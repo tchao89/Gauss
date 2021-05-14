@@ -9,6 +9,7 @@ from __future__ import print_function
 import abc
 from typing import Callable, List
 
+
 class Component(metaclass=abc.ABCMeta):
     """Base class for a component of ML workflow.
     All subclasses of Component must override the _train_run() method
@@ -26,8 +27,10 @@ class Component(metaclass=abc.ABCMeta):
         """
         self._name = name
         self._train_flag = train_flag
+
     def init(self, sess):
         pass
+
     @property
     def name(self):
         return self._name
@@ -37,16 +40,17 @@ class Component(metaclass=abc.ABCMeta):
         return self._train_flag
 
     
-    def run(self)
-        if(_train_flag)
-            _train_run()
-        else
-            _inference_run()
+    def run(self):
+        if self.train_flag:
+            self._train_run()
+        else:
+            self._inference_run()
 
     @abc.abstractmethod
-    def _train_run(self)
+    def _train_run(self):
         pass
+
     @abc.abstractmethod
-    def _inference_run(self)
+    def _inference_run(self):
         pass
   
