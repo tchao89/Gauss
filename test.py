@@ -1,18 +1,16 @@
-import abc
+from entity.plaintext_dataset import PlaintextDataset
+import pandas as pd
+from sklearn.datasets import dump_svmlight_file
 
-class A(metaclass=abc.ABCMeta):
- @abc.abstractmethod
- def run(self):
-  pass
-class B(A):
- @abc.abstractmethod
- def test(self):
-   pass
-class C(B):
- def run(self):
-   print("sb")
- def test(self):
-  print("fuck")
-tt = C()
-tt.run()
-tt.test()
+a = [[1], [2], [3]]
+r = a.pop(1)
+print(a)
+print(r)
+target_df = pd.DataFrame(a, columns=['a'])
+test = PlaintextDataset(input_path="/home/liangqian/Gauss/bank_numerical.csv", target_name="deposit")
+print(test.load_data().data)
+# dump_svmlight_file(X=test.load_data().data, y=test.load_data().target, f="bank_numerical.libsvm")
+test = PlaintextDataset(input_path="/home/liangqian/Gauss/bank_numerical.libsvm")
+print(test.load_data().data)
+test = PlaintextDataset(input_path="/home/liangqian/Gauss/bank_numerical.txt")
+print(test.load_data().data)
