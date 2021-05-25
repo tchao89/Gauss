@@ -28,9 +28,6 @@ class Component(metaclass=abc.ABCMeta):
         self._name = name
         self._train_flag = train_flag
 
-    def init(self, sess):
-        pass
-
     @property
     def name(self):
         return self._name
@@ -39,7 +36,6 @@ class Component(metaclass=abc.ABCMeta):
     def train_flag(self):
         return self._train_flag
 
-    
     def run(self):
         if self.train_flag:
             self._train_run()
@@ -53,4 +49,3 @@ class Component(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def _inference_run(self):
         pass
-  
