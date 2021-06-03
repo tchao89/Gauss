@@ -1,0 +1,17 @@
+2021-06-03 16:44:57.989733 logger [pid:247763 pnm:MainProcess] [tid:139796212242240 tnm:139796212242240] [fnm:plain_dataset.py lno:75 func:load_data] INFO : File path does not exist. 
+2021-06-03 16:44:57.989839 logger [pid:247763 pnm:MainProcess] [tid:139796212242240 tnm:139796212242240] [fnm:plain_dataset.py lno:77 func:load_data] INFO : .csv file has been converted to Bunch object. 
+2021-06-03 16:44:57.989892 logger [pid:247763 pnm:MainProcess] [tid:139796212242240 tnm:139796212242240] [fnm:plain_dataset.py lno:82 func:load_data] INFO : CSV file is not read correctly. 
+2021-06-03 16:45:50.518209 logger [pid:247792 pnm:MainProcess] [tid:140439183546176 tnm:140439183546176] [fnm:plain_dataset.py lno:75 func:load_data] INFO : File path does not exist. 
+2021-06-03 16:45:50.518306 logger [pid:247792 pnm:MainProcess] [tid:140439183546176 tnm:140439183546176] [fnm:plain_dataset.py lno:77 func:load_data] INFO : .csv file has been converted to Bunch object. 
+2021-06-03 16:45:50.518371 logger [pid:247792 pnm:MainProcess] [tid:140439183546176 tnm:140439183546176] [fnm:plain_dataset.py lno:82 func:load_data] INFO : CSV file is not read correctly. 
+2021-06-03 16:46:42.676239 logger [pid:247824 pnm:MainProcess] [tid:140566845605696 tnm:140566845605696] [fnm:plain_dataset.py lno:76 func:load_data] INFO : File path does not exist. 
+2021-06-03 16:46:42.676374 logger [pid:247824 pnm:MainProcess] [tid:140566845605696 tnm:140566845605696] [fnm:plain_dataset.py lno:78 func:load_data] INFO : .csv file has been converted to Bunch object. 
+2021-06-03 16:46:42.676426 logger [pid:247824 pnm:MainProcess] [tid:140566845605696 tnm:140566845605696] [fnm:plain_dataset.py lno:83 func:load_data] INFO : CSV file is not read correctly. 
+2021-06-03 16:49:25.402566 logger [pid:247870 pnm:MainProcess] [tid:140349043644224 tnm:140349043644224] [fnm:plain_dataset.py lno:75 func:load_data] INFO : File path does not exist. 
+2021-06-03 16:49:25.402667 logger [pid:247870 pnm:MainProcess] [tid:140349043644224 tnm:140349043644224] [fnm:plain_dataset.py lno:77 func:load_data] INFO : .csv file has been converted to Bunch object. 
+2021-06-03 16:49:25.402716 logger [pid:247870 pnm:MainProcess] [tid:140349043644224 tnm:140349043644224] [fnm:plain_dataset.py lno:82 func:load_data] INFO : CSV file is not read correctly. 
+2021-06-03 16:49:54.871896 logger [pid:247897 pnm:MainProcess] [tid:139654043502400 tnm:139654043502400] [fnm:plain_dataset.py lno:76 func:load_data] INFO : File path does not exist. 
+2021-06-03 16:49:54.871988 logger [pid:247897 pnm:MainProcess] [tid:139654043502400 tnm:139654043502400] [fnm:plain_dataset.py lno:78 func:load_data] INFO : .csv file has been converted to Bunch object. 
+2021-06-03 16:49:54.872035 logger [pid:247897 pnm:MainProcess] [tid:139654043502400 tnm:139654043502400] [fnm:plain_dataset.py lno:83 func:load_data] INFO : CSV file is not read correctly. 
+2021-06-03 16:51:33.663254 logger [pid:247996 pnm:MainProcess] [tid:140499234150208 tnm:140499234150208] [fnm:plain_dataset.py lno:74 func:load_data] INFO : .csv file has object dtype, load_mixed_csv() method has started. 
+2021-06-03 16:51:33.674246 logger [pid:247996 pnm:MainProcess] [tid:140499234150208 tnm:140499234150208] [fnm:plain_dataset.py lno:79 func:load_data] INFO : .csv file has been converted to Bunch object. 

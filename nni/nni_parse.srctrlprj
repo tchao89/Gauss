@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<config>
+    <source_groups>
+        <source_group_575b9069-3814-4230-95b3-2737d0979f2b>
+            <name>Python Source Group</name>
+            <source_extensions>
+                <source_extension>.py</source_extension>
+            </source_extensions>
+            <source_paths>
+                <source_path>algorithms</source_path>
+                <source_path>common</source_path>
+                <source_path>compression</source_path>
+                <source_path>experiment</source_path>
+                <source_path>feature_engineering</source_path>
+                <source_path>nas</source_path>
+                <source_path>retiarii</source_path>
+                <source_path>runtime</source_path>
+                <source_path>tools</source_path>
+                <source_path>__init__.py</source_path>
+                <source_path>__main__.py</source_path>
+                <source_path>assessor.py</source_path>
+                <source_path>parameter_expressions.py</source_path>
+                <source_path>recoverable.py</source_path>
+                <source_path>smartparam.py</source_path>
+                <source_path>trial.py</source_path>
+                <source_path>tuner.py</source_path>
+                <source_path>utils.py</source_path>
+            </source_paths>
+            <status>enabled</status>
+            <type>Python Source Group</type>
+        </source_group_575b9069-3814-4230-95b3-2737d0979f2b>
+    </source_groups>
+    <version>8</version>
+</config>

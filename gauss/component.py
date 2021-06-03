@@ -7,18 +7,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import abc
-from typing import Callable, List
-
 
 class Component(metaclass=abc.ABCMeta):
-    """Base class for a component of ML workflow.
+    """Base class for a component of ML workflow, such as feature  generation,
+    feature selector and so on     
     All subclasses of Component must override the _train_run() method
     and _inference_run() method
     """
 
     def __init__(self,
                  name: str,
-                 train_flag: bool = True):
+                 train_flag: bool = True,
+                 enable: bool = True):
         """Construct a Component.
 
         :param name: The name of the Component.
@@ -27,25 +27,30 @@ class Component(metaclass=abc.ABCMeta):
         """
         self._name = name
         self._train_flag = train_flag
+        self._enable = enable
 
     @property
     def name(self):
         return self._name
 
     @property
+    def enable(self):
+        return self._enable
+
+    @property
     def train_flag(self):
         return self._train_flag
-
-    def run(self):
-        if self.train_flag:
-            self._train_run()
+    
+    def run(self, **entity):
+        if self._train_flag:
+            self._train_run(**entity)
         else:
-            self._inference_run()
+            self._predict_run(**entity)
 
     @abc.abstractmethod
-    def _train_run(self):
+    def _train_run(self, **entity):
         pass
 
     @abc.abstractmethod
-    def _inference_run(self):
+    def _predict_run(self, **entity):
         pass

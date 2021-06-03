@@ -1,5 +1,0 @@
-{
-  "name": "bool",
-  "version": "numeric",
-  "dependencies": "categorical"
-}
