@@ -38,7 +38,8 @@ class TypeInference(BaseTypeInference):
         self.dtype_list = []
 
         self.epsilon = 0.00001
-        self.threshold = 0.95
+        self.dtype_threshold = 0.95
+        self.categorical_threshold = 0.01
 
         if source_file_path != "null":
             self.feature_configure = FeatureConf(name="source feature path", file_path=source_file_path)
@@ -49,13 +50,27 @@ class TypeInference(BaseTypeInference):
 
     def _train_run(self, **entity):
         assert "dataset" in entity.keys()
+        self.dtype_inference(dataset=entity["dataset"])
+
+        return self.feature_configure, self.target_feature_configure
 
     def ftype_inference(self, dataset: Bunch):
         data = dataset.data
-        target = dataset.target
 
-        for index, column in data.columns:
-            pass
+        for index, column in enumerate(data.columns):
+            if self.feature_configure.feature_dict[column].dtype == 'string':
+                self.feature_configure.feature_dict[column].ftype = 'category'
+            elif self.feature_configure.feature_dict[column].dtype == 'float64':
+                self.feature_configure.feature_dict[column].ftype = 'numerical'
+            else:
+                assert self.feature_configure.feature_dict[column].dtype == 'int64'
+
+                categorical_detect = len(pd.unique(data[column]))/data[column].shape[0]
+                if categorical_detect < self.categorical_threshold:
+                    self.feature_configure.feature_dict[column].ftype = 'category'
+                else:
+                    self.feature_configure.feature_dict[column].ftype = 'numerical'
+        return self.feature_configure
 
     def dtype_inference(self, dataset: Bunch):
 
@@ -105,7 +120,7 @@ class TypeInference(BaseTypeInference):
                         str_count += 1
                         str_coordinate.append(index)
 
-                if float_count/data.shape[0] > self.threshold:
+                if float_count/data.shape[0] > self.dtype_threshold:
                     feature_item_configure.dtype = 'float64'
                     detect_column = copy.deepcopy(data[column])
                     detect_column.loc[str_coordinate] = detect_column.iloc[str_coordinate].apply(lambda x: np.nan)
