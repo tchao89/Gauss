@@ -1,5 +1,6 @@
 import os
 import csv
+
 import pandas as pd
 import numpy as np
 from sklearn.datasets import load_svmlight_file
@@ -15,10 +16,11 @@ class PlaintextDataset(BaseDataset):
     Reads data
     """
 
-    def __init__(self, name, data_path, task_type, target_name="target_name", memory_only=True):
+    def __init__(self, name, data_path, task_type, target_name=None, memory_only=True):
         super(PlaintextDataset, self).__init__(name, data_path, task_type, target_name, memory_only)
 
         assert os.path.isfile(data_path)
+
         self.type_doc = None
         self.shape = None
         self._bunch = self.load_data()
@@ -48,8 +50,7 @@ class PlaintextDataset(BaseDataset):
             else:
                 return str(combined_df)
 
-    @property
-    def dataset(self):
+    def get_dataset(self):
         return self._bunch
 
     def load_data(self):

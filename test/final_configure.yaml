@@ -1,0 +1,78 @@
+age:
+  dtype: int64
+  ftype: category
+  index: 0
+  name: age
+  size: 1
+balance:
+  dtype: int64
+  ftype: numerical
+  index: 4
+  name: balance
+  size: 1
+campaign:
+  dtype: int64
+  ftype: null
+  index: 0
+  name: campaign
+  size: 1
+day:
+  dtype: int64
+  ftype: category
+  index: 7
+  name: day
+  size: 1
+deposit:
+  dtype: string
+  ftype: bool
+  index: 10
+  name: deposit
+  size: 1
+duration:
+  dtype: int64
+  ftype: numerical
+  index: 9
+  name: duration
+  size: 1
+education:
+  dtype: string
+  ftype: category
+  index: 3
+  name: education
+  size: 1
+housing:
+  dtype: string
+  ftype: bool
+  index: 5
+  name: housing
+  size: 1
+job:
+  dtype: string
+  ftype: category
+  index: 1
+  name: job
+  size: 1
+loan:
+  dtype: string
+  ftype: bool
+  index: 6
+  name: loan
+  size: 1
+marital:
+  dtype: string
+  ftype: category
+  index: 2
+  name: marital
+  size: 1
+month:
+  dtype: string
+  ftype: category
+  index: 8
+  name: month
+  size: 1
+time:
+  dtype: string
+  ftype: category
+  index: 11
+  name: time
+  size: 1

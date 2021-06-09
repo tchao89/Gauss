@@ -4,6 +4,8 @@
 # Authors: Lab
 
 import abc
+
+from typing import List
 from entity.entity import Entity
 
 
@@ -16,10 +18,14 @@ class BaseDataset(Entity):
                  memory_only=True):
 
         super(BaseDataset, self).__init__(name=name)
+
         if target_name is None:
-            target_name = "target_name"
+            target_name = ["target_name"]
+
+        assert isinstance(target_name, List)
+
         self._data_path = data_path
-        self._target_name = [target_name]
+        self._target_name = target_name
         self._memory_only = memory_only
         self._column_size = 0
         self._row_size = 0
@@ -28,6 +34,10 @@ class BaseDataset(Entity):
 
     @abc.abstractmethod
     def load_data(self):
+        pass
+
+    @abc.abstractmethod
+    def get_dataset(self):
         pass
 
     @property

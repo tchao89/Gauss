@@ -1,0 +1,52 @@
+features:
+
+    age: {dtype: int64, index: 0, size: 1}
+
+    job: {dtype: string, index: 1, size: 1}
+
+    marital: {dtype: string, index: 2, size: 1}
+
+    education: {dtype: string, index: 3,size: 1}
+
+    balance: {dtype: int64, index: 4, size: 1}
+
+    housing: {dtype: string, index: 5, size: 1}
+
+    loan: {dtype: string, index: 6, size: 1}
+
+    day: {dtype: int64, index: 7, size: 1}
+
+    month: {dtype: string, index: 8, size: 1}
+
+    duration: {dtype: int64, index: 9, size: 1}
+
+    deposit: {dtype: string, index: 11, size: 1}
+
+    time: {dtype: string, index: 12, size: 1}
+
+
+transforms:
+
+    categorical_features:
+
+        - job
+        - marital
+        - education
+        - day
+        - month
+        - deposit
+
+    numerical_features:
+
+        - age
+        - balance
+        - duration
+
+    bool_features:
+
+        - housing
+        - loan
+
+    datetime_features:
+
+        -time
