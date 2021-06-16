@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2020, Citic Inc. All rights reserved.
+# Authors: Lab
+from __future__ import annotations
+
 import os
 import csv
 
@@ -17,6 +23,14 @@ class PlaintextDataset(BaseDataset):
     """
 
     def __init__(self, name, data_path, task_type, target_name=None, memory_only=True):
+        """
+
+        :param name:
+        :param data_path:
+        :param task_type:
+        :param target_name:
+        :param memory_only:
+        """
         super(PlaintextDataset, self).__init__(name, data_path, task_type, target_name, memory_only)
 
         assert os.path.isfile(data_path)
@@ -24,6 +38,11 @@ class PlaintextDataset(BaseDataset):
         self.type_doc = None
         self.shape = None
         self._bunch = self.load_data()
+
+        # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
+        # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
+        # by the length of validation dataset.
+        self.val_start = -1
 
     def __repr__(self):
         assert self._bunch is not None
@@ -86,7 +105,7 @@ class PlaintextDataset(BaseDataset):
 
             self._bunch = Bunch(data=data,
                                 target=target,
-                                target_name=target_name,
+                                target_names=target_name,
                                 feature_names=feature_names)
 
         elif self.type_doc == 'libsvm':
@@ -231,3 +250,19 @@ class PlaintextDataset(BaseDataset):
     @classmethod
     def shuffle_data(cls, data, target):
         return shuffle(data, target)
+
+    # dataset is a PlainDataset object
+    def union(self, dataset: PlaintextDataset):
+        """ This method is used for concatenating train dataset and validation dataset.
+
+        :param dataset:
+        :return:
+        """
+        pass
+
+    def split(self):
+        """
+
+        :return:
+        """
+        pass

@@ -49,4 +49,4 @@ transforms:
 
     datetime_features:
 
-        -time
+        [time]

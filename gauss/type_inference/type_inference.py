@@ -25,8 +25,17 @@ class TypeInference(BaseTypeInference):
                  # user
                  source_file_path="null",
                  # final
-                 final_file_path: str = './final_configure.yaml',
+                 final_file_path: str = '../configure_files/final_configure.yaml',
                  final_file_prefix="final"):
+        """
+        TypeInference object can just change dataset, abnormal data in dataset will improve in PlainDataClear object.
+        :param name:
+        :param task_name:
+        :param train_flag:
+        :param source_file_path:
+        :param final_file_path:
+        :param final_file_prefix:
+        """
 
         super(TypeInference, self).__init__(
             name=name,

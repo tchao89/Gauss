@@ -8,7 +8,7 @@ import pandas as pd
 import yaml
 from sklearn.preprocessing import LabelEncoder
 
-import featuretools as ft
+from core import featuretools as ft
 from entity.base_dataset import BaseDataset
 from gauss.feature_generation.base_feature_generation import BaseFeatureGenerator
 from utils.Logger import logger
@@ -105,12 +105,20 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         primitives = ft.list_primitives()
         trans_primitives = list(primitives[primitives['type'] == 'transform']['name'].values)
 
-        # Create new features using specified primitives
-        features, feature_names = ft.dfs(entityset=es, target_entity=self.name,
-                                         trans_primitives=trans_primitives)
+        # pandas method Series.dt.weekofday and Series.dt.week have been deprecated,
+        # so featuretools can not use "week" transform method.
+        try:
+            trans_primitives.remove("week")
+        except ValueError:
+            logger.info("week transform does not exist in trans_primitives")
+        finally:
 
-        dataset.get_dataset().data = features
-        dataset.get_dataset().generated_features_names = feature_names
+            # Create new features using specified primitives
+            features, feature_names = ft.dfs(entityset=es, target_entity=self.name,
+                                             trans_primitives=trans_primitives)
+
+            dataset.get_dataset().data = features
+            dataset.get_dataset().generated_feature_names = feature_names
 
     def _label_encoding(self, dataset: BaseDataset):
         feature_names = dataset.get_dataset().feature_names

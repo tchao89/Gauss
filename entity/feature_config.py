@@ -138,9 +138,6 @@ class FeatureConf(Entity):
                 item_configure = FeatureItemConf()
                 item_configure.ftype = "datetime"
                 self._feature_dict[item] = item_configure
-        print(self._feature_dict['time'].name)
-        print(self._feature_dict['time'].dtype)
-        print(self._feature_dict['time'].ftype)
         return self
 
     def add_item_type(self, column_name: str, feature_item_conf: FeatureItemConf):
