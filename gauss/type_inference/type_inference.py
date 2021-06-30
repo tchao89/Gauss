@@ -18,15 +18,11 @@ from entity.feature_config import FeatureItemConf, FeatureConf
 
 
 class TypeInference(BaseTypeInference):
-    def __init__(self,
-                 name: str,
-                 task_name: str,
-                 train_flag: bool,
-                 # user
-                 source_file_path="null",
-                 # final
-                 final_file_path: str = '../configure_files/final_configure.yaml',
-                 final_file_prefix="final"):
+    """
+    1、如果存在某一列的特征是50%数字和50%的字母，这种id特征也是合理的，需要进行处理。
+    2、typeinference中，需要将噪声数据全部重置为缺失值。
+    """
+    def __init__(self, **params):
         """
         TypeInference object can just change dataset, abnormal data in dataset will improve in PlainDataClear object.
         :param name:
@@ -38,16 +34,16 @@ class TypeInference(BaseTypeInference):
         """
 
         super(TypeInference, self).__init__(
-            name=name,
-            train_flag=train_flag,
-            source_file_path=source_file_path,
-            final_file_path=final_file_path,
-            final_file_prefix=final_file_prefix
+            name=params["name"],
+            train_flag=params["train_flag"],
+            source_file_path=params["source_file_path"],
+            final_file_path=params["final_file_path"],
+            final_file_prefix=params["final_file_prefix"]
         )
 
-        assert task_name in ["regression", "classification"]
+        assert params["task_name"] in ["regression", "classification"]
 
-        self.task_name = task_name
+        self._task_name = params["task_name"]
         self.ftype_list = []
         self.dtype_list = []
 
@@ -55,13 +51,31 @@ class TypeInference(BaseTypeInference):
         self.dtype_threshold = 0.95
         self.categorical_threshold = 0.01
 
-        if source_file_path != "null":
-            self.init_feature_configure = FeatureConf(name="source feature path", file_path=source_file_path)
+        if params["source_file_path"] != "null":
+            self.init_feature_configure = FeatureConf(name="source feature path", file_path=params["source_file_path"])
             self.init_feature_configure.parse()
         else:
             self.init_feature_configure = None
 
-        self.final_feature_configure = FeatureConf(name='target feature path', file_path=final_file_path)
+        self.final_feature_configure = FeatureConf(name='target feature path', file_path=params["final_file_path"])
+
+    def set_name(self, name):
+        self._name = name
+
+    def set_train_flag(self, train_flag: bool):
+        self._train_flag = train_flag
+
+    def set_task_name(self, task_name):
+        self._task_name = task_name
+
+    def set_source_file_path(self, source_file_path):
+        self._source_file_path = source_file_path
+
+    def set_final_file_path(self, final_file_path):
+        self._final_file_path = final_file_path
+
+    def set_final_file_prefix(self, final_file_prefix):
+        self._final_file_prefix = final_file_prefix
 
     def _train_run(self, **entity):
         assert "dataset" in entity.keys()
@@ -201,10 +215,10 @@ class TypeInference(BaseTypeInference):
         for label_index, label in enumerate(target):
             feature_item_configure = FeatureItemConf()
 
-            if self.task_name == 'regression':
+            if self._task_name == 'regression':
                 assert target[label].dtypes == 'float64' and target[label].isna().sum() == 0
 
-            if self.task_name == 'classification':
+            if self._task_name == 'classification':
                 assert target[label].dtypes == 'int64'
 
             feature_item_configure.name = label

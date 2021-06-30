@@ -1,10 +1,12 @@
-import pandas as pd
-import lightgbm as lgb
+def fun1(fun):
+    print(1)
+    t = fun(10)
+    print(t)
 
-df = pd.read_csv("/home/liangqian/PycharmProjects/Gauss/test_dataset/bank.csv")
 
-label = df['age']
-data = df
+def fun2(x):
+    print(2)
+    return x
 
-dataset = lgb.Dataset(data=data, label=label)
-print(dataset.get_label())
+
+fun1(fun2)

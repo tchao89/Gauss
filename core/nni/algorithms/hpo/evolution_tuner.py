@@ -13,10 +13,10 @@ from collections import deque
 import numpy as np
 from schema import Schema, Optional
 
-import nni
-from nni import ClassArgsValidator
-from nni.tuner import Tuner
-from nni.utils import OptimizeMode, extract_scalar_reward, split_index, json2parameter, json2space
+from core import nni
+from core.nni import ClassArgsValidator
+from core.nni.tuner import Tuner
+from core.nni.utils import OptimizeMode, extract_scalar_reward, split_index, json2parameter, json2space
 
 logger = logging.getLogger(__name__)
 

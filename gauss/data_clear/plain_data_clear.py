@@ -16,7 +16,7 @@ from entity.base_dataset import BaseDataset
 
 # 需要传入三个参数， 数模型的数据/非数模型的数据， yaml文件， base dataset
 class PlainDataClear(BaseDataClear):
-    def __init__(self, name, train_flag, enable, model_name, feature_configure_path, strategy_dict=None):
+    def __init__(self, **params):
         """Construct a PlainDataClear.
 
         :param name: The name of the Component.
@@ -27,26 +27,44 @@ class PlainDataClear(BaseDataClear):
         But you can just use one of them, PlainDataClear object will use strict coding check programming.
         """
 
-        super(PlainDataClear, self).__init__(name=name, train_flag=train_flag, enable=enable)
+        super(PlainDataClear, self).__init__(name=params["name"], train_flag=params["train_flag"], enable=params["enable"])
 
-        self.model_name = model_name
-        self.feature_configure_path = feature_configure_path
-        assert os.path.isfile(self.feature_configure_path)
+        self._model_name = params["model_name"]
+        self._feature_configure_path = params["feature_configure_path"]
+        assert os.path.isfile(self._feature_configure_path)
 
-        self.strategy_dict = strategy_dict
+        self._strategy_dict = params["strategy_dict"]
 
         self.missing_values = np.nan
 
         self.default_cat_impute_model = SimpleImputer(missing_values=self.missing_values, strategy="most_frequent")
         self.default_num_impute_model = SimpleImputer(missing_values=self.missing_values, strategy="mean")
 
+    def set_name(self, name):
+        self._name = name
+
+    def set_train_flag(self, train_flag: bool):
+        self._train_flag = train_flag
+
+    def set_enable(self, enable: bool):
+        self._enable = enable
+
+    def set_model_name(self, model_name):
+        self._model_name = model_name
+
+    def set_feature_configure_path(self, configure_path):
+        self._feature_configure_path = configure_path
+
+    def set_strategy_dict(self, strategy_dict):
+        self._strategy_dict = strategy_dict
+
     def _train_run(self, **entity):
-        if self.model_name == "tree_model":
+        if self._model_name == "tree_model":
             assert "dataset" in entity.keys()
             self._clean(dataset=entity["dataset"])
 
     def _predict_run(self, **entity):
-        if self.model_name == "tree_model":
+        if self._model_name == "tree_model":
             assert "dataset" in entity.keys()
             self._clean(dataset=entity["dataset"])
 
@@ -56,7 +74,7 @@ class PlainDataClear(BaseDataClear):
 
         assert isinstance(data, pd.DataFrame)
 
-        feature_conf_file = open(self.feature_configure_path, 'r', encoding='utf-8')
+        feature_conf_file = open(self._feature_configure_path, 'r', encoding='utf-8')
         feature_conf = feature_conf_file.read()
         feature_conf = yaml.load(feature_conf, Loader=yaml.FullLoader)
 
@@ -65,20 +83,20 @@ class PlainDataClear(BaseDataClear):
             # feature configuration, dict type
             item_conf = feature_conf[feature]
 
-            if self.strategy_dict is not None:
+            if self._strategy_dict is not None:
 
-                if self.strategy_dict["model"]["name"] == "ftype":
+                if self._strategy_dict["model"]["name"] == "ftype":
                     impute_model = SimpleImputer(missing_values=self.missing_values,
-                                                 strategy=self.strategy_dict[item_conf['ftype']]["name"],
-                                                 fill_value=self.strategy_dict[item_conf['ftype']].get("fill_value"),
+                                                 strategy=self._strategy_dict[item_conf['ftype']]["name"],
+                                                 fill_value=self._strategy_dict[item_conf['ftype']].get("fill_value"),
                                                  add_indicator=True)
 
                 else:
 
-                    assert self.strategy_dict["model"]["name"] == "feature"
+                    assert self._strategy_dict["model"]["name"] == "feature"
                     impute_model = SimpleImputer(missing_values=self.missing_values,
-                                                 strategy=self.strategy_dict[feature]["name"],
-                                                 fill_value=self.strategy_dict[feature].get("fill_value"),
+                                                 strategy=self._strategy_dict[feature]["name"],
+                                                 fill_value=self._strategy_dict[feature].get("fill_value"),
                                                  add_indicator=True)
 
             else:
@@ -96,3 +114,10 @@ class PlainDataClear(BaseDataClear):
             item_data = item_data.reshape(1, -1).squeeze(axis=0)
 
             data[feature] = item_data
+
+    def configure_generation(self):
+        """
+        This method will generate data clear configuration from machine learning model name.
+        :return:
+        """
+        pass

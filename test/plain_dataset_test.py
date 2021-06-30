@@ -3,7 +3,7 @@ from sklearn.datasets import dump_svmlight_file
 import pandas as pd
 
 
-test = PlaintextDataset(name="dataset", task_type="test", data_path="/home/liangqian/PycharmProjects/Gauss/test_dataset/bank.csv", target_name=["campaign"])
+test = PlaintextDataset(name="dataset", task_type="classification", data_pair=None, data_path="/home/liangqian/PycharmProjects/Gauss/test_dataset/bank.csv", target_name=["campaign"], memory_only=True)
 print(test.get_dataset().target)
 print(test.get_column_size())
 print(test.get_row_size())
@@ -15,7 +15,7 @@ print(test.get_target_name())
 # target = data["deposit"]
 # dump_svmlight_file(X=data, y=target, f="/home/liangqian/PycharmProjects/Gauss/bank.libsvm")
 
-test = PlaintextDataset(name="dataset", task_type="test", data_path="/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical.libsvm", target_name=["deposit"])
+test = PlaintextDataset(name="dataset", task_type="test", data_path="/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical.libsvm", data_pair=None, target_name=["deposit"], memory_only=True)
 
 print(test.load_data().data)
 print(type(test.load_data().data))
@@ -24,7 +24,7 @@ print(test.get_column_size())
 print(test.get_row_size())
 print(test.get_target_name())
 
-test = PlaintextDataset(name="dataset", task_type="test", data_path="/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical.txt", target_name=["deposit"])
+test = PlaintextDataset(name="dataset", task_type="test", data_path="/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical.txt", data_pair=None, target_name=["deposit"], memory_only=True)
 print(test.load_data().data)
 print(type(test.load_data().data))
 print(repr(test))

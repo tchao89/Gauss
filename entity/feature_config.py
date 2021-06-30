@@ -69,15 +69,20 @@ class FeatureItemConf(object):
         self._size = size
 
 class FeatureConf(Entity):
-    def __init__(self, name, file_path):
+    def __init__(self, **params):
         super(FeatureConf, self).__init__(
-            name=name,
+            name=params["name"],
         )
 
         # yaml file path
-        self._file_path = file_path
-
+        self._file_path = params["file_path"]
         self._feature_dict = Bunch()
+
+    def set_name(self, name: str):
+        self._name = name
+
+    def set_file_path(self, file_path: str):
+        self._file_path = file_path
 
     def __repr__(self):
         if self._file_path is not None:

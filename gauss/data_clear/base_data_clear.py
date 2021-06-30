@@ -7,6 +7,12 @@ from gauss.component import Component
 
 class BaseDataClear(Component):
     def __init__(self, name, train_flag, enable):
+        """
+        如果输入数据中存在缺失值，其需要经过dataclear模块
+        :param name:
+        :param train_flag:
+        :param enable:
+        """
         super(BaseDataClear, self).__init__(name=name, train_flag=train_flag, enable=enable)
 
     def _train_run(self, **entity):

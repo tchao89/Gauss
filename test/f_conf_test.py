@@ -3,7 +3,7 @@ from gauss.type_inference.type_inference import TypeInference
 from entity.plain_dataset import PlaintextDataset
 
 
-test = PlaintextDataset(name="dataset", task_type="test", data_path="/home/liangqian/PycharmProjects/Gauss/test_dataset/bank.csv", target_name=["campaign"])
+test = PlaintextDataset(name="dataset", task_type="test", data_path="/home/liangqian/PycharmProjects/Gauss/test_dataset/bank.csv", data_pair=None, target_name=["campaign"], memory_only=True)
 
 test_yaml = FeatureConf(name='test', file_path="/home/liangqian/PycharmProjects/Gauss/test_dataset/feature_conf.yaml")
 

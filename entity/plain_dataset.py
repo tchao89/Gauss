@@ -22,27 +22,45 @@ class PlaintextDataset(BaseDataset):
     Reads data
     """
 
-    def __init__(self, name, data_path, task_type, target_name=None, memory_only=True):
+    def __init__(self, **params):
         """
-
-        :param name:
-        :param data_path:
-        :param task_type:
-        :param target_name:
-        :param memory_only:
+        :param name: module name.
+        :param data_path: input file path, csv, txt and libsvm are approved.
+        :param task_type: This value is optional, it can be "classification" or "regression".
+        :param target_name: label name in dataframe.
+        :param memory_only: it can just work in memory.
         """
-        super(PlaintextDataset, self).__init__(name, data_path, task_type, target_name, memory_only)
+        for item in ["name", "task_type", "data_pair", "data_path", "target_name", "memory_only"]:
+            if params.get(item) is None:
+                params[item] = None
 
-        assert os.path.isfile(data_path)
+        super(PlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_type"], params["target_name"], params["memory_only"])
+        if params["data_path"] is not None:
+            assert os.path.isfile(params["data_path"])
+
+        self._data_pair = params["data_pair"]
 
         self.type_doc = None
         self.shape = None
-        self._bunch = self.load_data()
+
+        self.data_module = False
+        self._bunch = None
+
+        assert params["data_path"] is not None or params["data_pair"] is not None
+        if params["data_path"] is not None and isinstance(params["data_path"], str):
+            self._bunch = self.load_data()
+
+        # if params["data_path] is a dict, it's format must be {"train_data": "./t_data.csv", "val_data": "./v_data.csv"}
+        elif params["data_path"] is not None and isinstance(params["data_path"], dict):
+            pass
+
+        else:
+            self._bunch = Bunch(data=self._data_pair.data, target=self._data_pair.target)
 
         # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
         # by the length of validation dataset.
-        self.val_start = -1
+        self._val_start = None
 
     def __repr__(self):
         assert self._bunch is not None
@@ -55,7 +73,7 @@ class PlaintextDataset(BaseDataset):
             combined_df, _, _ = self._convert_data_dataframe(data=self._bunch.data,
                                                              target=self._bunch.target,
                                                              feature_names=self._bunch.feature_names,
-                                                             target_names=self._bunch.target_name)
+                                                             target_names=self._bunch.target_names)
             if self.shape[0] > self._default_print_size:
                 return str(combined_df.head(self._default_print_size))
             else:
@@ -72,7 +90,10 @@ class PlaintextDataset(BaseDataset):
     def get_dataset(self):
         return self._bunch
 
-    def load_data(self):
+    def load_data(self, data_path=None):
+        if data_path is not None:
+            self._data_path = data_path
+
         assert "." in self._data_path
         self.type_doc = self._data_path.split(".")[-1]
 
@@ -251,18 +272,64 @@ class PlaintextDataset(BaseDataset):
     def shuffle_data(cls, data, target):
         return shuffle(data, target)
 
+    def feature_choose(self, feature_list):
+        data = self._bunch.data.iloc[:, feature_list]
+        return data
+
     # dataset is a PlainDataset object
-    def union(self, dataset: PlaintextDataset):
+    def union(self):
         """ This method is used for concatenating train dataset and validation dataset.
-
-        :param dataset:
         :return:
         """
-        pass
+        bunch_list = {}
 
-    def split(self):
+        train_data = bunch_list["train_data"]
+        val_data = bunch_list["val_data"]
+
+        for path in self._data_path.keys():
+            bunch_list[path] = self.load_data(data_path=self._data_path[path])
+
+        assert train_data.data.shape[1] == val_data.data.shape[1]
+        self._bunch.data = pd.concat([train_data.data, val_data.data], axis=0)
+
+        assert train_data.target.shape[1] == val_data.target.shape[1]
+        self._bunch.data = pd.concat([train_data.target, val_data.target], axis=0)
+        self._val_start = train_data.target.shape[0]
+
+        if train_data.get("feature_names") and val_data.get("feature_names"):
+            assert train_data.feature_names == val_data.feature_names
+        if train_data.get("target_names") and val_data.get("target_names"):
+            assert train_data.target_names == val_data.target_names
+
+    def split(self, val_start: float = 0.8):
         """
 
-        :return:
+        :param val_start: split proportion
+        :return: plaindataset object
         """
-        pass
+        assert self._bunch is not None
+
+        for key in self._bunch.keys():
+            assert key in ["data", "target", "feature_names", "target_names", "generated_feature_names"]
+
+        if self._val_start is None:
+            self._val_start = int(val_start * self._bunch.data.shape[0])
+        print(self._val_start)
+        print(self._bunch.data.shape)
+        print(self._bunch.target.shape)
+        val_data = self._bunch.data.iloc[self._val_start:, :]
+        self._bunch.data = self._bunch.data.iloc[:self._val_start, :]
+
+        val_target = self._bunch.target.iloc[self._val_start:, :]
+        self._bunch.target = self._bunch.target.iloc[:self._val_start, :]
+
+        self._bunch.data = self._bunch.data.reset_index(drop=True)
+        self._bunch.target = self._bunch.target.reset_index(drop=True)
+
+        val_data = val_data.reset_index(drop=True)
+        val_target = val_target.reset_index(drop=True)
+
+        print(val_data.shape)
+        print(val_target.shape)
+
+        return Bunch(data=val_data, target=val_target)

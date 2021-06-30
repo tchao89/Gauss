@@ -54,17 +54,16 @@ class BaseMetric(Entity, ABC):
     to conduct the metric evaluation and provide names of required data fields.
     """
 
-    def __init__(self, name: str, result: float, meta=None):
+    def __init__(self, name: str, meta=None):
         """Construct a metric result.
-        :param result: The metric's result.
         :param meta: A map of other meta metarmation.
         """
 
         if meta is None:
             meta = {}
-        self._result = result
+
         self._meta = meta
-        super(Entity, self).__init__(
+        super(BaseMetric, self).__init__(
             name=name,
         )
 
@@ -88,5 +87,13 @@ class BaseMetric(Entity, ABC):
         Returns the names of all required data fields.
 
         :return: A list of required data fields' name.
+        """
+        pass
+
+    @abc.abstractmethod
+    def metrics_result(self):
+        """
+
+        :return: MetricResult object for this BaseMetric object.
         """
         pass

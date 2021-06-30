@@ -5,6 +5,7 @@
 import shelve
 
 import pandas as pd
+import numpy as np
 import yaml
 from sklearn.preprocessing import LabelEncoder
 
@@ -16,17 +17,34 @@ from utils.Logger import logger
 
 class FeatureToolsGenerator(BaseFeatureGenerator):
 
-    def __init__(self, name, train_flag, enable, feature_config_path, label_encoding_configure_path):
-        super(FeatureToolsGenerator, self).__init__(name=name,
-                                                    train_flag=train_flag,
-                                                    enable=enable,
-                                                    feature_configure_path=feature_config_path)
+    def __init__(self, **params):
+
+        super(FeatureToolsGenerator, self).__init__(name=params["name"],
+                                                    train_flag=params["train_flag"],
+                                                    enable=params["enable"],
+                                                    feature_configure_path=params["feature_config_path"])
+
         self.entity_set = ft.EntitySet(id=self.name)
-        self.label_encoding_configure_path = label_encoding_configure_path
+        self._label_encoding_configure_path = params["label_encoding_configure_path"]
         self.label_encoding = {}
 
         self.variable_types = {}
         self.feature_configure = None
+
+    def set_name(self, name):
+        self._name = name
+
+    def set_train_flag(self, train_flag: bool):
+        self._train_flag = train_flag
+
+    def set_enable(self, enable: bool):
+        self._enable = enable
+
+    def set_feature_configure_path(self, configure_path):
+        self._feature_configure_path = configure_path
+
+    def set_label_encoding_configure_path(self, label_encoding_configure_path):
+        self._label_encoding_configure_path = label_encoding_configure_path
 
     def _train_run(self, **entity):
 
@@ -53,7 +71,7 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         self._set_feature_configure()
         assert self.feature_configure is not None
 
-        with shelve.open(self.label_encoding_configure_path) as shelve_open:
+        with shelve.open(self._label_encoding_configure_path) as shelve_open:
             le_model_list = shelve_open['label_encoding']
 
             for col in feature_names:
@@ -75,7 +93,7 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
 
     def _set_feature_configure(self):
 
-        feature_configure_file = open(self.feature_configure_path, 'r', encoding='utf-8')
+        feature_configure_file = open(self._feature_configure_path, 'r', encoding='utf-8')
         feature_configure = feature_configure_file.read()
         self.feature_configure = yaml.load(feature_configure, Loader=yaml.FullLoader)
         feature_configure_file.close()
@@ -116,9 +134,12 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
             # Create new features using specified primitives
             features, feature_names = ft.dfs(entityset=es, target_entity=self.name,
                                              trans_primitives=trans_primitives)
-
-            dataset.get_dataset().data = features
+            data = pd.concat([features, dataset.get_dataset().target], axis=1)
+            data = self.clean_dataset(data)
+            target = data.iloc[:, -1]
+            dataset.get_dataset().data = data.drop(dataset.get_dataset().target_names, axis=1)
             dataset.get_dataset().generated_feature_names = feature_names
+            dataset.target = target
 
     def _label_encoding(self, dataset: BaseDataset):
         feature_names = dataset.get_dataset().feature_names
@@ -135,5 +156,12 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
 
     def _label_encoding_serialize(self):
         # 序列化label encoding模型字典
-        with shelve.open(self.label_encoding_configure_path) as shelve_open:
+        with shelve.open(self._label_encoding_configure_path) as shelve_open:
             shelve_open['label_encoding'] = self.label_encoding
+
+    @classmethod
+    def clean_dataset(cls, df):
+        assert isinstance(df, pd.DataFrame), "df needs to be a pd.DataFrame"
+        df.dropna(inplace=True)
+        indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any(axis=1)
+        return df[indices_to_keep].astype(np.float64)

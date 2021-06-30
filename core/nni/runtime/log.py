@@ -4,7 +4,6 @@ import logging
 from logging import FileHandler, Formatter, Handler, StreamHandler
 from pathlib import Path
 import sys
-import time
 from typing import Optional
 
 import colorama

@@ -24,7 +24,7 @@ class Model(Entity):
         self._train_finished = False
         self._model_param_dict = {}
 
-        super(Entity, self).__init__(
+        super(Model, self).__init__(
             name=name,
         )
 
@@ -54,3 +54,7 @@ class Model(Entity):
 
     def update_params(self, **params):
         self._model_param_dict.update(params)
+
+    @abc.abstractmethod
+    def preprocess(self):
+        pass

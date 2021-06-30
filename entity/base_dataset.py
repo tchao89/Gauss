@@ -55,3 +55,15 @@ class BaseDataset(Entity):
     @property
     def default_print_size(self):
         return self._default_print_size
+
+    @property
+    def task_type(self):
+        return self._task_type
+
+    @abc.abstractmethod
+    def split(self):
+        pass
+
+    @abc.abstractmethod
+    def union(self):
+        pass

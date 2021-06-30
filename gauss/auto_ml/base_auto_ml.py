@@ -9,7 +9,7 @@ from gauss.component import Component
 class BaseAutoML(Component):
     def __init__(self, name: str, train_flag: bool = True, enable: bool = True, opt_model_names: list = None):
         super(BaseAutoML, self).__init__(name, train_flag, enable)
-        self.opt_model_names = opt_model_names
+        self._opt_model_names = opt_model_names
 
     @abc.abstractmethod
     def _train_run(self, **entity):

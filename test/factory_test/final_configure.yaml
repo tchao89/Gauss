@@ -7,7 +7,7 @@ age:
 balance:
   dtype: int64
   ftype: numerical
-  index: 4
+  index: 1
   name: balance
   size: 1
 campaign:
@@ -19,11 +19,11 @@ campaign:
 day:
   dtype: int64
   ftype: category
-  index: 7
+  index: 8
   name: day
   size: 1
 deposit:
-  dtype: string
+  dtype: int64
   ftype: bool
   index: 10
   name: deposit
@@ -35,44 +35,38 @@ duration:
   name: duration
   size: 1
 education:
-  dtype: string
+  dtype: int64
   ftype: category
-  index: 3
+  index: 4
   name: education
   size: 1
 housing:
-  dtype: string
+  dtype: int64
   ftype: bool
   index: 5
   name: housing
   size: 1
 job:
-  dtype: string
+  dtype: int64
   ftype: category
-  index: 1
+  index: 3
   name: job
   size: 1
 loan:
-  dtype: string
+  dtype: int64
   ftype: bool
   index: 6
   name: loan
   size: 1
 marital:
-  dtype: string
+  dtype: int64
   ftype: category
   index: 2
   name: marital
   size: 1
 month:
-  dtype: string
+  dtype: int64
   ftype: category
-  index: 8
+  index: 7
   name: month
-  size: 1
-time:
-  dtype: string
-  ftype: datetime
-  index: 11
-  name: time
   size: 1

@@ -10,7 +10,7 @@ See :class:`Tuner`' specification and ``docs/en_US/tuners.rst`` for details.
 
 import logging
 
-import nni
+from core import nni
 
 from .recoverable import Recoverable
 
