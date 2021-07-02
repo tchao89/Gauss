@@ -14,7 +14,7 @@ import numpy as np
 from entity.entity import Entity
 
 
-class MetricResult(object):
+class MetricResult(Entity):
     """Class for metric result."""
 
     def __init__(self, name: str, result: float, meta=None):

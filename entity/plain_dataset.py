@@ -55,7 +55,7 @@ class PlaintextDataset(BaseDataset):
             pass
 
         else:
-            self._bunch = Bunch(data=self._data_pair.data, target=self._data_pair.target)
+            self._bunch = self._data_pair
 
         # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
@@ -314,22 +314,17 @@ class PlaintextDataset(BaseDataset):
 
         if self._val_start is None:
             self._val_start = int(val_start * self._bunch.data.shape[0])
-        print(self._val_start)
-        print(self._bunch.data.shape)
-        print(self._bunch.target.shape)
+
         val_data = self._bunch.data.iloc[self._val_start:, :]
         self._bunch.data = self._bunch.data.iloc[:self._val_start, :]
 
-        val_target = self._bunch.target.iloc[self._val_start:, :]
-        self._bunch.target = self._bunch.target.iloc[:self._val_start, :]
+        val_target = self._bunch.target.iloc[self._val_start:]
+        self._bunch.target = self._bunch.target.iloc[:self._val_start]
 
         self._bunch.data = self._bunch.data.reset_index(drop=True)
         self._bunch.target = self._bunch.target.reset_index(drop=True)
 
         val_data = val_data.reset_index(drop=True)
         val_target = val_target.reset_index(drop=True)
-
-        print(val_data.shape)
-        print(val_target.shape)
 
         return Bunch(data=val_data, target=val_target)

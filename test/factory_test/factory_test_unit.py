@@ -7,10 +7,9 @@ entity_factory = gauss_factory.get_factory(choice="entity")
 component_factory = gauss_factory.get_factory(choice="component")
 
 # 创建plaindataset对象
-dataset_params = Bunch(name="test", task_type="classification", data_pair=None, data_path="/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical.csv", target_name=["campaign"], memory_only=True)
+dataset_params = Bunch(name="test", task_type="classification", data_pair=None, data_path="/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical.csv", target_name=["deposit"], memory_only=True)
 plain_dataset = entity_factory.get_entity(entity_name="plaindataset", **dataset_params)
 plain_dataset_test = entity_factory.get_entity(entity_name="plaindataset", **dataset_params)
-# print(repr(plain_dataset))
 dataset = Bunch(dataset=plain_dataset)
 dataset_test = Bunch(dataset=plain_dataset_test)
 
@@ -64,8 +63,8 @@ s_selector = component_factory.get_component(component_name="supervisedfeaturese
 s_selector.run(**dataset)
 
 # 模型选择
-model_params = Bunch()
-model = entity_factory.get_entity(entity_name="lightgbm", **model_params)
+# model_params = Bunch()
+# model = entity_factory.get_entity(entity_name="lightgbm", **model_params)
 
 # 评估指标选择
 metric_params = Bunch()

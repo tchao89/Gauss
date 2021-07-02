@@ -112,38 +112,42 @@ class FeatureConf(Entity):
 
             raise ValueError("Duplicate keys in transformers.")
 
-        for item in init_conf['transforms']['categorical_features']:
-            if self._feature_dict.get(item):
-                self._feature_dict[item].ftype = "category"
-            else:
-                item_configure = FeatureItemConf()
-                item_configure.ftype = "category"
-                self._feature_dict[item] = item_configure
+        if init_conf['transforms']['categorical_features'] is not None:
+            for item in init_conf['transforms']['categorical_features']:
+                if self._feature_dict.get(item):
+                    self._feature_dict[item].ftype = "category"
+                else:
+                    item_configure = FeatureItemConf()
+                    item_configure.ftype = "category"
+                    self._feature_dict[item] = item_configure
 
-        for item in init_conf['transforms']['numerical_features']:
-            if self._feature_dict.get(item):
-                self._feature_dict[item].ftype = "numerical"
-            else:
-                item_configure = FeatureItemConf()
-                item_configure.ftype = "numerical"
-                self._feature_dict[item] = item_configure
+        if init_conf['transforms']['numerical_features'] is not None:
+            for item in init_conf['transforms']['numerical_features']:
+                if self._feature_dict.get(item):
+                    self._feature_dict[item].ftype = "numerical"
+                else:
+                    item_configure = FeatureItemConf()
+                    item_configure.ftype = "numerical"
+                    self._feature_dict[item] = item_configure
 
-        for item in init_conf['transforms']['bool_features']:
-            if self._feature_dict.get(item):
-                self._feature_dict[item].ftype = "bool"
-            else:
-                item_configure = FeatureItemConf()
-                item_configure.ftype = "bool"
-                self._feature_dict[item] = item_configure
-
-        for item in init_conf['transforms']['datetime_features']:
-            if self._feature_dict.get(item):
-                self._feature_dict[item].ftype = "datetime"
-            else:
-                item_configure = FeatureItemConf()
-                item_configure.ftype = "datetime"
-                self._feature_dict[item] = item_configure
-        return self
+        if init_conf['transforms']['bool_features'] is not None:
+            for item in init_conf['transforms']['bool_features']:
+                if self._feature_dict.get(item):
+                    self._feature_dict[item].ftype = "bool"
+                else:
+                    item_configure = FeatureItemConf()
+                    item_configure.ftype = "bool"
+                    self._feature_dict[item] = item_configure
+                    
+        if init_conf['transforms']['datetime_features'] is not None:
+            for item in init_conf['transforms']['datetime_features']:
+                if self._feature_dict.get(item):
+                    self._feature_dict[item].ftype = "datetime"
+                else:
+                    item_configure = FeatureItemConf()
+                    item_configure.ftype = "datetime"
+                    self._feature_dict[item] = item_configure
+            return self
 
     def add_item_type(self, column_name: str, feature_item_conf: FeatureItemConf):
         self._feature_dict[column_name] = feature_item_conf

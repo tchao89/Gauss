@@ -1,5 +1,5 @@
 {
-  "num_leaves": {"_type": "randint",
+  "num_leaves": {"_type": "choice",
                  "_value": [10, 20, 30, 40, 50, 60]
                  },
   "learning_rate": {"_type": "choice",

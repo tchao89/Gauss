@@ -31,12 +31,17 @@ class AUC(BaseMetric):
         self._name = name
 
     def evaluate(self, predict, labels_map):
-        label = labels_map[self._label_name]
+        if len(labels_map.shape) > 1:
+            label = labels_map.loc[:, [self._label_name]]
+        else:
+            label = labels_map
+
         if np.sum(label) == 0 or np.sum(label) == label.size:
             self._metrics_result = MetricResult(name=self.name, result=float('nan'))
         else:
             auc = roc_auc_score(y_true=label, y_score=predict)
             self._metrics_result = MetricResult(name=self.name, result=auc, meta={'#': predict.size})
+
         return self._metrics_result
 
     @property

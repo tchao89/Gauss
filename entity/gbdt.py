@@ -7,12 +7,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numpy
 import pandas as pd
 import lightgbm as lgb
 
 from entity.model import Model
 from entity.base_dataset import BaseDataset
-from entity.base_metric import BaseMetric
+from entity.base_metric import BaseMetric, MetricResult
 from utils.bunch import Bunch
 
 
@@ -62,29 +63,27 @@ class GaussLightgbm(Model):
     def __repr__(self):
         pass
 
-    def load_data(self, dataset: BaseDataset):
+    def load_data(self, dataset: BaseDataset, val_dataset: BaseDataset):
         """
 
+        :param val_dataset:
         :param dataset:
         :return:
         """
         # dataset is a bunch object, including data, target, feature_names, target_names, generated_feature_names and
-        # val_start.
-        val_dataset = dataset.split()
         dataset = dataset.get_dataset()
+        val_dataset = val_dataset.get_dataset()
+
         self._check_bunch(dataset=dataset)
+        self._check_bunch(dataset=val_dataset)
 
         # check if this method will create a new project.
-        print(dataset.target.shape)
-        print(dataset.data.shape)
-        print(val_dataset.target.shape)
-        print(val_dataset.data.shape)
 
         train_data = [dataset.data.values, dataset.target.values]
         validation_set = [val_dataset.data.values, val_dataset.target.values]
 
-        lgb_train = lgb.Dataset(data=train_data[0], label=train_data[1])
-        lgb_eval = lgb.Dataset(data=validation_set[0], label=validation_set[1], reference=lgb_train)
+        lgb_train = lgb.Dataset(data=train_data[0], label=train_data[1], free_raw_data=False)
+        lgb_eval = lgb.Dataset(data=validation_set[0], label=validation_set[1], reference=lgb_train, free_raw_data=False)
 
         return lgb_train, lgb_eval
 
@@ -94,27 +93,32 @@ class GaussLightgbm(Model):
         for key in dataset.keys():
             assert key in keys
 
-    def train(self, dataset: BaseDataset, metrics: BaseMetric, **entity):
+    def train(self, dataset: BaseDataset, val_dataset: BaseDataset, metrics: BaseMetric, **entity):
 
-        lgb_train, lgb_eval = self.load_data(dataset=dataset)
+        lgb_train, lgb_eval = self.load_data(dataset=dataset, val_dataset=val_dataset)
 
         if self._model_param_dict is not None:
             params = self._model_param_dict
-
             self._lgb_model = lgb.train(params,
                                         lgb_train,
                                         num_boost_round=200,
                                         valid_sets=lgb_eval,
-                                        early_stopping_rounds=5)
-            # predict
+                                        early_stopping_rounds=2,
+                                        verbose_eval=0)
+
             # 默认生成的为预测值的概率值，传入metrics之后再处理.
             y_pred = self._lgb_model.predict(lgb_eval.get_data(), num_iteration=self._lgb_model.best_iteration)
 
-            metrics.evaluate(predict=y_pred, labels_map=dataset.get_dataset().target)
-            metrics = metrics.metrics_result()
+            assert isinstance(y_pred, numpy.ndarray)
+            assert isinstance(lgb_eval.get_label(), numpy.ndarray)
+
+            metrics.evaluate(predict=y_pred, labels_map=lgb_eval.get_label())
+            metrics = metrics.metrics_result
+            assert isinstance(metrics, MetricResult)
 
         else:
             raise ValueError("Model parameters is None.")
+        self._val_metrics = metrics
         return metrics
 
     def predict(self, test: BaseDataset):

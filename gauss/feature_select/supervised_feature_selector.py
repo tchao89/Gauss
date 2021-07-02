@@ -53,12 +53,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         # generated parameters
         self._new_parameters = None
         self._task_name = params["task_name"]
-        # # 训练机器学习模型，特征选择模型直接写入该方法中
-        # self.hyperopt_ml = TabularAutoML(name="HyperOptAutoMl",
-        #                                  train_flag=params["train_flag"],
-        #                                  enable=True,
-        #                                  opt_model_names=["tpe", "random_search", "anneal", "evolution"],
-        #                                  auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config")
 
     def _train_run(self, **entity):
         """
@@ -68,6 +62,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         """
 
         dataset = entity["dataset"]
+
         self.set_default_params()
         self.set_search_space()
 
@@ -87,28 +82,31 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                                             enable=True,
                                             opt_model_names=["tpe", "random_search", "anneal", "evolution"],
                                             auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config")
-
+                # 默认10步
                 for trial in range(self.selector_trial_num):
                     params = self._new_parameters
                     receive_params = selector_tuner.generate_parameters(trial)
+                    # feature selector hyper-parameters
                     params.update(receive_params)
                     feature_list = self._gradient_based_selector(dataset=dataset, params=params)
 
-                    print("this is a test:", feature_list)
                     # 将data和target包装成为PlainDataset对象
                     data = dataset.feature_choose(feature_list)
                     target = dataset.get_dataset().target
-                    data_pair = Bunch(data=data, target=target)
+
+                    data_pair = Bunch(data=data, target=target, target_names=dataset.get_dataset().target_names)
                     train_dataset = PlaintextDataset(name="train_data", task_type="train", data_pair=data_pair)
+
+                    val_dataset = PlaintextDataset(name="train_data", task_type="train", data_pair=train_dataset.split())
 
                     metrics_factory = MetricsFactory()
                     metrics_params = Bunch(name="auc", label_name=dataset.get_dataset().target_names[0])
                     metrics = metrics_factory.get_entity(entity_name=self._metrics_name, **metrics_params)
 
                     model = GaussLightgbm(name='lightgbm', model_path='./model.txt', train_flag=True, task_type='classification')
-                    model_tuner.run(model=model, dataset=train_dataset, metrics=metrics)
-
-                    selector_tuner.receive_trial_result(trial, receive_params, metrics)
+                    model_tuner.run(model=model, dataset=train_dataset, val_dataset=val_dataset, metrics=metrics)
+                    print("metrics.metrics_result.result: ", metrics.metrics_result.result)
+                    selector_tuner.receive_trial_result(trial, receive_params, metrics.metrics_result.result)
 
     def _predict_run(self, **entity):
         pass
@@ -167,7 +165,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                                            classification=params["classification"],
                                            learning_rate=params["learning_rate"],
                                            n_features=params["n_features"],
-                                           verbose=1)
+                                           verbose=0)
 
         selector.fit(data, target.values.flatten())
         return selector.get_selected_features()

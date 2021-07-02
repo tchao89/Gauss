@@ -12,8 +12,8 @@ balance:
   size: 1
 campaign:
   dtype: int64
-  ftype: null
-  index: 0
+  ftype: category
+  index: 9
   name: campaign
   size: 1
 day:
@@ -24,14 +24,14 @@ day:
   size: 1
 deposit:
   dtype: int64
-  ftype: bool
-  index: 10
+  ftype: null
+  index: 0
   name: deposit
   size: 1
 duration:
   dtype: int64
   ftype: numerical
-  index: 9
+  index: 10
   name: duration
   size: 1
 education:

@@ -12,6 +12,7 @@ from entity.base_dataset import BaseDataset
 from entity.model import Model
 from entity.base_metric import BaseMetric
 
+
 class TabularAutoML(BaseAutoML):
     def __init__(self, **params):
         """
@@ -27,8 +28,6 @@ class TabularAutoML(BaseAutoML):
         # trial num for auto ml.
         self.trial_num = 15
         self._auto_ml_path = params["auto_ml_path"]
-        print(self._auto_ml_path)
-        print(params)
         self._default_parameters = None
         self._search_space = None
 
@@ -60,8 +59,10 @@ class TabularAutoML(BaseAutoML):
             raise RuntimeError('Not support tuner algorithm in tabular auto-ml algorithms.')
 
     def _train_run(self, **entity):
+
         assert "model" in entity and isinstance(entity["model"], Model)
         assert "dataset" in entity and isinstance(entity["dataset"], BaseDataset)
+        assert "val_dataset" in entity and isinstance(entity["dataset"], BaseDataset)
         assert "metrics" in entity and isinstance(entity["metrics"], BaseMetric)
 
         self.chose_tuner_set()
@@ -70,21 +71,18 @@ class TabularAutoML(BaseAutoML):
 
         for tuner_algorithms in self.opt_tuners:
             tuner = tuner_algorithms
-            print(self._search_space)
-            print(self._default_parameters)
             tuner.update_search_space(self._search_space)
 
+            # 默认15步
             for trial in range(self.trial_num):
                 if self._default_parameters is not None:
                     params = self._default_parameters
                     receive_params = tuner.generate_parameters(trial)
                     params.update(receive_params)
                     model = entity["model"]
-                    print(type(model))
-                    print(params)
                     model.update_params(**params)
                     model.train(**entity)
-                    metrics = model.get_train_metric()
+                    metrics = model.val_metrics.result
                     tuner.receive_trial_result(trial, receive_params, metrics)
                 else:
                     raise ValueError("Default parameters is None.")

@@ -20,9 +20,7 @@ features:
 
     duration: {dtype: int64, index: 9, size: 1}
 
-    deposit: {dtype: string, index: 11, size: 1}
-
-    time: {dtype: string, index: 12, size: 1}
+    campaign: {dtype: int64, index: 10, size: 1}
 
 
 transforms:
@@ -34,7 +32,7 @@ transforms:
         - education
         - day
         - month
-        - deposit
+        - campaign
 
     numerical_features:
 
@@ -48,5 +46,3 @@ transforms:
         - loan
 
     datetime_features:
-
-        [time]

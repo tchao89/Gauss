@@ -139,7 +139,7 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
             target = data.iloc[:, -1]
             dataset.get_dataset().data = data.drop(dataset.get_dataset().target_names, axis=1)
             dataset.get_dataset().generated_feature_names = feature_names
-            dataset.target = target
+            dataset.get_dataset().target = target
 
     def _label_encoding(self, dataset: BaseDataset):
         feature_names = dataset.get_dataset().feature_names
