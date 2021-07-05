@@ -69,3 +69,5 @@ s_selector.run(**dataset)
 # 评估指标选择
 metric_params = Bunch()
 # 自动机器学习对象
+
+print("end")

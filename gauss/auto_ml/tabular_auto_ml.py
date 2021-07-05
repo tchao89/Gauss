@@ -26,7 +26,7 @@ class TabularAutoML(BaseAutoML):
         # optional: "maximize", "minimize", depends on metrics for auto ml.
         self.optimize_mode = "maximize"
         # trial num for auto ml.
-        self.trial_num = 15
+        self.trial_num = 5
         self._auto_ml_path = params["auto_ml_path"]
         self._default_parameters = None
         self._search_space = None
@@ -73,7 +73,6 @@ class TabularAutoML(BaseAutoML):
             tuner = tuner_algorithms
             tuner.update_search_space(self._search_space)
 
-            # 默认15步
             for trial in range(self.trial_num):
                 if self._default_parameters is not None:
                     params = self._default_parameters

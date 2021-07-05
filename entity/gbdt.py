@@ -77,8 +77,6 @@ class GaussLightgbm(Model):
         self._check_bunch(dataset=dataset)
         self._check_bunch(dataset=val_dataset)
 
-        # check if this method will create a new project.
-
         train_data = [dataset.data.values, dataset.target.values]
         validation_set = [val_dataset.data.values, val_dataset.target.values]
 
