@@ -5,16 +5,15 @@
 import os
 import json
 
-from entity.base_dataset import BaseDataset
-from entity.plain_dataset import PlaintextDataset
-from entity.gbdt import GaussLightgbm
+from entity.dataset.base_dataset import BaseDataset
+from entity.dataset.plain_dataset import PlaintextDataset
 from gauss.feature_select.base_feature_selector import BaseFeatureSelector
 from gauss.auto_ml.tabular_auto_ml import TabularAutoML
 
 from core.nni.algorithms.feature_engineering.gradient_selector import FeatureGradientSelector
 from core.nni.algorithms.feature_engineering.gbdt_selector import GBDTSelector
 from core.nni.algorithms.hpo.evolution_tuner import EvolutionTuner
-from gauss_factory.entity_factory import MetricsFactory
+from gauss_factory.entity_factory import MetricsFactory, ModelFactory
 from utils.bunch import Bunch
 
 
@@ -32,6 +31,11 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         :param selector_config_path:
         :param metrics_name:
         """
+        assert "model_name" in params
+        assert "auto_ml_path" in params
+        assert "metrics_name" in params
+        assert "model_save_path" in params
+
         super(SupervisedFeatureSelector, self).__init__(name=params["name"],
                                                         train_flag=params["train_flag"],
                                                         enable=params["enable"],
@@ -40,6 +44,9 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         self._label_encoding_configure_path = params["label_encoding_configure_path"]
         self._metrics_name = params["metrics_name"]
         self._selector_config_path = params["selector_config_path"]
+        self._model_name = params["model_name"]
+        self._auto_ml_path = params["auto_ml_path"]
+        self._model_save_path = params["model_save_path"]
 
         # selector names
         self.feature_selector_names = ["gradient_feature_selector", "GBDTSelector"]
@@ -114,9 +121,10 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 self._new_parameters = self._default_parameters[model_name]
 
                 assert self._new_parameters.get("lgb_params")
-                assert isinstance(self._new_parameters["lgb_params"], dict)
+                assert isinstance(self._new_parameters.get("lgb_params"), dict)
+                lgb_params = self._new_parameters.get("lgb_params").keys()
 
-                lgb_params = self._new_parameters["lgb_params"].keys()
+                # flatten dict
                 self._new_parameters = self.read_default_params(json_dict=self._new_parameters)
 
                 search_space = self._search_space[model_name]
@@ -126,10 +134,10 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
             selector_tuner.update_search_space(search_space=search_space)
             # 创建自动机器学习对象
             model_tuner = TabularAutoML(name="auto_ml",
-                                        train_flag=True,
-                                        enable=True,
+                                        train_flag=self._train_flag,
+                                        enable=self.enable,
                                         opt_model_names=["tpe", "random_search", "anneal", "evolution"],
-                                        auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config")
+                                        auto_ml_path=self._auto_ml_path)
 
             for trial in range(self.selector_trial_num):
                 params = self._new_parameters
@@ -140,8 +148,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 if model_name == "GBDTSelector":
                     lgb_params_dict = {}
                     for key in params.keys():
-                        print(key)
-                        print("1")
 
                         if key in lgb_params:
                             lgb_params_dict[key] = params[key]
@@ -154,17 +160,21 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 target = dataset.get_dataset().target
 
                 data_pair = Bunch(data=data, target=target, target_names=dataset.get_dataset().target_names)
-                train_dataset = PlaintextDataset(name="train_data", task_type="train", data_pair=data_pair)
+                train_dataset = PlaintextDataset(name="train_data", task_type=self._train_flag, data_pair=data_pair)
 
-                val_dataset = PlaintextDataset(name="train_data", task_type="train", data_pair=train_dataset.split())
+                val_dataset = train_dataset.split()
 
                 metrics_factory = MetricsFactory()
                 metrics_params = Bunch(name="auc", label_name=dataset.get_dataset().target_names[0])
                 metrics = metrics_factory.get_entity(entity_name=self._metrics_name, **metrics_params)
-
-                model = GaussLightgbm(name='lightgbm', model_path='./model.txt', train_flag=True,
-                                      task_type='classification')
+                # modify
+                model_params = Bunch(name=self._model_name, model_path=self._model_save_path,
+                                     train_flag=self._train_flag,
+                                     task_type=self._task_name)
+                model_factory = ModelFactory()
+                model = model_factory.get_entity(entity_name=self._model_name, **model_params)
                 model_tuner.run(model=model, dataset=train_dataset, val_dataset=val_dataset, metrics=metrics)
+
                 print("metrics.metrics_result.result: ", metrics.metrics_result.result)
                 selector_tuner.receive_trial_result(trial, receive_params, metrics.metrics_result.result)
 
@@ -191,38 +201,14 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
             return int(columns * col_ratio)
 
         params["topk"] = len_features(params["topk"])
-        lgb_params = {
-            "boosting_type": "gbdt",
-            "objective": "binary",
-            "num_class": 1,
-            "metric": "auc",
-            "num_leaves": 32,
-            "learning_rate": 0.01,
-            "feature_fraction": 0.8,
-            "bagging_fraction": 0.8,
-            "bagging_freq": 5,
-            "verbose": 0,
-            "max_depth": 9,
-            "nthread": -1,
-            "lambda_l2": 0.8
-        }
-        eval_ratio = 0.1
-        early_stopping_rounds = 4
-        importance_type = 'gain'
-        num_boost_round = 1000
-        topk = 10
 
         selector = GBDTSelector()
-        print("11111111111111")
-        print(params)
-        print(params["lgb_params"])
-        print(lgb_params)
         selector.fit(data.values, target.values.flatten(),
                      lgb_params=params["lgb_params"],
-                     eval_ratio=eval_ratio,
-                     early_stopping_rounds=early_stopping_rounds,
-                     importance_type=importance_type,
-                     num_boost_round=num_boost_round)
+                     eval_ratio=params["eval_ratio"],
+                     early_stopping_rounds=params["early_stopping_rounds"],
+                     importance_type=params["importance_type"],
+                     num_boost_round=params["num_boost_round"])
 
         return selector.get_selected_features(topk=params["topk"])
 

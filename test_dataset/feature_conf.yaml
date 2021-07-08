@@ -22,6 +22,8 @@ features:
 
     campaign: {dtype: int64, index: 10, size: 1}
 
+    time: {dtype: string, index: 12, size: 1}
+
 
 transforms:
 
@@ -46,3 +48,4 @@ transforms:
         - loan
 
     datetime_features:
+        - time

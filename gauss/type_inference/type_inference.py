@@ -12,9 +12,9 @@ from utils.Logger import logger
 import numpy as np
 import pandas as pd
 
-from entity.base_dataset import BaseDataset
+from entity.dataset.base_dataset import BaseDataset
 from gauss.type_inference.base_type_inference import BaseTypeInference
-from entity.feature_config import FeatureItemConf, FeatureConf
+from entity.feature_configuration.feature_config import FeatureItemConf, FeatureConf
 
 
 class TypeInference(BaseTypeInference):
@@ -59,24 +59,6 @@ class TypeInference(BaseTypeInference):
 
         self.final_feature_configure = FeatureConf(name='target feature path', file_path=params["final_file_path"])
 
-    def set_name(self, name):
-        self._name = name
-
-    def set_train_flag(self, train_flag: bool):
-        self._train_flag = train_flag
-
-    def set_task_name(self, task_name):
-        self._task_name = task_name
-
-    def set_source_file_path(self, source_file_path):
-        self._source_file_path = source_file_path
-
-    def set_final_file_path(self, final_file_path):
-        self._final_file_path = final_file_path
-
-    def set_final_file_prefix(self, final_file_prefix):
-        self._final_file_prefix = final_file_prefix
-
     def _train_run(self, **entity):
         assert "dataset" in entity.keys()
 
@@ -88,13 +70,21 @@ class TypeInference(BaseTypeInference):
         return self.final_feature_configure
 
     def _predict_run(self, **entity):
-        pass
+        # just detect error in test dataset.
+        assert "dataset" in entity.keys()
+        conf_file = open(self._final_file_path, 'r', encoding='utf-8')
+        conf = conf_file.read()
+        conf = yaml.load(conf, Loader=yaml.FullLoader)
+        conf_file.close()
+
+        for col in entity["dataset"].get_dataset().data.columns:
+            assert col in list(conf)
 
     def _bool_column_selector(self, feature_name: str, dataset: pd.DataFrame):
 
         if self.init_feature_configure is not None \
-                and self.init_feature_configure.feature_dict[feature_name].ftype == 'bool' \
-                and self.init_feature_configure.feature_dict[feature_name].dtype == 'int64' or 'string':
+                and self.init_feature_configure.feature_dict.get(feature_name).ftype == 'bool' \
+                and self.init_feature_configure.feature_dict.get(feature_name).dtype == 'int64' or 'string':
 
             column_unique = list(set(dataset[feature_name]))
 
@@ -106,7 +96,7 @@ class TypeInference(BaseTypeInference):
         def datetime_map(x):
             x = str(x)
 
-            if re.search(r"(\d{4}-\d{1,2}-\d{1,2})", x):
+            if re.search(r"(\d{4}.\d{1,2}.\d{1,2})", x):
                 return True
             else:
                 return False

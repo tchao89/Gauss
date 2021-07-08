@@ -10,7 +10,8 @@ import yaml
 from sklearn.preprocessing import LabelEncoder
 
 from core import featuretools as ft
-from entity.base_dataset import BaseDataset
+from core.featuretools.variable_types.variable import Discrete, Boolean, Numeric, Datetime
+from entity.dataset.base_dataset import BaseDataset
 from gauss.feature_generation.base_feature_generation import BaseFeatureGenerator
 from utils.Logger import logger
 
@@ -27,24 +28,13 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         self.entity_set = ft.EntitySet(id=self.name)
         self._label_encoding_configure_path = params["label_encoding_configure_path"]
         self.label_encoding = {}
+        self._final_file_path = params["final_file_path"]
 
         self.variable_types = {}
         self.feature_configure = None
 
-    def set_name(self, name):
-        self._name = name
-
-    def set_train_flag(self, train_flag: bool):
-        self._train_flag = train_flag
-
-    def set_enable(self, enable: bool):
-        self._enable = enable
-
-    def set_feature_configure_path(self, configure_path):
-        self._feature_configure_path = configure_path
-
-    def set_label_encoding_configure_path(self, label_encoding_configure_path):
-        self._label_encoding_configure_path = label_encoding_configure_path
+        # This is the feature description dictionary, which will generate a yaml file.
+        self.yaml_dict = {}
 
     def _train_run(self, **entity):
 
@@ -57,6 +47,7 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         self._label_encoding(dataset=dataset)
         self._label_encoding_serialize()
         self._ft_generator(dataset=dataset)
+        self.final_configure_generation(dataset=dataset)
 
     def _predict_run(self, **entity):
 
@@ -165,3 +156,32 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         df.dropna(inplace=True)
         indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any(axis=1)
         return df[indices_to_keep].astype(np.float64)
+
+    def final_configure_generation(self, dataset: BaseDataset):
+        data = dataset.get_dataset().data
+        generated_feature_names = dataset.get_dataset().generated_feature_names
+
+        for index, feature in enumerate(generated_feature_names):
+
+            if issubclass(feature.variable_type, Discrete):
+                ftype = "category"
+            elif issubclass(feature.variable_type, Boolean):
+                ftype = "bool"
+            elif issubclass(feature.variable_type, Numeric):
+                ftype = "numerical"
+            else:
+                raise ValueError("Unknown input feature ftype: " + str(feature.name))
+
+            if data[feature.name].dtype == "float64":
+                dtype = "float64"
+            elif data[feature.name].dtype == "int64":
+                dtype = "int64"
+            else:
+                raise ValueError("Unknown input feature dtype: " + str(feature.name))
+
+            item_dict = {"name": feature.name, "index": index, "dtype": dtype, "ftype": ftype}
+            assert feature.name not in self.yaml_dict.keys()
+            self.yaml_dict[feature.name] = item_dict
+
+        with open(self._final_file_path, "w", encoding="utf-8") as yaml_file:
+            yaml.dump(self.yaml_dict, yaml_file)

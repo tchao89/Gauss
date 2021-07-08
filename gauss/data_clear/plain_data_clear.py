@@ -11,7 +11,7 @@ import numpy as np
 from sklearn.impute import SimpleImputer
 
 from gauss.data_clear.base_data_clear import BaseDataClear
-from entity.base_dataset import BaseDataset
+from entity.dataset.base_dataset import BaseDataset
 
 
 # 需要传入三个参数， 数模型的数据/非数模型的数据， yaml文件， base dataset
@@ -31,7 +31,7 @@ class PlainDataClear(BaseDataClear):
 
         self._model_name = params["model_name"]
         self._feature_configure_path = params["feature_configure_path"]
-        assert os.path.isfile(self._feature_configure_path)
+        self._final_file_path = params["final_file_path"]
 
         self._strategy_dict = params["strategy_dict"]
 
@@ -40,33 +40,15 @@ class PlainDataClear(BaseDataClear):
         self.default_cat_impute_model = SimpleImputer(missing_values=self.missing_values, strategy="most_frequent")
         self.default_num_impute_model = SimpleImputer(missing_values=self.missing_values, strategy="mean")
 
-    def set_name(self, name):
-        self._name = name
-
-    def set_train_flag(self, train_flag: bool):
-        self._train_flag = train_flag
-
-    def set_enable(self, enable: bool):
-        self._enable = enable
-
-    def set_model_name(self, model_name):
-        self._model_name = model_name
-
-    def set_feature_configure_path(self, configure_path):
-        self._feature_configure_path = configure_path
-
-    def set_strategy_dict(self, strategy_dict):
-        self._strategy_dict = strategy_dict
-
     def _train_run(self, **entity):
-        if self._model_name == "tree_model":
-            assert "dataset" in entity.keys()
-            self._clean(dataset=entity["dataset"])
+        assert "dataset" in entity.keys()
+        self._clean(dataset=entity["dataset"])
+        self.final_configure_generation()
 
     def _predict_run(self, **entity):
-        if self._model_name == "tree_model":
-            assert "dataset" in entity.keys()
-            self._clean(dataset=entity["dataset"])
+        # 存储保留的特征,生成新的.yaml文件
+        assert "dataset" in entity.keys()
+        self._clean(dataset=entity["dataset"])
 
     def _clean(self, dataset: BaseDataset):
         data = dataset.get_dataset().data
@@ -121,3 +103,11 @@ class PlainDataClear(BaseDataClear):
         :return:
         """
         pass
+
+    def final_configure_generation(self):
+        feature_conf_file = open(self._feature_configure_path, 'r', encoding='utf-8')
+        feature_conf = feature_conf_file.read()
+        feature_conf = yaml.load(feature_conf, Loader=yaml.FullLoader)
+
+        with open(self._final_file_path, "w", encoding="utf-8") as yaml_file:
+            yaml.dump(feature_conf, yaml_file)

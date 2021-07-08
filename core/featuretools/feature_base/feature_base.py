@@ -58,6 +58,10 @@ class FeatureBase(object):
         assert self._check_input_types(), ("Provided inputs don't match input "
                                            "type requirements")
 
+    @property
+    def name(self):
+        return self._name
+
     def __getitem__(self, key):
         assert self.number_output_features > 1, \
             'can only access slice of multi-output feature'

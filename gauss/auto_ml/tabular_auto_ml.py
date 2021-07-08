@@ -8,9 +8,9 @@ import json
 from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
 from core.nni.algorithms.hpo.evolution_tuner import EvolutionTuner
 from gauss.auto_ml.base_auto_ml import BaseAutoML
-from entity.base_dataset import BaseDataset
-from entity.model import Model
-from entity.base_metric import BaseMetric
+from entity.dataset.base_dataset import BaseDataset
+from entity.model.model import Model
+from entity.metrics.base_metric import BaseMetric
 
 
 class TabularAutoML(BaseAutoML):

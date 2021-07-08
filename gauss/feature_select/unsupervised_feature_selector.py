@@ -1,9 +1,11 @@
+import yaml
+
 import pandas as pd
 from scipy.stats import chi2
 from sklearn.feature_selection import chi2, SelectKBest
 
 from gauss.feature_select.base_feature_selector import BaseFeatureSelector
-from entity.base_dataset import BaseDataset
+from entity.dataset.base_dataset import BaseDataset
 from core import featuretools as ft
 
 
@@ -26,26 +28,7 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
 
         self.feature_list = []
         self._label_encoding_configure_path = params["label_encoding_configure_path"]
-        # 特征选择结果配置文件
-        self._feature_select_configure_path = params["feature_select_configure_path"]
-
-    def set_name(self, name):
-        self._name = name
-
-    def set_train_flag(self, train_flag: bool):
-        self._train_flag = train_flag
-
-    def set_enable(self, enable: bool):
-        self._enable = enable
-
-    def set_feature_configure_path(self, configure_path):
-        self._feature_configure_path = configure_path
-
-    def set_label_encoding_configure_path(self, label_encoding_configure_path):
-        self._label_encoding_configure_path = label_encoding_configure_path
-
-    def set_feature_select_configure_path(self, feature_select_configure_path):
-        self._feature_select_configure_path = feature_select_configure_path
+        self._final_file_path = params["final_file_path"]
 
     def _train_run(self, **entity):
         """
@@ -66,11 +49,23 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         data, generated_features_names = self._ft_method(features=data, feature_names=generated_features_names)
 
         dataset.get_dataset().data = data
-        dataset.get_dataset().generated_feature_names = generated_features_names
+        dataset.get_dataset().generated_feature_names = list(data.columns)
+        self.final_configure_generation(dataset=dataset)
 
     def _predict_run(self, **entity):
         assert "dataset" in entity.keys()
-        pass
+
+        dataset = entity['dataset']
+        print(self._final_file_path)
+
+        conf_file = open(self._final_file_path, 'r', encoding='utf-8')
+        conf = conf_file.read()
+        conf = yaml.load(conf, Loader=yaml.FullLoader)
+        conf_file.close()
+
+        generated_feature_names = list(conf.keys())
+        dataset.get_dataset().data = dataset.get_dataset().data[generated_feature_names]
+        dataset.get_dataset().generated_feature_names = dataset.get_dataset().generated_feature_names
 
     @classmethod
     def _chi2_method(cls, features, target, k):
@@ -96,5 +91,20 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         features, feature_names = ft.selection.remove_highly_correlated_features(features, feature_names)
         features, feature_names = ft.selection.remove_highly_null_features(features, feature_names)
         features, feature_names = ft.selection.remove_single_value_features(features, feature_names)
-
         return features, feature_names
+
+    def final_configure_generation(self, dataset: BaseDataset):
+
+        feature_conf_file = open(self._feature_configure_path, 'r', encoding='utf-8')
+        feature_conf = feature_conf_file.read()
+        feature_conf = yaml.load(feature_conf, Loader=yaml.FullLoader)
+        feature_conf_file.close()
+
+        yaml_dict = {}
+        data = dataset.get_dataset().data
+
+        for col_name in data.columns:
+            yaml_dict[col_name] = feature_conf[col_name]
+
+        with open(self._final_file_path, "w", encoding="utf-8") as yaml_file:
+            yaml.dump(yaml_dict, yaml_file)

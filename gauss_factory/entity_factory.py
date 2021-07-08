@@ -4,10 +4,10 @@
 # Authors: Lab
 from gauss_factory.abstarct_guass import AbstractGauss
 
-from entity.plain_dataset import PlaintextDataset
-from entity.feature_config import FeatureConf
-from entity.gbdt import GaussLightgbm
-from entity.udf_metric import AUC
+from entity.dataset.plain_dataset import PlaintextDataset
+from entity.feature_configuration.feature_config import FeatureConf
+from entity.model.gbdt import GaussLightgbm
+from entity.metrics.udf_metric import AUC
 
 # This class will be used in pipeline
 class EntityFactory(AbstractGauss):

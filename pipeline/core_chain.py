@@ -5,7 +5,9 @@
 
 from __future__ import annotations
 
-import abc
+from gauss.component import Component
+from gauss_factory.gauss_factory_producer import GaussFactoryProducer
+
 
 class CoreRoute(Component):
     def __init__(self,
@@ -29,30 +31,46 @@ class CoreRoute(Component):
             name=name,
             train_flag=train_flag
         )
+
     def run(self, **entity):
         if self._train_flag:
             self._train_run(**entity)
         else:
             self._predict_run(**entity)
+
     def _train_run(self, **entity):
         entity["model"] = self.model
-        if(feature_selector_flag and feature_selector_name == "XXX"):
+        if feature_selector_flag and feature_selector_name == "XXX":
             self.feature_selector.run(entity)
         else auto_ml.run(entity)
 
     def _predict_run(self, **entity):
         self.model.Init()
         model.predict(**entity)
+
+    @classmethod
+    def create_component(cls, component_name: str, **params):
+        gauss_factory = GaussFactoryProducer()
+        component_factory = gauss_factory.get_factory(choice="component")
+        return component_factory.get_component(component_name=component_name, **params)
+
+    @classmethod
+    def create_entity(cls, entity_name: str, **params):
+        gauss_factory = GaussFactoryProducer()
+        entity_factory = gauss_factory.get_factory(choice="entity")
+        return entity_factory.get_entity(entity_name=entity_name, **params)
+
     def get_train_loss(self, **entity):
-    
+        pass
 
     def get_train_metric(self, **entity):
+        pass
 
     def get_eval_loss(self, **entity):
+        pass
     
     def get_eval_metric(self,  **entity):
+        pass
 
     def get_eval_result(self,  **entity):
-
-
-        
+        pass
