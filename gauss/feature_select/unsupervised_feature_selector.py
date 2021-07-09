@@ -56,7 +56,6 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         assert "dataset" in entity.keys()
 
         dataset = entity['dataset']
-        print(self._final_file_path)
 
         conf_file = open(self._final_file_path, 'r', encoding='utf-8')
         conf = conf_file.read()

@@ -9,6 +9,7 @@ def main(config="./config.yaml"):
                            conf.work_root,
                            conf.out_put_path):
      inference.run()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("configure-file")
     parser.add_argument("-config", type=str,

@@ -17,18 +17,20 @@ from entity.metrics.base_metric import MetricResult
 class AUC(BaseMetric):
 
     def __init__(self, **params):
-        super().__init__(name=params["name"])
-        self._label_name = params["label_name"]
+        super().__init__(name=params["name"], optimize_mode="maximize")
+        self._label_name = params.get("label_name")
         self._metrics_result = None
 
     def __repr__(self):
         print("go")
 
-    def set_label_name(self, label_name: str):
-        self._label_name = label_name
+    @property
+    def label_name(self):
+        return self._label_name
 
-    def set_name(self, name: str):
-        self._name = name
+    @label_name.setter
+    def label_name(self, label_name: str):
+        self._label_name = label_name
 
     def evaluate(self, predict, labels_map):
         if len(labels_map.shape) > 1:

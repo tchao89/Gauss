@@ -41,6 +41,7 @@ class AutoModelingTree(Object):
         self.best_model="XXX"
         self.best_metric=None
         self.best_result_root="XXX"
+
     def run_route(folder_prefix_str,
                   data_clear_flag,
                   feature_generator_flag,
@@ -106,6 +107,7 @@ class AutoModelingTree(Object):
                 best_model = model
                 best_metric = local_metric
         return best_model, best_metric, work_root
+
     def update_best(local_best_model, local_best_metric, local_best_work_root):
         if compare(local_best_metric, self.best_metric) < 0
             self.best_model = local_best_metric

@@ -54,7 +54,7 @@ class BaseMetric(Entity, ABC):
     to conduct the metric evaluation and provide names of required data fields.
     """
 
-    def __init__(self, name: str, meta=None):
+    def __init__(self, name: str, optimize_mode, meta=None):
         """Construct a metric result.
         :param meta: A map of other meta metarmation.
         """
@@ -62,10 +62,17 @@ class BaseMetric(Entity, ABC):
         if meta is None:
             meta = {}
 
+        assert optimize_mode in ["minimize", "maximize"]
+        self._optimize_mode = optimize_mode
+
         self._meta = meta
         super(BaseMetric, self).__init__(
             name=name,
         )
+
+    @property
+    def optimize_mode(self):
+        return self._optimize_mode
 
     @abc.abstractmethod
     def evaluate(self,

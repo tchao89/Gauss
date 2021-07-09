@@ -63,10 +63,11 @@ print(dataset.dataset.get_dataset().generated_feature_names)
 # 监督特征选择
 s_params = Bunch(name="test", train_flag=True, enable=True, metrics_name="AUC", task_name="classification",
                  feature_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/final_configure.yaml",
+                 final_file_path="/home/liangqian/PycharmProjects/Gauss/test/factory_test/final_feature_configure.yaml",
                  label_encoding_configure_path="/home/liangqian/PycharmProjects/Gauss/configure_files/final_configure.db",
                  selector_config_path='/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config',
                  model_name="lightgbm", auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
-                 model_save_path="/home/liangqian/PycharmProjects/Gauss/configure_files/model")
+                 model_save_path="/home/liangqian/PycharmProjects/Gauss/configure_files/")
 s_selector = component_factory.get_component(component_name="supervisedfeatureselector", **s_params)
 s_selector.run(**dataset)
 

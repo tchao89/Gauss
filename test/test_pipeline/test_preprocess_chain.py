@@ -3,6 +3,7 @@ import os
 import random
 import string
 from pipeline.preprocess_chain import PreprocessRoute
+from pipeline.core_chain import CoreRoute
 
 from utils.bunch import Bunch
 
@@ -17,6 +18,8 @@ experiment_id = datetime.datetime.strftime(time, '%Y%m%d-%H:%M--') + id_generato
 root = "/home/liangqian/PycharmProjects/Gauss/experiments"
 experiment_path = os.path.join(root, experiment_id)
 os.mkdir(experiment_path)
+model_path = os.path.join(experiment_path, "model_path")
+os.mkdir(model_path)
 
 feature_dict = Bunch()
 feature_dict.user_feature = "/home/liangqian/PycharmProjects/Gauss/test_dataset/feature_conf.yaml"
@@ -42,8 +45,30 @@ chain = PreprocessRoute(name="chain",
                         feature_generator_flag=True,
                         feature_selector_name="unsupervised",
                         feature_selector_flag=True)
-chain.run()
 
+entity_dict = chain.run()
+for item in entity_dict.keys():
+    print(item)
+    print(entity_dict[item].get_dataset().data)
+    print(entity_dict[item].get_dataset().target)
+
+core_chain = CoreRoute(name="core_chain",
+                       train_flag=True,
+                       model_name="lightgbm",
+                       model_save_root=os.path.join(experiment_path, "model_path/"),
+                       target_feature_configure_path=os.path.join(experiment_path, "target_feature_feature.yaml"),
+                       pre_feature_configure_path=os.path.join(experiment_path, "unsupervised_feature.yaml"),
+                       label_encoding_path=os.path.join(experiment_path, "label_encoding_path"),
+                       model_type="tree_model",
+                       metrics_name="auc",
+                       task_type="classification",
+                       feature_selector_name="supervised_selector",
+                       feature_selector_flag=False,
+                       auto_ml_type="auto_ml",
+                       auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
+                       selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config")
+
+core_chain.run(**entity_dict)
 chain = PreprocessRoute(name="chain",
                         feature_path_dict=feature_dict,
                         task_type="classification",
@@ -61,4 +86,21 @@ chain = PreprocessRoute(name="chain",
                         feature_selector_name="unsupervised",
                         feature_selector_flag=True)
 chain.run()
+core_chain = CoreRoute(name="core_chain",
+                       train_flag=False,
+                       model_name="lightgbm",
+                       model_save_root=os.path.join(experiment_path, "model_path/"),
+                       target_feature_configure_path=os.path.join(experiment_path, "target_feature_feature.yaml"),
+                       pre_feature_configure_path=os.path.join(experiment_path, "unsupervised_feature.yaml"),
+                       label_encoding_path=os.path.join(experiment_path, "label_encoding_path"),
+                       model_type="tree_model",
+                       metrics_name="auc",
+                       task_type="classification",
+                       feature_selector_name="supervised_selector",
+                       feature_selector_flag=False,
+                       auto_ml_type="auto_ml",
+                       auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
+                       selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config")
+
+core_chain.run(**entity_dict)
 print("finished")

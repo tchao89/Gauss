@@ -11,7 +11,7 @@ class Inference(Object):
                  name: str,
                  work_root: str,
                  out_put_path: str,
-                 ):  
+                 ):
         self.name = name
         self.work_root = work_root
         self.root_conf = self.work_root + "/" + "pipline.configure"
@@ -31,8 +31,9 @@ class Inference(Object):
         self.feature_generator_flag = conf.feature_generator_flag
         self.unsupervised_feature_selector_flag = conf.unsupervised_feature_selector_flag
         self.supervised_feature_selector_flag = conf.supervised_feature_selector_flag
-    def output_result(predict_result):
 
+    def output_result(predict_result):
+        pass
 
     def run(self):
         work_feaure_root = self.work_root + "/feature"
@@ -65,6 +66,7 @@ class Inference(Object):
         model_save_root = work_model_root + "/model_save"
         model_config_root = work_model_root + "/model_config"
         model_conf = utils.parse_conf(model_config_root)
+
         core_chain = CoreRoute("core_route",
                                False,
                                model_save_root,
@@ -77,14 +79,7 @@ class Inference(Object):
                                self.feature_selector_name,
                                self.feature_selector_flag,
                                None)
+
         core_chain.run(entity)
         assert(entity.has_key["predict_result_dataset"])
         output_result(entity["predict_result_dataset"])
- 
-    
-        
-            
-
-
-       
-       

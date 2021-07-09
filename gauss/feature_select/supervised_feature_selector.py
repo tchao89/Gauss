@@ -4,6 +4,9 @@
 # Authors: citic-lab
 import os
 import json
+from typing import List
+
+import yaml
 
 from entity.dataset.base_dataset import BaseDataset
 from entity.dataset.plain_dataset import PlaintextDataset
@@ -47,19 +50,33 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         self._model_name = params["model_name"]
         self._auto_ml_path = params["auto_ml_path"]
         self._model_save_path = params["model_save_path"]
+        self._final_file_path = params["final_file_path"]
+
+        self._optimize_mode = None
 
         # selector names
-        self.feature_selector_names = ["gradient_feature_selector", "GBDTSelector"]
+        self._feature_selector_names = ["gradient_feature_selector", "GBDTSelector"]
         # max trail num for selector tuner
-        self.selector_trial_num = 2
+        self.selector_trial_num = 3
         # default parameters concludes tree selector parameters and gradient parameters.
         # format: {"gradient_feature_selector": {"order": 4, "n_epochs": 100},
         # "GBDTSelector": {"lgb_params": {}, "eval_ratio", 0.3, "importance_type": "gain", "early_stopping_rounds": 100}}
         self._search_space = None
         self._default_parameters = None
+        self._final_feature_names = None
         # generated parameters
         self._new_parameters = None
         self._task_name = params["task_name"]
+
+    @property
+    def feature_selector_names(self):
+        return self._feature_selector_names
+
+    @feature_selector_names.setter
+    def feature_selector_names(self, selector_names: List[str]):
+        for item in selector_names:
+            assert item in ["gradient_feature_selector", "GBDTSelector"]
+        self._feature_selector_names = selector_names
 
     def choose_selector(self, selector_name: str, dataset: BaseDataset, params: dict):
         if selector_name == "gradient_feature_selector":
@@ -94,6 +111,12 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 res[key] = key_value
         return res
 
+    def run(self, **entity):
+        if self._train_flag:
+            return self._train_run(**entity)
+        else:
+            return self._predict_run(**entity)
+
     def _train_run(self, **entity):
         """
 
@@ -109,8 +132,14 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         lgb_params = None
         search_space = None
 
-        selector_tuner = EvolutionTuner()
-        for model_name in self.feature_selector_names:
+        metrics_factory = MetricsFactory()
+        metrics_params = Bunch(name=self._metrics_name)
+        metrics = metrics_factory.get_entity(entity_name=self._metrics_name, **metrics_params)
+        self._optimize_mode = metrics.optimize_mode
+
+        selector_tuner = EvolutionTuner(optimize_mode=self._optimize_mode)
+
+        for model_name in self._feature_selector_names:
             # 梯度特征选择
             if model_name == "gradient_feature_selector":
                 # 接受默认参数列表
@@ -137,7 +166,11 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                                         train_flag=self._train_flag,
                                         enable=self.enable,
                                         opt_model_names=["tpe", "random_search", "anneal", "evolution"],
+                                        optimize_mode=self._optimize_mode,
                                         auto_ml_path=self._auto_ml_path)
+
+            best_metrics = None
+            best_model = None
 
             for trial in range(self.selector_trial_num):
                 params = self._new_parameters
@@ -157,29 +190,80 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 feature_list = self.choose_selector(selector_name=model_name, dataset=dataset, params=params)
                 # 将data和target包装成为PlainDataset对象
                 data = dataset.feature_choose(feature_list)
+                choose_feature_names = list(data.columns)
+
                 target = dataset.get_dataset().target
 
                 data_pair = Bunch(data=data, target=target, target_names=dataset.get_dataset().target_names)
                 train_dataset = PlaintextDataset(name="train_data", task_type=self._train_flag, data_pair=data_pair)
 
                 val_dataset = train_dataset.split()
+                metrics.label_name = dataset.get_dataset().target_names[0]
 
-                metrics_factory = MetricsFactory()
-                metrics_params = Bunch(name="auc", label_name=dataset.get_dataset().target_names[0])
-                metrics = metrics_factory.get_entity(entity_name=self._metrics_name, **metrics_params)
-                # modify
-                model_params = Bunch(name=self._model_name, model_path=self._model_save_path,
+                model_params = Bunch(name=self._model_name,
+                                     model_path=self._model_save_path,
                                      train_flag=self._train_flag,
                                      task_type=self._task_name)
+
                 model_factory = ModelFactory()
                 model = model_factory.get_entity(entity_name=self._model_name, **model_params)
+                # 返回训练好的最佳模型
                 model_tuner.run(model=model, dataset=train_dataset, val_dataset=val_dataset, metrics=metrics)
+                new_metrics = metrics.metrics_result.result
 
-                print("metrics.metrics_result.result: ", metrics.metrics_result.result)
+                if best_metrics is None:
+                    best_metrics = metrics.metrics_result.result
+
+                if best_model is None:
+                    best_model = model
+
+                if self._final_feature_names is None:
+                    self._final_feature_names = choose_feature_names
+
+                if new_metrics > best_metrics:
+                    best_metrics = new_metrics
+                    best_model = model
+                    self._final_feature_names = choose_feature_names
+
                 selector_tuner.receive_trial_result(trial, receive_params, metrics.metrics_result.result)
 
+            # save model
+            best_model.model_save()
+            # save features
+            self.final_configure_generation()
+            return best_model
+
     def _predict_run(self, **entity):
-        pass
+        assert self.train_flag is False
+
+        dataset = entity["dataset"]
+
+        assert self._model_save_path
+        assert self._final_file_path
+
+        with open(self._final_file_path, "r", encoding="utf-8") as yaml_file:
+            features = yaml.load(yaml_file, Loader=yaml.FullLoader)
+            features = features["features"]
+
+        model_params = Bunch(name=self._model_name,
+                             model_path=self._model_save_path,
+                             train_flag=self._train_flag,
+                             task_type=self._task_name)
+        model_factory = ModelFactory()
+        model = model_factory.get_entity(entity_name=self._model_name, **model_params)
+        data = dataset.feature_choose(features)
+
+        data_pair = Bunch(data=data, target=None, target_names=dataset.get_dataset().target_names)
+        dataset = PlaintextDataset(name="train_data", task_type=self._train_flag, data_pair=data_pair)
+
+        return model.predict(dataset)
+
+    def final_configure_generation(self):
+        yaml_dict = {"features": self._final_feature_names,
+                     "model": self._model_name}
+
+        with open(self._final_file_path, "w", encoding="utf-8") as yaml_file:
+            yaml.dump(yaml_dict, yaml_file)
 
     @property
     def search_space(self):

@@ -42,7 +42,9 @@ def main(config="./config.yaml"):
                             conf.supervised_feature_selector_flag,
                             conf.model_zoo,
                             conf.auto_ml)
+
          udf_model_tree.run()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("configure-file")
     parser.add_argument("-config", type=str,

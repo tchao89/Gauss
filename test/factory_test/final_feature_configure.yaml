@@ -1,0 +1,48 @@
+features:
+- duration
+- month
+- day
+- 1 / duration
+- housing
+- age
+- duration % balance
+- balance * duration
+- DIFF(balance)
+- DIFF(duration)
+- balance % duration
+- campaign
+- CUM_MEAN(balance)
+- CUM_MEAN(duration)
+- CUM_SUM(balance)
+- job
+- balance
+- DAY(time)
+- loan
+- balance / duration
+- duration / balance
+- 1 / balance
+- MONTH(time)
+- marital
+- education
+- WEEKDAY(time)
+- housing = month
+- housing = marital
+- campaign = loan
+- PERCENTILE(balance)
+- education = housing
+- job = month
+- campaign = marital
+- campaign = education
+- education = marital
+- housing = loan
+- job = marital
+- job = loan
+- campaign = month
+- education = loan
+- education = month
+- IS_WEEKEND(time)
+- campaign = housing
+- marital = month
+- housing = job
+- 1 % balance
+model: lightgbm

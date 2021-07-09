@@ -22,9 +22,13 @@ class TabularAutoML(BaseAutoML):
         :param opt_model_names: opt_model is a list object, and can includes tpe, random_search, anneal and evolution.
         """
         super(TabularAutoML, self).__init__(params["name"], params["train_flag"], params["enable"], params["opt_model_names"])
+
+        assert "optimize_mode" in params
+        assert params["optimize_mode"] in ["minimize", "maximize"]
+
         self.opt_tuners = []
         # optional: "maximize", "minimize", depends on metrics for auto ml.
-        self.optimize_mode = "maximize"
+        self._optimize_mode = params["optimize_mode"]
         # trial num for auto ml.
         self.trial_num = 5
         self._auto_ml_path = params["auto_ml_path"]
@@ -44,19 +48,24 @@ class TabularAutoML(BaseAutoML):
                 opt_tuner = self._chose_tuner(opt_name)
                 self.opt_tuners.append(opt_tuner)
 
-    @classmethod
-    def _chose_tuner(cls, algorithms_name: str):
+    def _chose_tuner(self, algorithms_name: str):
 
         if algorithms_name == "tpe":
-            return HyperoptTuner("tpe")
+            return HyperoptTuner(algorithm_name="tpe", optimize_mode=self._optimize_mode)
         if algorithms_name == "random_search":
-            return HyperoptTuner("random_search")
+            return HyperoptTuner(algorithm_name="random_search", optimize_mode=self._optimize_mode)
         if algorithms_name == "anneal":
-            return HyperoptTuner("anneal")
+            return HyperoptTuner(algorithm_name="anneal", optimize_mode=self._optimize_mode)
         if algorithms_name == "evolution":
-            return EvolutionTuner()
+            return EvolutionTuner(optimize_mode=self._optimize_mode)
         else:
             raise RuntimeError('Not support tuner algorithm in tabular auto-ml algorithms.')
+
+    def run(self, **entity):
+        if self._train_flag:
+            return self._train_run(**entity)
+        else:
+            return self._predict_run(**entity)
 
     def _train_run(self, **entity):
 
@@ -68,6 +77,9 @@ class TabularAutoML(BaseAutoML):
         self.chose_tuner_set()
         self.set_search_space()
         self.set_default_params()
+
+        best_model = None
+        best_metrics = None
 
         for tuner_algorithms in self.opt_tuners:
             tuner = tuner_algorithms
@@ -81,10 +93,24 @@ class TabularAutoML(BaseAutoML):
                     model = entity["model"]
                     model.update_params(**params)
                     model.train(**entity)
+                    model.eval(**entity)
                     metrics = model.val_metrics.result
+                    # get model which has been trained.
+
+                    if best_model is None:
+                        best_model = model
+
+                    if best_metrics is None:
+                        best_metrics = metrics
+
+                    if metrics > best_metrics:
+                        best_model = model
+                        best_metrics = metrics
+
                     tuner.receive_trial_result(trial, receive_params, metrics)
                 else:
                     raise ValueError("Default parameters is None.")
+        return best_model
 
     def _predict_run(self, **entity):
         pass

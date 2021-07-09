@@ -198,6 +198,7 @@ class PlaintextDataset(BaseDataset):
 
             self._row_size = n_samples = self.wc_count() - 1
             self._column_size = n_features = len(feature_names)
+
             data = np.empty((n_samples, n_features))
             target = np.empty((n_samples,), dtype=int)
 
