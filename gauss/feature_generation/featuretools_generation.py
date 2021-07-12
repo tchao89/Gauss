@@ -125,6 +125,7 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
             # Create new features using specified primitives
             features, feature_names = ft.dfs(entityset=es, target_entity=self.name,
                                              trans_primitives=trans_primitives)
+
             data = pd.concat([features, dataset.get_dataset().target], axis=1)
             data = self.clean_dataset(data)
             target = data.iloc[:, -1]
@@ -165,19 +166,15 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
 
             if issubclass(feature.variable_type, Discrete):
                 ftype = "category"
+                dtype = "int64"
             elif issubclass(feature.variable_type, Boolean):
                 ftype = "bool"
+                dtype = "int64"
             elif issubclass(feature.variable_type, Numeric):
                 ftype = "numerical"
+                dtype = "float64"
             else:
                 raise ValueError("Unknown input feature ftype: " + str(feature.name))
-
-            if data[feature.name].dtype == "float64":
-                dtype = "float64"
-            elif data[feature.name].dtype == "int64":
-                dtype = "int64"
-            else:
-                raise ValueError("Unknown input feature dtype: " + str(feature.name))
 
             item_dict = {"name": feature.name, "index": index, "dtype": dtype, "ftype": ftype}
             assert feature.name not in self.yaml_dict.keys()

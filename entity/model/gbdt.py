@@ -141,3 +141,8 @@ class GaussLightgbm(Model):
 
     def set_weight(self):
         pass
+
+    @property
+    def need_data_clear(self):
+        assert isinstance(self._need_data_clear, bool)
+        return self._need_data_clear
