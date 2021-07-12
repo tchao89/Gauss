@@ -75,8 +75,10 @@ class PlaintextDataset(BaseDataset):
                                                              target=self._bunch.target,
                                                              feature_names=self._bunch.feature_names,
                                                              target_names=self._bunch.target_names)
+
             if self.shape[0] > self._default_print_size:
                 return str(combined_df.head(self._default_print_size))
+
             else:
                 return str(combined_df)
 

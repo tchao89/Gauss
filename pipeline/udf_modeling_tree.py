@@ -5,8 +5,10 @@
 
 from __future__ import annotations
 
-class UdfModelingTree(Object):
-   
+from typing import List
+
+# pipeline defined by user.
+class UdfModelingTree(object):
     def __init__(self,
                  name: str,
                  work_root: str,
@@ -15,20 +17,43 @@ class UdfModelingTree(Object):
                  label_name: [],
                  train_data_path: str,
                  val_data_path: str=None,
-                 feature_configue_path: str=None,
+                 feature_configure_path: str=None,
                  dataset_type: str="plain",
                  type_inference: str="plain",
                  data_clear: str="plain",
-                 data_clear_flag: []=[True, False],
+                 data_clear_flag: []= [True, False],
                  feature_generator: str="featuretools",
                  feature_generator_flag: []=[True, False],
                  unsupervised_feature_selector: str="unsupervised",
                  unsupervised_feature_selector_flag: []=[True, False],
                  supervised_feature_selector: str="supervised",
                  supervised_feature_selector_flag: []=[True, False],
-                 model_zoo: list=["xgb", "lightgbm", "cgb", "lr_lightgbm", "dnn"],
+                 model_zoo: List[str]=["xgboost", "lightgbm", "catboost", "lr_lightgbm", "dnn"],
                  auto_ml: str="plain"
-                 ):  
+                 ):
+        """
+        :param name:
+        :param work_root:
+        :param task_type:
+        :param metric_name:
+        :param label_name:
+        :param train_data_path:
+        :param val_data_path:
+        :param feature_configure_path:
+        :param dataset_type:
+        :param type_inference:
+        :param data_clear:
+        :param data_clear_flag:
+        :param feature_generator:
+        :param feature_generator_flag:
+        :param unsupervised_feature_selector:
+        :param unsupervised_feature_selector_flag:
+        :param supervised_feature_selector:
+        :param supervised_feature_selector_flag:
+        :param model_zoo:
+        :param auto_ml:
+        """
+
         self.name = name
         self.work_root = work_root
         self.task_type = task_type
@@ -36,7 +61,7 @@ class UdfModelingTree(Object):
         self.label_name = label_name
         self.train_data_path = train_data_path
         self.val_data_path = val_data_path
-        self.feature_configue_path = feature_configue_path
+        self.feature_configure_path = feature_configure_path
         self.dataset_type=dataset_type
         self.type_inference=type_inference
         self.data_clear=data_clear
@@ -50,16 +75,18 @@ class UdfModelingTree(Object):
         self.model_zoo=model_zoo
         self.auto_ml=auto_ml
         self.need_data_clear = False
-        self.best_model="XXX"
+        self.best_model=None
         self.best_metric=None
-        self.best_result_root="XXX"
+        self.best_result_root=None
 
-    def run_route(folder_prefix_str,
+    def run_route(self,
+                  folder_prefix_str,
                   data_clear_flag,
                   feature_generator_flag,
                   unsupervised_feature_generator_flag, 
                   supervised_feature_selector_flag,
                   model):
+
         work_root = self.work_root + "/" + folder_prefix_str
         pipline_configure_path = work_root + "/" + "pipline.configure"
         pipline_configure = "data_clear_flag" : data_clear_flag, "feature_generator_flag" : feature_generator_flag...
@@ -114,11 +141,13 @@ class UdfModelingTree(Object):
         core_chain.run(entity)
         local_metric = core_chain.get_val_metric()
         return local_metric, work_root
+
     def update_best(local_best_model, local_best_metric, local_best_work_root):
         if compare(local_best_metric, self.best_metric) < 0
             self.best_model = local_best_metric
             self.best_metric = local_best_metric
             self.best_result_root = local_best_work_root
+
     def run(self):
         for data_clear in self.data_clear_flag:
             for feature_generator in self.feature_generator_flag:

@@ -5,7 +5,11 @@
 
 from __future__ import annotations
 
-class Inference(Object):
+from pipeline.core_chain import CoreRoute
+from pipeline.preprocess_chain import PreprocessRoute
+
+
+class Inference(object):
    
     def __init__(self,
                  name: str,

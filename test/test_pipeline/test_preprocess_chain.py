@@ -1,33 +1,11 @@
-import datetime
 import os
-import random
-import string
 from pipeline.preprocess_chain import PreprocessRoute
 from pipeline.core_chain import CoreRoute
-
-from utils.bunch import Bunch
-
-
-def id_generator(size=6, chars=string.ascii_uppercase + string.digits + string.ascii_lowercase):
-    return ''.join(random.choice(chars) for _ in range(size))
+from pipeline.mapping import EnvironmentConfigure
 
 
-time = datetime.datetime.now()
-experiment_id = datetime.datetime.strftime(time, '%Y%m%d-%H:%M--') + id_generator()
-
-root = "/home/liangqian/PycharmProjects/Gauss/experiments"
-experiment_path = os.path.join(root, experiment_id)
-os.mkdir(experiment_path)
-model_path = os.path.join(experiment_path, "model_path")
-os.mkdir(model_path)
-
-feature_dict = Bunch()
-feature_dict.user_feature = "/home/liangqian/PycharmProjects/Gauss/test_dataset/feature_conf.yaml"
-feature_dict.type_inference_feature = os.path.join(experiment_path, "type_inference_feature.yaml")
-feature_dict.data_clear_feature = os.path.join(experiment_path, "data_clear_feature.yaml")
-feature_dict.feature_generator_feature = os.path.join(experiment_path, "feature_generator_feature.yaml")
-feature_dict.unsupervised_feature = os.path.join(experiment_path, "unsupervised_feature.yaml")
-feature_dict.label_encoding_path = os.path.join(experiment_path, "label_encoding_path")
+environ_configure = EnvironmentConfigure(env="test")
+experiment_path, feature_dict = environ_configure.env_conf()
 
 chain = PreprocessRoute(name="chain",
                         feature_path_dict=feature_dict,

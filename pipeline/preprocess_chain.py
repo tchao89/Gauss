@@ -191,3 +191,7 @@ class PreprocessRoute(Component):
         self.unsupervised_feature_selector.run(**entity_dict)
 
         return entity_dict
+
+    @property
+    def need_data_clear(self):
+        return self._need_data_clear
