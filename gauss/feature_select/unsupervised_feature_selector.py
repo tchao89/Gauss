@@ -8,6 +8,8 @@ from gauss.feature_select.base_feature_selector import BaseFeatureSelector
 from entity.dataset.base_dataset import BaseDataset
 from core import featuretools as ft
 
+from utils.common_component import yaml_write, yaml_read
+
 
 class UnsupervisedFeatureSelector(BaseFeatureSelector):
 
@@ -40,31 +42,40 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         dataset = entity['dataset']
 
         assert isinstance(dataset, BaseDataset)
-
         data = dataset.get_dataset().data
-        # target = dataset.get_dataset().target
-        generated_features_names = dataset.get_dataset().generated_feature_names
 
-        # unsupervised methods will vote for the best features, which will be finished in the future.
-        data, generated_features_names = self._ft_method(features=data, feature_names=generated_features_names)
+        feature_conf = yaml_read(self._feature_configure_path)
+        # remove datetime features.
+        for col in data.columns:
+            if feature_conf[col]["ftype"] not in ["category", "numerical", "bool"]:
+                data.drop([col], axis=1, inplace=True)
 
-        dataset.get_dataset().data = data
-        dataset.get_dataset().generated_feature_names = list(data.columns)
+        if self._enable is True:
+            # target = dataset.get_dataset().target
+            if dataset.get_dataset().get("generated_feature_names"):
+                feature_names = dataset.get_dataset().generated_feature_names
+            else:
+                feature_names = dataset.get_dataset().feature_names
+
+            # unsupervised methods will vote for the best features, which will be finished in the future.
+            data, generated_features_names = self._ft_method(features=data, feature_names=feature_names)
+
+            dataset.get_dataset().data = data
+            dataset.get_dataset().generated_feature_names = list(data.columns)
+
         self.final_configure_generation(dataset=dataset)
 
     def _predict_run(self, **entity):
         assert "dataset" in entity.keys()
 
         dataset = entity['dataset']
+        conf = yaml_read(yaml_file=self._final_file_path)
 
-        conf_file = open(self._final_file_path, 'r', encoding='utf-8')
-        conf = conf_file.read()
-        conf = yaml.load(conf, Loader=yaml.FullLoader)
-        conf_file.close()
-
-        generated_feature_names = list(conf.keys())
-        dataset.get_dataset().data = dataset.get_dataset().data[generated_feature_names]
-        dataset.get_dataset().generated_feature_names = dataset.get_dataset().generated_feature_names
+        assert "unsupervised_feature_selector" in conf.keys()
+        if conf["unsupervised_feature_selector"] is True:
+            generated_feature_names = list(conf.keys())
+            dataset.get_dataset().data = dataset.get_dataset().data[generated_feature_names]
+            dataset.get_dataset().generated_feature_names = dataset.get_dataset().generated_feature_names
 
     @classmethod
     def _chi2_method(cls, features, target, k):
@@ -105,5 +116,6 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         for col_name in data.columns:
             yaml_dict[col_name] = feature_conf[col_name]
 
-        with open(self._final_file_path, "w", encoding="utf-8") as yaml_file:
-            yaml.dump(yaml_dict, yaml_file)
+        assert isinstance(self._enable, bool)
+        yaml_dict["unsupervised_feature_selector"] = self._enable
+        yaml_write(yaml_dict=yaml_dict, yaml_file=self._final_file_path)

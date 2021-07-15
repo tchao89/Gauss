@@ -1,0 +1,10 @@
+features:
+- age
+- balance
+- housing
+- loan
+- month
+- day
+- campaign
+- duration
+model: lightgbm

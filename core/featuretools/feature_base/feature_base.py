@@ -25,6 +25,15 @@ from core.featuretools.variable_types import (
 )
 
 
+class FeatureBaseLite(object):
+    def __init__(self, name=None):
+        self._name = name
+        self.number_output_features = 1
+
+    def get_name(self):
+        return self._name
+
+
 class FeatureBase(object):
     def __init__(self, entity, base_features, relationship_path, primitive, name=None, names=None):
         """Base class for all features

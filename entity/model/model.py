@@ -56,4 +56,19 @@ class Model(Entity):
 
     @abc.abstractmethod
     def preprocess(self):
+        """
+        This method is used to implement Normalization, Standardization, which need self._train_flag parameters.
+        :return: None
+        """
+        if self._train_flag:
+            self._train_preprocess()
+        else:
+            self._predict_process()
+
+    @abc.abstractmethod
+    def _train_preprocess(self):
+        pass
+
+    @abc.abstractmethod
+    def _predict_process(self):
         pass

@@ -11,7 +11,7 @@ from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
 
 from typing import List
-from utils.common_component import yaml_write
+from utils.common_component import yaml_write, mkdir
 from utils.bunch import Bunch
 
 
@@ -66,19 +66,26 @@ class AutoModelingTree(object):
                   model_zoo: List[str]):
 
         work_root = self.work_root + "/" + folder_prefix_str
-        pipeline_configure_path = work_root + "/" + "pipeline.configure"
-        pipeline_configure = {"data_clear_flag": data_clear_flag, "feature_generator_flag": feature_generator_flag,
-                              "metric_name": self.metric_name, "task_type": self.task_type}
-        yaml_write(yaml_file=pipeline_configure_path, yaml_dict=pipeline_configure)
+        pipeline_configure_path = work_root + "/" + "pipeline/configure"
+        pipeline_configure = {"data_clear_flag": data_clear_flag,
+                              "feature_generator_flag": feature_generator_flag,
+                              "metric_name": self.metric_name,
+                              "task_type": self.task_type}
+
+        try:
+            yaml_write(yaml_file=pipeline_configure_path, yaml_dict=pipeline_configure)
+        except FileNotFoundError:
+            yaml_write(yaml_file=pipeline_configure_path, yaml_dict=pipeline_configure)
 
         work_feature_root = work_root + "/feature"
         feature_dict = Bunch()
         feature_dict.user_feature = self.feature_configure_path
         feature_dict.type_inference_feature = os.path.join(work_feature_root, "type_inference_feature.yaml")
         feature_dict.data_clear_feature = os.path.join(work_feature_root, "data_clear_feature.yaml")
+        feature_dict.data_clear_configure_path = os.path.join(work_feature_root, "impute_models")
         feature_dict.feature_generator_feature = os.path.join(work_feature_root, "feature_generator_feature.yaml")
         feature_dict.unsupervised_feature = os.path.join(work_feature_root, "unsupervised_feature.yaml")
-        feature_dict.label_encoding_path = os.path.join(work_feature_root, "label_encoding_path")
+        feature_dict.label_encoding_path = os.path.join(work_feature_root, "label_encoding_models")
         feature_dict.supervised_feature = os.path.join(work_feature_root, "target_feature_feature.yaml")
 
         preprocess_chain = PreprocessRoute(name="PreprocessRoute",
@@ -108,7 +115,7 @@ class AutoModelingTree(object):
 
         for model in model_zoo:
             work_model_root = work_root + "/model/" + model + "/"
-            model_save_root = work_model_root + "/model_save"
+            model_save_root = work_model_root + "model_save"
             # model_config_root = work_model_root + "/model_config"
 
             core_chain = CoreRoute(name="core_route",
@@ -124,18 +131,18 @@ class AutoModelingTree(object):
                                    feature_selector_name="supervised_selector",
                                    feature_selector_flag=supervised_feature_selector_flag,
                                    auto_ml_type="auto_ml",
-                                   auto_ml_path="",
-                                   selector_config_path="")
+                                   auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
+                                   selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config")
 
             local_model = core_chain.run(**entity_dict)
-            local_metric = best_model.get_val_metric()
+            local_metric = local_model.val_metrics
 
             if best_model is None:
                 best_model = local_model
             if self.best_metric is None:
                 best_metric = local_metric
 
-            if (self.compare(local_metric, best_metric)) < 0:
+            if best_metric is None or (self.compare(local_metric, best_metric)) < 0:
                 best_model = local_model
                 best_metric = local_metric
                 model_name = model_name
@@ -144,26 +151,28 @@ class AutoModelingTree(object):
 
     @classmethod
     def compare(cls, local_best_metric, best_metric):
-        return best_metric - local_best_metric
+        return best_metric.result - local_best_metric.result
 
     # local_best_model, local_best_metric, local_best_work_root, local_best_model_name
     def update_best(self, *params):
-        if params[0] is None or self.compare(params[1], self.best_metric) < 0:
+        if self.best_metric is None or self.compare(params[1], self.best_metric) < 0:
             self.best_model = params[0]
             self.best_metric = params[1]
             self.best_result_root = params[2]
 
     def run(self):
-        self.update_best(self.run_route(
+        best_model, best_metric, work_root, model_name = self.run_route(
             folder_prefix_str="no-clear_no-feagen_no-unsupfeasel_no-supfeasel",
             data_clear_flag=False,
-            feature_generator_flag=False,
+            feature_generator_flag=True,
             unsupervised_feature_generator_flag=False,
             supervised_feature_selector_flag=False,
-            model_zoo=["xgboost, lightgbm, catboost"]))
+            model_zoo=["lightgbm"])
+
+        self.update_best(*(best_model, best_metric, work_root, model_name))
 
         self.update_best(
-            self.run_route("clear_feagen_supfeasel_no-supfeasel", True, True, True, False, ["xgb, lightgbm, catboost"]))
+            *self.run_route("clear_feagen_supfeasel_no-supfeasel", True, True, True, False, ["lightgbm"]))
 
         self.update_best(
-            self.run_route("no-clear_no-feagen_no-feasel", True, True, True, True, ["lr+lightgbm_V1", "lr+lightgbm_V2"]))
+            *self.run_route("no-clear_no-feagen_no-feasel", True, True, True, True, ["lightgbm"]))

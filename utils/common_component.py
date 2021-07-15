@@ -2,9 +2,19 @@ import os
 import yaml
 
 def mkdir(path: str):
-    os.mkdir(path=path)
+    try:
+        os.mkdir(path=path)
+    except FileNotFoundError:
+        os.system("mkdir -p " + path)
 
 def yaml_write(yaml_dict: dict, yaml_file: str):
+    root, _ = os.path.split(yaml_file)
+
+    try:
+        assert os.path.isdir(root)
+    except AssertionError:
+        mkdir(root)
+
     with open(yaml_file, "w", encoding="utf-8") as yaml_file:
         yaml.dump(yaml_dict, yaml_file)
 

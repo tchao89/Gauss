@@ -1,0 +1,8 @@
+features:
+- balance
+- housing
+- loan
+- month
+- campaign
+- duration
+model: lightgbm

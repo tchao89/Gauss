@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2020, Citic-Lab. All rights reserved.
 # Authors: citic-lab
+import abc
+
 from gauss.component import Component
 
 
@@ -15,8 +17,10 @@ class BaseDataClear(Component):
         """
         super(BaseDataClear, self).__init__(name=name, train_flag=train_flag, enable=enable)
 
+    @abc.abstractmethod
     def _train_run(self, **entity):
         pass
 
+    @abc.abstractmethod
     def _predict_run(self, **entity):
         pass

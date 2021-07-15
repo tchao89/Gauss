@@ -97,10 +97,10 @@ class PreprocessRoute(Component):
                                  final_file_prefix="final")
         self.type_inference = self.create_component(component_name=type_inference_name, **inference_params)
 
-        # 注意:每一步都要记录
         clear_params = Bunch(name=data_clear_name, train_flag=self._train_flag, enable=self._data_clear_flag,
                              model_name="tree_model",
                              feature_configure_path=feature_path_dict["type_inference_feature"],
+                             data_clear_configure_path=feature_path_dict["impute_path"],
                              final_file_path=feature_path_dict["data_clear_feature"], strategy_dict=None)
         self.data_clear = self.create_component(component_name="plaindataclear", **clear_params)
 
@@ -172,6 +172,7 @@ class PreprocessRoute(Component):
 
     def _predict_run(self, **entity):
         entity_dict = {}
+
         assert self._test_data_path is not None
         assert os.path.isfile(self._test_data_path)
         assert self._train_flag is False

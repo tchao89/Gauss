@@ -5,9 +5,8 @@
 import re
 import copy
 
-import yaml
-
 from utils.Logger import logger
+from utils.common_component import yaml_write
 
 import numpy as np
 import pandas as pd
@@ -253,5 +252,4 @@ class TypeInference(BaseTypeInference):
             item_dict = {"name": item[1].name, "index": item[1].index, "dtype": item[1].dtype, "ftype": item[1].ftype, "size": item[1].size}
             yaml_dict[item[0]] = item_dict
 
-        with open(self._final_file_path, "w", encoding="utf-8") as yaml_file:
-            yaml.dump(yaml_dict, yaml_file)
+        yaml_write(yaml_dict=yaml_dict, yaml_file=self._final_file_path)

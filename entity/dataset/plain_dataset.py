@@ -18,9 +18,6 @@ from utils.Logger import logger
 
 
 class PlaintextDataset(BaseDataset):
-    """
-    Reads data
-    """
 
     def __init__(self, **params):
         """
@@ -39,11 +36,7 @@ class PlaintextDataset(BaseDataset):
             assert os.path.isfile(params["data_path"])
 
         self._data_pair = params["data_pair"]
-
         self.type_doc = None
-        self.shape = None
-
-        self.data_module = False
         self._bunch = None
 
         assert params["data_path"] is not None or params["data_pair"] is not None
@@ -277,7 +270,11 @@ class PlaintextDataset(BaseDataset):
         return shuffle(data, target)
 
     def feature_choose(self, feature_list):
-        data = self._bunch.data.iloc[:, feature_list]
+        try:
+            data = self._bunch.data.iloc[:, feature_list]
+        except IndexError:
+            logger.info("index method used.")
+            data = self._bunch.data.loc[:, feature_list]
         return data
 
     # dataset is a PlainDataset object
@@ -285,18 +282,24 @@ class PlaintextDataset(BaseDataset):
         """ This method is used for concatenating train dataset and validation dataset.
         :return: Plaindataset
         """
+        self._val_start = self._bunch.target.shape[0]
 
         assert self._bunch.data.shape[1] == val_dataset.get_dataset().data.shape[1]
         self._bunch.data = pd.concat([self._bunch.data, val_dataset.get_dataset().data], axis=0)
 
         assert self._bunch.target.shape[1] == val_dataset.get_dataset().target.shape[1]
-        self._bunch.data = pd.concat([self._bunch.target, val_dataset.get_dataset().target], axis=0)
-        self._val_start = self._bunch.target.shape[0]
+        self._bunch.target = pd.concat([self._bunch.target, val_dataset.get_dataset().target], axis=0)
 
-        if self._bunch.get("feature_names") and val_dataset.get_dataset().get("feature_names"):
-            assert self._bunch.feature_names == val_dataset.get_dataset().feature_names
-        if self._bunch.get("target_names") and val_dataset.get_dataset().get("target_names"):
-            assert self._bunch.target_names == val_dataset.get_dataset().target_names
+        self._bunch.data = self._bunch.data.reset_index(drop=True)
+        self._bunch.target = self._bunch.target.reset_index(drop=True)
+
+        if self._bunch.get("feature_names") is not None and val_dataset.get_dataset().get("feature_names") is not None:
+            for item in self._bunch.feature_names:
+                assert item in val_dataset.get_dataset().feature_names
+
+        if self._bunch.get("target_names") is not None and val_dataset.get_dataset().get("target_names") is not None:
+            for item in self._bunch.target_names:
+                assert item in val_dataset.get_dataset().target_names
 
     def split(self, val_start: float = 0.8):
         """

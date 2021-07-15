@@ -1,0 +1,471 @@
+1 % balance:
+  dtype: float64
+  ftype: numerical
+  index: 170
+  name: 1 % balance
+1 / balance:
+  dtype: float64
+  ftype: numerical
+  index: 28
+  name: 1 / balance
+1 / duration:
+  dtype: float64
+  ftype: numerical
+  index: 29
+  name: 1 / duration
+AND(housing, loan):
+  dtype: int64
+  ftype: bool
+  index: 16
+  name: AND(housing, loan)
+CUM_MAX(balance):
+  dtype: float64
+  ftype: numerical
+  index: 17
+  name: CUM_MAX(balance)
+CUM_MAX(duration):
+  dtype: float64
+  ftype: numerical
+  index: 18
+  name: CUM_MAX(duration)
+CUM_MEAN(balance):
+  dtype: float64
+  ftype: numerical
+  index: 19
+  name: CUM_MEAN(balance)
+CUM_MEAN(duration):
+  dtype: float64
+  ftype: numerical
+  index: 20
+  name: CUM_MEAN(duration)
+CUM_MIN(balance):
+  dtype: float64
+  ftype: numerical
+  index: 21
+  name: CUM_MIN(balance)
+CUM_MIN(duration):
+  dtype: float64
+  ftype: numerical
+  index: 22
+  name: CUM_MIN(duration)
+CUM_SUM(balance):
+  dtype: float64
+  ftype: numerical
+  index: 23
+  name: CUM_SUM(balance)
+DAY(time):
+  dtype: int64
+  ftype: category
+  index: 25
+  name: DAY(time)
+DIFF(balance):
+  dtype: float64
+  ftype: numerical
+  index: 26
+  name: DIFF(balance)
+DIFF(duration):
+  dtype: float64
+  ftype: numerical
+  index: 27
+  name: DIFF(duration)
+IS_WEEKEND(time):
+  dtype: int64
+  ftype: bool
+  index: 147
+  name: IS_WEEKEND(time)
+MONTH(time):
+  dtype: int64
+  ftype: category
+  index: 176
+  name: MONTH(time)
+OR(housing, loan):
+  dtype: int64
+  ftype: bool
+  index: 276
+  name: OR(housing, loan)
+PERCENTILE(balance):
+  dtype: float64
+  ftype: numerical
+  index: 277
+  name: PERCENTILE(balance)
+PERCENTILE(duration):
+  dtype: float64
+  ftype: numerical
+  index: 278
+  name: PERCENTILE(duration)
+TIME_SINCE(time):
+  dtype: float64
+  ftype: numerical
+  index: 285
+  name: TIME_SINCE(time)
+WEEKDAY(time):
+  dtype: int64
+  ftype: category
+  index: 286
+  name: WEEKDAY(time)
+age:
+  dtype: int64
+  ftype: category
+  index: 0
+  name: age
+age = balance:
+  dtype: int64
+  ftype: bool
+  index: 34
+  name: age = balance
+age = campaign:
+  dtype: int64
+  ftype: bool
+  index: 35
+  name: age = campaign
+age = day:
+  dtype: int64
+  ftype: bool
+  index: 37
+  name: age = day
+age = duration:
+  dtype: int64
+  ftype: bool
+  index: 38
+  name: age = duration
+age = education:
+  dtype: int64
+  ftype: bool
+  index: 39
+  name: age = education
+age = housing:
+  dtype: int64
+  ftype: bool
+  index: 40
+  name: age = housing
+age = job:
+  dtype: int64
+  ftype: bool
+  index: 41
+  name: age = job
+age = loan:
+  dtype: int64
+  ftype: bool
+  index: 42
+  name: age = loan
+age = month:
+  dtype: int64
+  ftype: bool
+  index: 44
+  name: age = month
+balance:
+  dtype: float64
+  ftype: numerical
+  index: 1
+  name: balance
+balance % duration:
+  dtype: float64
+  ftype: numerical
+  index: 172
+  name: balance % duration
+balance * duration:
+  dtype: float64
+  ftype: numerical
+  index: 178
+  name: balance * duration
+balance / duration:
+  dtype: float64
+  ftype: numerical
+  index: 30
+  name: balance / duration
+balance = campaign:
+  dtype: int64
+  ftype: bool
+  index: 46
+  name: balance = campaign
+balance = data_id:
+  dtype: int64
+  ftype: bool
+  index: 47
+  name: balance = data_id
+balance = day:
+  dtype: int64
+  ftype: bool
+  index: 48
+  name: balance = day
+balance = duration:
+  dtype: int64
+  ftype: bool
+  index: 49
+  name: balance = duration
+balance = education:
+  dtype: int64
+  ftype: bool
+  index: 50
+  name: balance = education
+balance = housing:
+  dtype: int64
+  ftype: bool
+  index: 51
+  name: balance = housing
+balance = job:
+  dtype: int64
+  ftype: bool
+  index: 52
+  name: balance = job
+balance = loan:
+  dtype: int64
+  ftype: bool
+  index: 53
+  name: balance = loan
+balance = marital:
+  dtype: int64
+  ftype: bool
+  index: 54
+  name: balance = marital
+balance = month:
+  dtype: int64
+  ftype: bool
+  index: 55
+  name: balance = month
+balance > duration:
+  dtype: int64
+  ftype: bool
+  index: 125
+  name: balance > duration
+balance >= 0:
+  dtype: int64
+  ftype: bool
+  index: 129
+  name: balance >= 0
+campaign:
+  dtype: int64
+  ftype: category
+  index: 9
+  name: campaign
+campaign = data_id:
+  dtype: int64
+  ftype: bool
+  index: 57
+  name: campaign = data_id
+campaign = day:
+  dtype: int64
+  ftype: bool
+  index: 58
+  name: campaign = day
+campaign = duration:
+  dtype: int64
+  ftype: bool
+  index: 59
+  name: campaign = duration
+campaign = education:
+  dtype: int64
+  ftype: bool
+  index: 60
+  name: campaign = education
+campaign = housing:
+  dtype: int64
+  ftype: bool
+  index: 61
+  name: campaign = housing
+campaign = job:
+  dtype: int64
+  ftype: bool
+  index: 62
+  name: campaign = job
+campaign = loan:
+  dtype: int64
+  ftype: bool
+  index: 63
+  name: campaign = loan
+campaign = marital:
+  dtype: int64
+  ftype: bool
+  index: 64
+  name: campaign = marital
+campaign = month:
+  dtype: int64
+  ftype: bool
+  index: 65
+  name: campaign = month
+data_id = duration:
+  dtype: int64
+  ftype: bool
+  index: 68
+  name: data_id = duration
+data_id = education:
+  dtype: int64
+  ftype: bool
+  index: 69
+  name: data_id = education
+day:
+  dtype: int64
+  ftype: category
+  index: 8
+  name: day
+day = duration:
+  dtype: int64
+  ftype: bool
+  index: 76
+  name: day = duration
+day = education:
+  dtype: int64
+  ftype: bool
+  index: 77
+  name: day = education
+day = housing:
+  dtype: int64
+  ftype: bool
+  index: 78
+  name: day = housing
+day = job:
+  dtype: int64
+  ftype: bool
+  index: 79
+  name: day = job
+day = loan:
+  dtype: int64
+  ftype: bool
+  index: 80
+  name: day = loan
+day = marital:
+  dtype: int64
+  ftype: bool
+  index: 81
+  name: day = marital
+day = month:
+  dtype: int64
+  ftype: bool
+  index: 82
+  name: day = month
+duration:
+  dtype: float64
+  ftype: numerical
+  index: 10
+  name: duration
+duration % balance:
+  dtype: float64
+  ftype: numerical
+  index: 173
+  name: duration % balance
+duration / balance:
+  dtype: float64
+  ftype: numerical
+  index: 31
+  name: duration / balance
+duration = education:
+  dtype: int64
+  ftype: bool
+  index: 84
+  name: duration = education
+duration = job:
+  dtype: int64
+  ftype: bool
+  index: 86
+  name: duration = job
+duration = month:
+  dtype: int64
+  ftype: bool
+  index: 89
+  name: duration = month
+education:
+  dtype: int64
+  ftype: category
+  index: 4
+  name: education
+education = housing:
+  dtype: int64
+  ftype: bool
+  index: 91
+  name: education = housing
+education = job:
+  dtype: int64
+  ftype: bool
+  index: 92
+  name: education = job
+education = loan:
+  dtype: int64
+  ftype: bool
+  index: 93
+  name: education = loan
+education = marital:
+  dtype: int64
+  ftype: bool
+  index: 94
+  name: education = marital
+education = month:
+  dtype: int64
+  ftype: bool
+  index: 95
+  name: education = month
+housing:
+  dtype: int64
+  ftype: bool
+  index: 5
+  name: housing
+housing = job:
+  dtype: int64
+  ftype: bool
+  index: 97
+  name: housing = job
+housing = loan:
+  dtype: int64
+  ftype: bool
+  index: 98
+  name: housing = loan
+housing = marital:
+  dtype: int64
+  ftype: bool
+  index: 99
+  name: housing = marital
+housing = month:
+  dtype: int64
+  ftype: bool
+  index: 100
+  name: housing = month
+job:
+  dtype: int64
+  ftype: category
+  index: 3
+  name: job
+job = loan:
+  dtype: int64
+  ftype: bool
+  index: 102
+  name: job = loan
+job = marital:
+  dtype: int64
+  ftype: bool
+  index: 103
+  name: job = marital
+job = month:
+  dtype: int64
+  ftype: bool
+  index: 104
+  name: job = month
+loan:
+  dtype: int64
+  ftype: bool
+  index: 6
+  name: loan
+loan = marital:
+  dtype: int64
+  ftype: bool
+  index: 106
+  name: loan = marital
+loan = month:
+  dtype: int64
+  ftype: bool
+  index: 107
+  name: loan = month
+marital:
+  dtype: int64
+  ftype: category
+  index: 2
+  name: marital
+marital = month:
+  dtype: int64
+  ftype: bool
+  index: 109
+  name: marital = month
+month:
+  dtype: int64
+  ftype: category
+  index: 7
+  name: month
+unsupervised_feature_selector: true

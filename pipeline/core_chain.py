@@ -93,12 +93,6 @@ class CoreRoute(Component):
         self.best_model = None
         self.best_val_metric = None
 
-    def run(self, **entity):
-        if self._train_flag:
-            return self._train_run(**entity)
-        else:
-            return self._predict_run(**entity)
-
     def _train_run(self, **entity):
         assert "dataset" in entity
         assert "val_dataset" in entity
@@ -118,7 +112,6 @@ class CoreRoute(Component):
 
         assert best_model is not None
         self.best_model = best_model
-
         return best_model
 
     def _predict_run(self, **entity):

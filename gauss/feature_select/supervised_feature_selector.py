@@ -261,7 +261,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
     def final_configure_generation(self):
         yaml_dict = {"features": self._final_feature_names,
                      "model": self._model_name}
-
         with open(self._final_file_path, "w", encoding="utf-8") as yaml_file:
             yaml.dump(yaml_dict, yaml_file)
 

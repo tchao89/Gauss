@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2020, Citic-Lab. All rights reserved.
 # Authors: citic-lab
-import os
+import shelve
 
 import yaml
 import pandas as pd
@@ -12,6 +12,8 @@ from sklearn.impute import SimpleImputer
 
 from gauss.data_clear.base_data_clear import BaseDataClear
 from entity.dataset.base_dataset import BaseDataset
+
+from utils.common_component import yaml_read
 
 
 # 需要传入三个参数， 数模型的数据/非数模型的数据， yaml文件， base dataset
@@ -32,6 +34,8 @@ class PlainDataClear(BaseDataClear):
         self._model_name = params["model_name"]
         self._feature_configure_path = params["feature_configure_path"]
         self._final_file_path = params["final_file_path"]
+        # 序列化模型
+        self._data_clear_configure_path = params["data_clear_configure_path"]
 
         self._strategy_dict = params["strategy_dict"]
 
@@ -40,15 +44,33 @@ class PlainDataClear(BaseDataClear):
         self.default_cat_impute_model = SimpleImputer(missing_values=self.missing_values, strategy="most_frequent")
         self.default_num_impute_model = SimpleImputer(missing_values=self.missing_values, strategy="mean")
 
+        self.impute_models = {}
+
     def _train_run(self, **entity):
-        assert "dataset" in entity.keys()
-        self._clean(dataset=entity["dataset"])
+        if self._enable:
+            assert "dataset" in entity.keys()
+            self._clean(dataset=entity["dataset"])
         self.final_configure_generation()
+        self._data_clear_serialize()
 
     def _predict_run(self, **entity):
-        # 存储保留的特征,生成新的.yaml文件
-        assert "dataset" in entity.keys()
-        self._clean(dataset=entity["dataset"])
+        data_clear_conf = yaml_read(self._feature_configure_path)
+        assert "plain_data_clear" in data_clear_conf.keys()
+
+        if data_clear_conf["plain_data_clear"] is True:
+            assert "dataset" in entity.keys()
+            dataset = entity["dataset"]
+
+            data = dataset.get_dataset().data
+            assert isinstance(data, pd.DataFrame)
+
+            feature_names = dataset.get_dataset().feature_names
+            with shelve.open(self._data_clear_configure_path) as shelve_open:
+                dc_model_list = shelve_open['impute_models']
+
+            for col in feature_names:
+                if dc_model_list.get(col):
+                    data[col] = dc_model_list.get(col).transform(data[col])
 
     def _clean(self, dataset: BaseDataset):
         data = dataset.get_dataset().data
@@ -56,9 +78,7 @@ class PlainDataClear(BaseDataClear):
 
         assert isinstance(data, pd.DataFrame)
 
-        feature_conf_file = open(self._feature_configure_path, 'r', encoding='utf-8')
-        feature_conf = feature_conf_file.read()
-        feature_conf = yaml.load(feature_conf, Loader=yaml.FullLoader)
+        feature_conf = yaml_read(self._feature_configure_path)
 
         for feature in feature_names:
             item_data = data[feature].values
@@ -66,7 +86,6 @@ class PlainDataClear(BaseDataClear):
             item_conf = feature_conf[feature]
 
             if self._strategy_dict is not None:
-
                 if self._strategy_dict["model"]["name"] == "ftype":
                     impute_model = SimpleImputer(missing_values=self.missing_values,
                                                  strategy=self._strategy_dict[item_conf['ftype']]["name"],
@@ -74,7 +93,6 @@ class PlainDataClear(BaseDataClear):
                                                  add_indicator=True)
 
                 else:
-
                     assert self._strategy_dict["model"]["name"] == "feature"
                     impute_model = SimpleImputer(missing_values=self.missing_values,
                                                  strategy=self._strategy_dict[feature]["name"],
@@ -92,22 +110,24 @@ class PlainDataClear(BaseDataClear):
 
             item_data = item_data.reshape(-1, 1)
             impute_model = impute_model.fit(item_data)
+
             item_data = impute_model.transform(item_data)
             item_data = item_data.reshape(1, -1).squeeze(axis=0)
 
+            self.impute_models[feature] = impute_model
+
             data[feature] = item_data
 
-    def configure_generation(self):
-        """
-        This method will generate data clear configuration from machine learning model name.
-        :return:
-        """
-        pass
+    def _data_clear_serialize(self):
+        # 序列化label encoding模型字典
+        with shelve.open(self._data_clear_configure_path) as shelve_open:
+            shelve_open['impute_models'] = self.impute_models
 
     def final_configure_generation(self):
-        feature_conf_file = open(self._feature_configure_path, 'r', encoding='utf-8')
-        feature_conf = feature_conf_file.read()
-        feature_conf = yaml.load(feature_conf, Loader=yaml.FullLoader)
+        feature_conf = yaml_read(yaml_file=self._feature_configure_path)
+
+        assert isinstance(self._enable, bool)
+        feature_conf["plain_data_clear"] = self._enable
 
         with open(self._final_file_path, "w", encoding="utf-8") as yaml_file:
             yaml.dump(feature_conf, yaml_file)

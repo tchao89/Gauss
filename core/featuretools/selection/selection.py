@@ -1,4 +1,5 @@
 from core.featuretools import variable_types as vtypes
+from core.featuretools.feature_base import FeatureBase, FeatureBaseLite
 
 
 def remove_low_information_features(feature_matrix, features=None):
@@ -12,14 +13,26 @@ def remove_low_information_features(feature_matrix, features=None):
             (feature_matrix, features)
 
     """
+
     keep = [c for c in feature_matrix
             if (feature_matrix[c].nunique(dropna=False) > 1 and
                 feature_matrix[c].dropna().shape[0] > 0)]
     feature_matrix = feature_matrix[keep]
+
     if features is not None:
-        features = [f for f in features
-                    if f.get_name() in feature_matrix.columns]
-        return feature_matrix, features
+        feature_names = []
+        if all(isinstance(feature, FeatureBase) for feature in features):
+            features = [f for f in features
+                        if f.get_name() in feature_matrix.columns]
+            return feature_matrix, features
+
+        elif all(isinstance(feature, str) for feature in features):
+            for item in features:
+                feature_item = FeatureBaseLite(name=item)
+                if item in feature_matrix.columns:
+                    feature_names.append(feature_item)
+            return feature_matrix, feature_names
+
     return feature_matrix
 
 

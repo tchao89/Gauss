@@ -6,7 +6,6 @@ import shelve
 
 import pandas as pd
 import numpy as np
-import yaml
 from sklearn.preprocessing import LabelEncoder
 
 from core import featuretools as ft
@@ -14,6 +13,7 @@ from core.featuretools.variable_types.variable import Discrete, Boolean, Numeric
 from entity.dataset.base_dataset import BaseDataset
 from gauss.feature_generation.base_feature_generation import BaseFeatureGenerator
 from utils.Logger import logger
+from utils.common_component import yaml_read, yaml_write
 
 
 class FeatureToolsGenerator(BaseFeatureGenerator):
@@ -37,57 +37,56 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         self.yaml_dict = {}
 
     def _train_run(self, **entity):
-
         assert "dataset" in entity.keys()
         dataset = entity["dataset"]
-
         self._set_feature_configure()
         assert self.feature_configure is not None
 
-        self._label_encoding(dataset=dataset)
-        self._label_encoding_serialize()
-        self._ft_generator(dataset=dataset)
+        if self._enable:
+            self._label_encoding(dataset=dataset)
+            self._label_encoding_serialize()
+            self._ft_generator(dataset=dataset)
+
         self.final_configure_generation(dataset=dataset)
 
     def _predict_run(self, **entity):
+        feature_tools_generation_conf = yaml_read(self._feature_configure_path)
+        assert "featuretools_generation" in feature_tools_generation_conf.keys()
 
-        assert "dataset" in entity.keys()
-        dataset = entity['dataset']
+        if feature_tools_generation_conf["featuretools_generation"] is True:
+            assert "dataset" in entity.keys()
+            dataset = entity['dataset']
 
-        data = dataset.get_dataset().data
-        assert isinstance(data, pd.DataFrame)
+            data = dataset.get_dataset().data
+            assert isinstance(data, pd.DataFrame)
 
-        feature_names = dataset.get_dataset().feature_names
+            feature_names = dataset.get_dataset().feature_names
 
-        self._set_feature_configure()
-        assert self.feature_configure is not None
+            self._set_feature_configure()
+            assert self.feature_configure is not None
 
-        with shelve.open(self._label_encoding_configure_path) as shelve_open:
-            le_model_list = shelve_open['label_encoding']
+            with shelve.open(self._label_encoding_configure_path) as shelve_open:
+                le_model_list = shelve_open['label_encoding']
 
-            for col in feature_names:
-                if self.feature_configure[col]['ftype'] == "category":
-                    assert le_model_list.get(col)
-                    le_model = le_model_list[col]
+                for col in feature_names:
+                    if self.feature_configure[col]['ftype'] == "category":
+                        assert le_model_list.get(col)
+                        le_model = le_model_list[col]
 
-                    label_dict = dict(zip(le_model.classes_, le_model.transform(le_model.classes_)))
-                    status_list = data[col].unique().tolist()
+                        label_dict = dict(zip(le_model.classes_, le_model.transform(le_model.classes_)))
+                        status_list = data[col].unique().tolist()
 
-                    for item in status_list:
-                        if label_dict.get(item) is None:
-                            logger.info("feature: " + str(col) + "has an abnormal value (unseen by label encoding): " + str(item))
-                            raise ValueError("feature: " + str(col) + " has an abnormal value (unseen by label encoding): " + str(item))
+                        for item in status_list:
+                            if label_dict.get(item) is None:
+                                logger.info("feature: " + str(col) + "has an abnormal value (unseen by label encoding): " + str(item))
+                                raise ValueError("feature: " + str(col) + " has an abnormal value (unseen by label encoding): " + str(item))
 
-                    data[col] = le_model.transform(data[col])
+                        data[col] = le_model.transform(data[col])
 
-        self._ft_generator(dataset=dataset)
+            self._ft_generator(dataset=dataset)
 
     def _set_feature_configure(self):
-
-        feature_configure_file = open(self._feature_configure_path, 'r', encoding='utf-8')
-        feature_configure = feature_configure_file.read()
-        self.feature_configure = yaml.load(feature_configure, Loader=yaml.FullLoader)
-        feature_configure_file.close()
+        self.feature_configure = yaml_read(self._feature_configure_path)
 
     def _ft_generator(self, dataset: BaseDataset):
         data = dataset.get_dataset().data
@@ -128,7 +127,9 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
 
             data = pd.concat([features, dataset.get_dataset().target], axis=1)
             data = self.clean_dataset(data)
+
             target = data.iloc[:, -1]
+
             dataset.get_dataset().data = data.drop(dataset.get_dataset().target_names, axis=1)
             dataset.get_dataset().generated_feature_names = feature_names
             dataset.get_dataset().target = target
@@ -159,26 +160,29 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         return df[indices_to_keep].astype(np.float64)
 
     def final_configure_generation(self, dataset: BaseDataset):
-        data = dataset.get_dataset().data
-        generated_feature_names = dataset.get_dataset().generated_feature_names
+        if self._enable:
+            generated_feature_names = dataset.get_dataset().generated_feature_names
 
-        for index, feature in enumerate(generated_feature_names):
+            for index, feature in enumerate(generated_feature_names):
 
-            if issubclass(feature.variable_type, Discrete):
-                ftype = "category"
-                dtype = "int64"
-            elif issubclass(feature.variable_type, Boolean):
-                ftype = "bool"
-                dtype = "int64"
-            elif issubclass(feature.variable_type, Numeric):
-                ftype = "numerical"
-                dtype = "float64"
-            else:
-                raise ValueError("Unknown input feature ftype: " + str(feature.name))
+                if issubclass(feature.variable_type, Discrete):
+                    ftype = "category"
+                    dtype = "int64"
+                elif issubclass(feature.variable_type, Boolean):
+                    ftype = "bool"
+                    dtype = "int64"
+                elif issubclass(feature.variable_type, Numeric):
+                    ftype = "numerical"
+                    dtype = "float64"
+                else:
+                    raise ValueError("Unknown input feature ftype: " + str(feature.name))
 
-            item_dict = {"name": feature.name, "index": index, "dtype": dtype, "ftype": ftype}
-            assert feature.name not in self.yaml_dict.keys()
-            self.yaml_dict[feature.name] = item_dict
+                item_dict = {"name": feature.name, "index": index, "dtype": dtype, "ftype": ftype}
+                assert feature.name not in self.yaml_dict.keys()
+                self.yaml_dict[feature.name] = item_dict
+        else:
+            self.yaml_dict = self.feature_configure
 
-        with open(self._final_file_path, "w", encoding="utf-8") as yaml_file:
-            yaml.dump(self.yaml_dict, yaml_file)
+        assert isinstance(self._enable, bool)
+        self.yaml_dict["featuretools_generation"] = self._enable
+        yaml_write(yaml_dict=self.yaml_dict, yaml_file=self._final_file_path)

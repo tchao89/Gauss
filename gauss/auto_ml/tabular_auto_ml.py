@@ -93,6 +93,7 @@ class TabularAutoML(BaseAutoML):
                     model = entity["model"]
                     model.update_params(**params)
                     model.train(**entity)
+
                     model.eval(**entity)
                     metrics = model.val_metrics.result
                     # get model which has been trained.
@@ -129,8 +130,6 @@ class TabularAutoML(BaseAutoML):
         return self.search_space()
 
     def set_search_space(self):
-        print("self._auto_ml_path", self._auto_ml_path)
         search_space_path = os.path.join(self._auto_ml_path, "search_space.json")
-        print(search_space_path)
         with open(search_space_path, 'r') as json_file:
             self._search_space = json.load(json_file)

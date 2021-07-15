@@ -43,9 +43,9 @@ class Component(metaclass=abc.ABCMeta):
     
     def run(self, **entity):
         if self._train_flag:
-            self._train_run(**entity)
+            return self._train_run(**entity)
         else:
-            self._predict_run(**entity)
+            return self._predict_run(**entity)
 
     @abc.abstractmethod
     def _train_run(self, **entity):

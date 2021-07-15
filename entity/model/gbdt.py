@@ -17,9 +17,11 @@ from entity.model.model import Model
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from utils.bunch import Bunch
+from utils.common_component import mkdir
 
 
 class GaussLightgbm(Model):
+
     def __init__(self, **params):
         super(GaussLightgbm, self).__init__(params["name"], params["model_path"], params["task_type"],
                                             params["train_flag"])
@@ -51,7 +53,6 @@ class GaussLightgbm(Model):
 
             self._check_bunch(dataset=dataset)
             self._check_bunch(dataset=val_dataset)
-
             train_data = [dataset.data.values, dataset.target.values]
             validation_set = [val_dataset.data.values, val_dataset.target.values]
 
@@ -104,6 +105,12 @@ class GaussLightgbm(Model):
     def preprocess(self):
         pass
 
+    def _train_preprocess(self):
+        pass
+
+    def _predict_process(self):
+        pass
+
     def eval(self, metrics: BaseMetric, **entity):
         # 默认生成的为预测值的概率值，传入metrics之后再处理.
         y_pred = self._lgb_model.predict(self.lgb_eval.get_data(), num_iteration=self._lgb_model.best_iteration)
@@ -133,16 +140,14 @@ class GaussLightgbm(Model):
 
     def model_save(self):
         assert self._lgb_model is not None
-
-        self._lgb_model.save_model(self._model_path + self.file_name)
+        try:
+            assert os.path.isdir(os.path.join(self._model_path, self.file_name))
+        except AssertionError:
+            mkdir(self._model_path)
+        self._lgb_model.save_model(os.path.join(self._model_path, self.file_name))
 
     def update_params(self, **params):
         self._model_param_dict.update(params)
 
     def set_weight(self):
         pass
-
-    @property
-    def need_data_clear(self):
-        assert isinstance(self._need_data_clear, bool)
-        return self._need_data_clear

@@ -10,7 +10,7 @@ from pipeline.preprocess_chain import PreprocessRoute
 
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 
-from utils.common_component import yaml_write, mkdir
+from utils.common_component import yaml_write
 
 
 # pipeline defined by user.
@@ -20,7 +20,6 @@ class UdfModelingTree(object):
                  work_root: str,
                  task_type: str,
                  metric_name: str,
-                 label_name: [],
                  train_data_path: str,
                  val_data_path: str = None,
                  target_names=None,
@@ -43,7 +42,6 @@ class UdfModelingTree(object):
         :param work_root:
         :param task_type:
         :param metric_name:
-        :param label_name:
         :param train_data_path:
         :param val_data_path:
         :param feature_configure_path:
@@ -57,8 +55,8 @@ class UdfModelingTree(object):
         :param unsupervised_feature_selector_flag:
         :param supervised_feature_selector:
         :param supervised_feature_selector_flag:
-        :param model_zoo:
-        :param auto_ml:
+        :param model_zoo: model name list
+        :param auto_ml: auto ml name
         """
 
         if model_zoo is None:
@@ -80,7 +78,6 @@ class UdfModelingTree(object):
         self.work_root = work_root
         self.task_type = task_type
         self.metric_name = metric_name
-        self.label_name = label_name
         self.train_data_path = train_data_path
         self.val_data_path = val_data_path
         self.target_names = target_names
@@ -113,7 +110,7 @@ class UdfModelingTree(object):
                   selector_config_path):
 
         work_root = self.work_root + "/" + folder_prefix_str
-        pipeline_configure_path = work_root + "/" + "pipeline.configure"
+        pipeline_configure_path = work_root + "/" + "pipeline/configure.yaml"
 
         pipeline_configure = {"data_clear_flag": data_clear_flag,
                               "feature_generator_flag": feature_generator_flag,
@@ -123,22 +120,15 @@ class UdfModelingTree(object):
         yaml_write(yaml_file=pipeline_configure_path, yaml_dict=pipeline_configure)
 
         work_feature_root = work_root + "/feature"
-        work_model_root = work_root + "/model"
-        model_save_root = work_model_root + "/model_save"
-        model_config_root = work_model_root + "/model_config_root"
-
-        mkdir(work_root)
-        mkdir(work_feature_root)
-        mkdir(work_model_root)
-        mkdir(model_save_root)
-        mkdir(model_config_root)
 
         feature_dict = {"user_feature": self.feature_configure_path,
-                        "type_inference_feature": work_feature_root + "/." + "type_inference_feature.yaml",
-                        "data_clear_feature": work_feature_root + "/." + "data_clear_feature.yaml",
-                        "feature_generator_feature": work_feature_root + "/." + "feature_generator_feature.yaml",
-                        "unsupervised_feature": work_feature_root + "/." + "unsupervised_feature.yaml",
-                        "supervised_feature": work_feature_root + "/." + "supervise_feature.yaml"}
+                        "type_inference_feature": work_feature_root + "/" + "type_inference_feature.yaml",
+                        "data_clear_feature": work_feature_root + "/" + "data_clear_feature.yaml",
+                        "feature_generator_feature": work_feature_root + "/" + "feature_generator_feature.yaml",
+                        "unsupervised_feature": work_feature_root + "/" + "unsupervised_feature.yaml",
+                        "supervised_feature": work_feature_root + "/" + "supervise_feature.yaml",
+                        "label_encoding_path": work_feature_root + "/" + "label_encoding_models",
+                        "impute_path": work_feature_root + "/" + "impute_models"}
 
         preprocess_chain = PreprocessRoute(name="PreprocessRoute",
                                            feature_path_dict=feature_dict,
@@ -183,19 +173,20 @@ class UdfModelingTree(object):
                                selector_config_path=selector_config_path)
 
         local_model = core_chain.run(**entity_dict)
-        local_metric = local_model.get_val_metric()
+        local_metric = local_model.val_metrics
+
         return local_model, local_metric, work_root, model_name
 
     # local_best_model, local_best_metric, local_best_work_root, local_best_model_name
     def update_best(self, *params):
-        if params[0] is None or self.compare(params[1], self.best_metric) < 0:
+        if self.best_metric is None or self.compare(params[1], self.best_metric) < 0:
             self.best_model = params[0]
             self.best_metric = params[1]
             self.best_result_root = params[2]
 
     @classmethod
     def compare(cls, local_best_metric, best_metric):
-        return best_metric - local_best_metric
+        return best_metric.result - local_best_metric.result
 
     @classmethod
     def check_data(cls, need_data_clear, model_name):
@@ -223,21 +214,20 @@ class UdfModelingTree(object):
     def run(self):
 
         for data_clear in self.data_clear_flag:
+
             for feature_generator in self.feature_generator_flag:
-
                 for unsupervised_feature_sel in self.unsupervised_feature_selector_flag:
-
                     for supervise_feature_sel in self.supervised_feature_selector_flag:
 
                         for model in self.model_zoo:
                             prefix = str(data_clear) + "_" + str(feature_generator) + "_" + str(
                                 unsupervised_feature_sel) + "_" + str(supervise_feature_sel)
 
-                            self.update_best(self.run_route(folder_prefix_str=prefix,
-                                                            data_clear_flag=data_clear,
-                                                            feature_generator_flag=feature_generator,
-                                                            unsupervised_feature_selector_flag=unsupervised_feature_sel,
-                                                            supervised_feature_selector_flag=supervise_feature_sel,
-                                                            model_name=[model],
-                                                            auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
-                                                            selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config"))
+                            self.update_best(*self.run_route(folder_prefix_str=prefix,
+                                                             data_clear_flag=data_clear,
+                                                             feature_generator_flag=feature_generator,
+                                                             unsupervised_feature_selector_flag=unsupervised_feature_sel,
+                                                             supervised_feature_selector_flag=supervise_feature_sel,
+                                                             model_name=model,
+                                                             auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
+                                                             selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config"))
