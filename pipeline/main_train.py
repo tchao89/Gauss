@@ -14,7 +14,7 @@ environ_configure = EnvironmentConfigure(work_root="/home/liangqian/PycharmProje
                                          user_feature="/home/liangqian/PycharmProjects/Gauss/test_dataset/feature_conf.yaml")
 
 pipeline_dict = Bunch()
-pipeline_dict.mode = "udf"
+pipeline_dict.mode = "auto"
 pipeline_dict.work_root = environ_configure.work_root
 pipeline_dict.task_type = "classification"
 pipeline_dict.metric_name = "auc"

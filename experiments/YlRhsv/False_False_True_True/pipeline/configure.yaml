@@ -1,4 +1,0 @@
-data_clear_flag: false
-feature_generator_flag: false
-supervised_feature_selector_flag: true
-unsupervised_feature_selector_flag: true

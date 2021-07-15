@@ -11,6 +11,7 @@ from pipeline.preprocess_chain import PreprocessRoute
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 
 from utils.common_component import yaml_write
+from pipeline.mapping import EnvironmentConfigure
 
 
 # pipeline defined by user.
@@ -115,20 +116,23 @@ class UdfModelingTree(object):
         pipeline_configure = {"data_clear_flag": data_clear_flag,
                               "feature_generator_flag": feature_generator_flag,
                               "unsupervised_feature_selector_flag": unsupervised_feature_selector_flag,
-                              "supervised_feature_selector_flag": supervised_feature_selector_flag}
+                              "supervised_feature_selector_flag": supervised_feature_selector_flag,
+                              "metric_name": self.metric_name,
+                              "task_type": self.task_type
+                              }
 
         yaml_write(yaml_file=pipeline_configure_path, yaml_dict=pipeline_configure)
 
         work_feature_root = work_root + "/feature"
 
         feature_dict = {"user_feature": self.feature_configure_path,
-                        "type_inference_feature": work_feature_root + "/" + "type_inference_feature.yaml",
-                        "data_clear_feature": work_feature_root + "/" + "data_clear_feature.yaml",
-                        "feature_generator_feature": work_feature_root + "/" + "feature_generator_feature.yaml",
-                        "unsupervised_feature": work_feature_root + "/" + "unsupervised_feature.yaml",
-                        "supervised_feature": work_feature_root + "/" + "supervise_feature.yaml",
-                        "label_encoding_path": work_feature_root + "/" + "label_encoding_models",
-                        "impute_path": work_feature_root + "/" + "impute_models"}
+                        "type_inference_feature": work_feature_root + "/" + EnvironmentConfigure.feature_dict().type_inference_feature,
+                        "data_clear_feature": work_feature_root + "/" + EnvironmentConfigure.feature_dict().data_clear_feature,
+                        "feature_generator_feature": work_feature_root + "/" + EnvironmentConfigure.feature_dict().feature_generator_feature,
+                        "unsupervised_feature": work_feature_root + "/" + EnvironmentConfigure.feature_dict().unsupervised_feature,
+                        "supervised_feature": work_feature_root + "/" + EnvironmentConfigure.feature_dict().supervised_feature,
+                        "label_encoding_path": work_feature_root + "/" + EnvironmentConfigure.feature_dict().label_encoding_path,
+                        "impute_path": work_feature_root + "/" + EnvironmentConfigure.feature_dict().impute_path}
 
         preprocess_chain = PreprocessRoute(name="PreprocessRoute",
                                            feature_path_dict=feature_dict,
@@ -231,3 +235,6 @@ class UdfModelingTree(object):
                                                              model_name=model,
                                                              auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
                                                              selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config"))
+
+        yaml_dict = {"best_root": self.best_result_root}
+        yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root+"/final_config.yaml")

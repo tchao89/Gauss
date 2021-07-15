@@ -9,9 +9,10 @@ import os
 
 from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
+from pipeline.mapping import EnvironmentConfigure
 
 from typing import List
-from utils.common_component import yaml_write, mkdir
+from utils.common_component import yaml_write
 from utils.bunch import Bunch
 
 
@@ -66,9 +67,11 @@ class AutoModelingTree(object):
                   model_zoo: List[str]):
 
         work_root = self.work_root + "/" + folder_prefix_str
-        pipeline_configure_path = work_root + "/" + "pipeline/configure"
+        pipeline_configure_path = work_root + "/" + "pipeline/configure.yaml"
         pipeline_configure = {"data_clear_flag": data_clear_flag,
                               "feature_generator_flag": feature_generator_flag,
+                              "unsupervised_feature_generator_flag": unsupervised_feature_generator_flag,
+                              "supervised_feature_selector_flag": supervised_feature_selector_flag,
                               "metric_name": self.metric_name,
                               "task_type": self.task_type}
 
@@ -79,14 +82,15 @@ class AutoModelingTree(object):
 
         work_feature_root = work_root + "/feature"
         feature_dict = Bunch()
+
         feature_dict.user_feature = self.feature_configure_path
-        feature_dict.type_inference_feature = os.path.join(work_feature_root, "type_inference_feature.yaml")
-        feature_dict.data_clear_feature = os.path.join(work_feature_root, "data_clear_feature.yaml")
-        feature_dict.data_clear_configure_path = os.path.join(work_feature_root, "impute_models")
-        feature_dict.feature_generator_feature = os.path.join(work_feature_root, "feature_generator_feature.yaml")
-        feature_dict.unsupervised_feature = os.path.join(work_feature_root, "unsupervised_feature.yaml")
-        feature_dict.label_encoding_path = os.path.join(work_feature_root, "label_encoding_models")
-        feature_dict.supervised_feature = os.path.join(work_feature_root, "target_feature_feature.yaml")
+        feature_dict.type_inference_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().type_inference_feature)
+        feature_dict.data_clear_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().data_clear_feature)
+        feature_dict.feature_generator_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().feature_generator_feature)
+        feature_dict.unsupervised_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().unsupervised_feature)
+        feature_dict.label_encoding_path = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().label_encoding_path)
+        feature_dict.impute_path = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().impute_path)
+        feature_dict.supervised_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().supervised_feature)
 
         preprocess_chain = PreprocessRoute(name="PreprocessRoute",
                                            feature_path_dict=feature_dict,
@@ -176,3 +180,6 @@ class AutoModelingTree(object):
 
         self.update_best(
             *self.run_route("no-clear_no-feagen_no-feasel", True, True, True, True, ["lightgbm"]))
+
+        yaml_dict = {"best_root": self.best_result_root}
+        yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root+"/final_config.yaml")

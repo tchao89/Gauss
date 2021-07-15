@@ -1,0 +1,17 @@
+auto_ml: auto_ml
+best_root: /home/liangqian/PycharmProjects/Gauss/experiments/79Uvzp/clear_feagen_supfeasel_no-supfeasel
+data_clear: plaindataclear
+data_clear_flag: true
+dataset_name: plaindataset
+feature_generator: featuretools
+feature_generator_flag: true
+metric_name: auc
+out_put_path: /home/liangqian/PycharmProjects/Gauss/experiments/79Uvzp
+supervised_feature_selector: supervised
+supervised_feature_selector_flag: false
+task_type: classification
+test_data_path: /home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical_predict.csv
+type_inference: typeinference
+unsupervised_feature_generator_flag: true
+unsupervised_feature_selector: unsupervised
+work_root: /home/liangqian/PycharmProjects/Gauss/experiments/79Uvzp

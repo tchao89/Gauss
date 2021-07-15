@@ -138,10 +138,15 @@ class GaussLightgbm(Model):
     def val_metrics(self):
         return self._val_metrics
 
-    def model_save(self):
+    def model_save(self, model_path=None):
+        if model_path is not None:
+            self._model_path = model_path
+
+        assert self._model_path is not None
         assert self._lgb_model is not None
+
         try:
-            assert os.path.isdir(os.path.join(self._model_path, self.file_name))
+            assert os.path.isdir(self._model_path)
         except AssertionError:
             mkdir(self._model_path)
         self._lgb_model.save_model(os.path.join(self._model_path, self.file_name))

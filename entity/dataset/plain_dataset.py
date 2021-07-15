@@ -10,7 +10,6 @@ import csv
 import pandas as pd
 import numpy as np
 from sklearn.datasets import load_svmlight_file
-from sklearn.utils import shuffle
 
 from utils.bunch import Bunch
 from entity.dataset.base_dataset import BaseDataset
@@ -115,11 +114,6 @@ class PlaintextDataset(BaseDataset):
             finally:
                 logger.info(".csv file has been converted to Bunch object.")
 
-            try:
-                self.shuffle_data(data, target)
-            except TypeError:
-                logger.info("CSV file is not read correctly.")
-
             self._bunch = Bunch(data=data,
                                 target=target,
                                 target_names=target_name,
@@ -129,7 +123,6 @@ class PlaintextDataset(BaseDataset):
             data, target = self.load_libsvm()
             _, data, target = self._convert_data_dataframe(data=data,
                                                            target=target)
-            self.shuffle_data(data, target)
             self._bunch = Bunch(
                 data=data,
                 target=target
@@ -139,7 +132,6 @@ class PlaintextDataset(BaseDataset):
             data, target = self.load_txt()
             _, data, target = self._convert_data_dataframe(data=data,
                                                            target=target)
-            self.shuffle_data(data, target)
             self._bunch = Bunch(
                 data=data,
                 target=target
@@ -264,10 +256,6 @@ class PlaintextDataset(BaseDataset):
         combined_df = pd.concat([data_df, target_df], axis=1)
 
         return combined_df, data_df, target_df
-
-    @classmethod
-    def shuffle_data(cls, data, target):
-        return shuffle(data, target)
 
     def feature_choose(self, feature_list):
         try:
