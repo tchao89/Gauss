@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import os.path
 
-import numpy
+import numpy as np
+import pandas as pd
 import lightgbm as lgb
 
 from entity.model.model import Model
@@ -95,11 +96,12 @@ class GaussLightgbm(Model):
         assert self._train_flag is False
 
         self.lgb_test = self.load_data(dataset=test_dataset)
+        assert os.path.isfile(self._model_path + "/" + self.file_name)
 
-        assert os.path.isfile(self._model_path + self.file_name)
-        self._lgb_model = lgb.Booster(model_file=self._model_path + self.file_name)
+        self._lgb_model = lgb.Booster(model_file=self._model_path + "/" + self.file_name)
 
         inference_result = self._lgb_model.predict(self.lgb_test)
+        inference_result = pd.DataFrame({"result": inference_result})
         return inference_result
 
     def preprocess(self):
@@ -115,8 +117,8 @@ class GaussLightgbm(Model):
         # 默认生成的为预测值的概率值，传入metrics之后再处理.
         y_pred = self._lgb_model.predict(self.lgb_eval.get_data(), num_iteration=self._lgb_model.best_iteration)
 
-        assert isinstance(y_pred, numpy.ndarray)
-        assert isinstance(self.lgb_eval.get_label(), numpy.ndarray)
+        assert isinstance(y_pred, np.ndarray)
+        assert isinstance(self.lgb_eval.get_label(), np.ndarray)
 
         metrics.evaluate(predict=y_pred, labels_map=self.lgb_eval.get_label())
         metrics = metrics.metrics_result

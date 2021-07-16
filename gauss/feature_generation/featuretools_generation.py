@@ -50,7 +50,7 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         self.final_configure_generation(dataset=dataset)
 
     def _predict_run(self, **entity):
-        feature_tools_generation_conf = yaml_read(self._feature_configure_path)
+        feature_tools_generation_conf = yaml_read(self._final_file_path)
         assert "featuretools_generation" in feature_tools_generation_conf.keys()
 
         if feature_tools_generation_conf["featuretools_generation"] is True:
@@ -129,10 +129,12 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
             data = self.clean_dataset(data)
 
             target = data.iloc[:, -1]
-
-            dataset.get_dataset().data = data.drop(dataset.get_dataset().target_names, axis=1)
+            if dataset.get_dataset().get("target_names"):
+                dataset.get_dataset().data = data.drop(dataset.get_dataset().target_names, axis=1)
+                dataset.get_dataset().target = target
+            else:
+                dataset.get_dataset().data = data
             dataset.get_dataset().generated_feature_names = feature_names
-            dataset.get_dataset().target = target
 
     def _label_encoding(self, dataset: BaseDataset):
         feature_names = dataset.get_dataset().feature_names

@@ -73,6 +73,7 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
 
         assert "unsupervised_feature_selector" in conf.keys()
         if conf["unsupervised_feature_selector"] is True:
+            conf.pop("unsupervised_feature_selector")
             generated_feature_names = list(conf.keys())
             dataset.get_dataset().data = dataset.get_dataset().data[generated_feature_names]
             dataset.get_dataset().generated_feature_names = dataset.get_dataset().generated_feature_names

@@ -6,7 +6,7 @@ import re
 import copy
 
 from utils.Logger import logger
-from utils.common_component import yaml_write
+from utils.common_component import yaml_write, yaml_read
 
 import numpy as np
 import pandas as pd
@@ -71,10 +71,7 @@ class TypeInference(BaseTypeInference):
     def _predict_run(self, **entity):
         # just detect error in test dataset.
         assert "dataset" in entity.keys()
-        conf_file = open(self._final_file_path, 'r', encoding='utf-8')
-        conf = conf_file.read()
-        conf = yaml.load(conf, Loader=yaml.FullLoader)
-        conf_file.close()
+        conf = yaml_read(yaml_file=self._final_file_path)
 
         for col in entity["dataset"].get_dataset().data.columns:
             assert col in list(conf)

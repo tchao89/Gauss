@@ -99,6 +99,7 @@ class UdfModelingTree(object):
         self.best_model = None
         self.best_metric = None
         self.best_result_root = None
+        self.best_model_name = None
 
     def run_route(self,
                   folder_prefix_str,
@@ -187,6 +188,7 @@ class UdfModelingTree(object):
             self.best_model = params[0]
             self.best_metric = params[1]
             self.best_result_root = params[2]
+            self.best_model_name = params[3]
 
     @classmethod
     def compare(cls, local_best_metric, best_metric):
@@ -236,5 +238,16 @@ class UdfModelingTree(object):
                                                              auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
                                                              selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config"))
 
-        yaml_dict = {"best_root": self.best_result_root}
+        yaml_dict = {"best_root": self.best_result_root,
+                     "best_model_name": self.best_model_name,
+                     "work_root": self.work_root,
+                     "task_type": self.task_type,
+                     "metric_name": self.metric_name,
+                     "dataset_name": self.dataset_type,
+                     "type_inference": self.type_inference,
+                     "data_clear": self.data_clear,
+                     "feature_generator": self.feature_generator,
+                     "unsupervised_feature_selector": self.unsupervised_feature_selector,
+                     "supervised_feature_selector": self.supervised_feature_selector,
+                     "auto_ml": self.auto_ml}
         yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root+"/final_config.yaml")

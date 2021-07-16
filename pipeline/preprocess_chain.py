@@ -147,6 +147,7 @@ class PreprocessRoute(Component):
         dataset_params = Bunch(name="test", task_type=self._task_type, data_pair=None,
                                data_path=self._train_data_path,
                                target_name=self._target_names, memory_only=True)
+
         train_dataset = self.create_entity(entity_name="plaindataset", **dataset_params)
 
         if self._val_data_path is not None:

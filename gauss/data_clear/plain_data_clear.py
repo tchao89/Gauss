@@ -54,7 +54,7 @@ class PlainDataClear(BaseDataClear):
         self._data_clear_serialize()
 
     def _predict_run(self, **entity):
-        data_clear_conf = yaml_read(self._feature_configure_path)
+        data_clear_conf = yaml_read(self._final_file_path)
         assert "plain_data_clear" in data_clear_conf.keys()
 
         if data_clear_conf["plain_data_clear"] is True:

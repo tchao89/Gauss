@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import os.path
+
 import pandas as pd
 
 from pipeline.core_chain import CoreRoute
@@ -25,8 +27,8 @@ class Inference(object):
         self.root_conf = self.work_root + "/" + "inference_config.yaml"
 
         self.conf = Bunch(**yaml_read(self.root_conf))
-        print(self.conf)
 
+        self.best_root = self.conf.best_root
         self.task_type = self.conf.task_type
         self.metric_name = self.conf.metric_name
         self.test_data_path = self.conf.test_data_path
@@ -46,15 +48,20 @@ class Inference(object):
         self.out_put_path = out_put_path
 
     def output_result(self, predict_result: pd.DataFrame):
-        predict_result.to_csv(self.out_put_path)
+        assert isinstance(predict_result, pd.DataFrame)
+        predict_result.to_csv(os.path.join(self.out_put_path, "result.txt"))
 
     def run(self):
-        work_feature_root = self.work_root + "/feature"
+        work_feature_root = self.best_root + "/feature"
         feature_dict = {"user_feature": "null",
-                        "type_inference_feature": work_feature_root + "/" + "type_inference_feature",
-                        "feature_generator_feature": work_feature_root + "/" + "feature_generate",
-                        "unsupervised_feature": work_feature_root + "/" + "unsupervised_feature_selector",
-                        "supervised_feature": work_feature_root + "/" + "supervise_feature_selector"}
+                        "type_inference_feature": work_feature_root + "/" + "type_inference_feature.yaml",
+                        "feature_generator_feature": work_feature_root + "/" + "feature_generator_feature.yaml",
+                        "unsupervised_feature": work_feature_root + "/" + "unsupervised_feature.yaml",
+                        "supervised_feature": work_feature_root + "/" + "supervised_feature.yaml",
+                        "data_clear_feature": work_feature_root + "/" + "data_clear_feature.yaml",
+                        "label_encoding_path": work_feature_root + "/" + "label_encoding_models",
+                        "impute_path": work_feature_root + "/" + "impute_models"
+                        }
 
         preprocess_chain = PreprocessRoute(name="PreprocessRoute",
                                            feature_path_dict=feature_dict,
@@ -75,19 +82,23 @@ class Inference(object):
         entity_dict = preprocess_chain.run()
 
         assert "dataset" in entity_dict
-        work_model_root = self.work_root + "/model/" + self.conf.model + "/"
+        work_model_root = self.best_root + "/model/" + self.conf.best_model_name
         model_save_root = work_model_root + "/model_save"
         model_config_root = work_model_root + "/model_config"
-        model_conf = yaml_read(model_config_root)
+
+        ################################################
+        if os.path.isfile(model_config_root):
+            model_conf = yaml_read(model_config_root)
+        ################################################
 
         core_chain = CoreRoute(name="core_route",
                                train_flag=False,
                                model_save_root=model_save_root,
                                target_feature_configure_path=feature_dict["supervised_feature"],
                                pre_feature_configure_path=feature_dict["unsupervised_feature"],
-                               model_name=model_conf.model_name,
-                               label_encoding_path=self.conf.label_encoding_path,
-                               model_type=model_conf.model_type,
+                               model_name=self.conf.best_model_name,
+                               label_encoding_path=self.best_root + "/feature/label_encoding_models",
+                               model_type="tree_model",
                                metrics_name=self.metric_name,
                                task_type=self.task_type,
                                feature_selector_name=self.supervised_feature_selector_name,

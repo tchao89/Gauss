@@ -141,15 +141,20 @@ class PlaintextDataset(BaseDataset):
         return self._bunch
 
     def load_mixed_csv(self):
+        target = None
+        target_name = None
+
         data = pd.read_csv(self._data_path)
-        target = data[self._target_name]
-        data = data.drop(self._target_name, axis=1)
 
         feature_names = data.columns
-        target_name = self._target_name
-
         self._row_size = data.shape[0]
-        self._column_size = data.shape[1] + target.shape[1]
+
+        if self._target_name is not None:
+            target = data[self._target_name]
+            data = data.drop(self._target_name, axis=1)
+            feature_names = data.columns
+            target_name = self._target_name
+            self._column_size = data.shape[1] + target.shape[1]
 
         return data, target, feature_names, target_name
 
