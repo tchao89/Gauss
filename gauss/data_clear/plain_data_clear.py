@@ -45,11 +45,16 @@ class PlainDataClear(BaseDataClear):
         self.default_num_impute_model = SimpleImputer(missing_values=self.missing_values, strategy="mean")
 
         self.impute_models = {}
+        self._need_data_clear = None
 
     def _train_run(self, **entity):
         if self._enable:
+            self._need_data_clear = True
             assert "dataset" in entity.keys()
             self._clean(dataset=entity["dataset"])
+        else:
+            self._need_data_clear = False
+
         self.final_configure_generation()
         self._data_clear_serialize()
 
@@ -70,7 +75,9 @@ class PlainDataClear(BaseDataClear):
 
             for col in feature_names:
                 if dc_model_list.get(col):
-                    data[col] = dc_model_list.get(col).transform(data[col])
+                    item_data = data[col].values.reshape(-1, 1)
+                    item_data = dc_model_list.get(col).transform(item_data)
+                    data[col] = item_data.reshape(1, -1).squeeze(axis=0)
 
     def _clean(self, dataset: BaseDataset):
         data = dataset.get_dataset().data
@@ -131,3 +138,7 @@ class PlainDataClear(BaseDataClear):
 
         with open(self._final_file_path, "w", encoding="utf-8") as yaml_file:
             yaml.dump(feature_conf, yaml_file)
+
+    @property
+    def need_data_clear(self):
+        return self._need_data_clear

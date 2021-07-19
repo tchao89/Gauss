@@ -53,7 +53,7 @@ class AutoModelingTree(object):
         self.unsupervised_feature_selector = unsupervised_feature_selector
         self.supervised_feature_selector = supervised_feature_selector
         self.auto_ml = auto_ml
-        self.need_data_clear = False
+        self.need_data_clear = None
         self.best_model = None
         self.best_metric = None
         self.best_result_root = None
@@ -71,7 +71,7 @@ class AutoModelingTree(object):
         pipeline_configure_path = work_root + "/" + "pipeline/configure.yaml"
         pipeline_configure = {"data_clear_flag": data_clear_flag,
                               "feature_generator_flag": feature_generator_flag,
-                              "unsupervised_feature_generator_flag": unsupervised_feature_generator_flag,
+                              "unsupervised_feature_selector_flag": unsupervised_feature_generator_flag,
                               "supervised_feature_selector_flag": supervised_feature_selector_flag,
                               "metric_name": self.metric_name,
                               "task_type": self.task_type}
@@ -112,16 +112,22 @@ class AutoModelingTree(object):
 
         entity_dict = preprocess_chain.run()
         self.need_data_clear = preprocess_chain.need_data_clear
+
         assert "dataset" in entity_dict and "val_dataset" in entity_dict
 
         best_model = None
         best_metric = None
-        model_name = None
+        best_model_name = None
 
         for model in model_zoo:
             work_model_root = work_root + "/model/" + model + "/"
             model_save_root = work_model_root + "model_save"
             # model_config_root = work_model_root + "/model_config"
+            if self.check_data(need_data_clear=self.need_data_clear, model_name=model) is not True:
+                print(self.check_data(need_data_clear=self.need_data_clear, model_name=model))
+                print("111111111111111")
+                print(model)
+                continue
 
             core_chain = CoreRoute(name="core_route",
                                    train_flag=True,
@@ -144,19 +150,31 @@ class AutoModelingTree(object):
 
             if best_model is None:
                 best_model = local_model
-            if self.best_metric is None:
+            if best_metric is None:
                 best_metric = local_metric
+            if best_model_name is None:
+                best_model_name = model
 
             if best_metric is None or (self.compare(local_metric, best_metric)) < 0:
                 best_model = local_model
                 best_metric = local_metric
-                model_name = model_name
+                best_model_name = model
 
-        return best_model, best_metric, work_root, model_name
+        return best_model, best_metric, work_root, best_model_name
 
     @classmethod
     def compare(cls, local_best_metric, best_metric):
         return best_metric.result - local_best_metric.result
+
+    @classmethod
+    def check_data(cls, need_data_clear, model_name):
+        assert isinstance(need_data_clear, bool)
+        assert isinstance(model_name, str)
+
+        if not need_data_clear:
+            if model_name not in ["lightgbm", "xgboost", "catboost"]:
+                return False
+        return True
 
     # local_best_model, local_best_metric, local_best_work_root, local_best_model_name
     def update_best(self, *params):
@@ -167,7 +185,7 @@ class AutoModelingTree(object):
             self.best_model_name = params[3]
 
     def run(self):
-        best_model, best_metric, work_root, model_name = self.run_route(
+        local_result = self.run_route(
             folder_prefix_str="no-clear_no-feagen_no-unsupfeasel_no-supfeasel",
             data_clear_flag=False,
             feature_generator_flag=True,
@@ -175,13 +193,12 @@ class AutoModelingTree(object):
             supervised_feature_selector_flag=False,
             model_zoo=["lightgbm"])
 
-        self.update_best(*(best_model, best_metric, work_root, model_name))
+        if local_result is not None:
+            self.update_best(*local_result)
 
-        self.update_best(
-            *self.run_route("clear_feagen_supfeasel_no-supfeasel", True, True, True, False, ["lightgbm"]))
-
-        self.update_best(
-            *self.run_route("no-clear_no-feagen_no-feasel", True, True, True, True, ["lightgbm"]))
+        local_result = self.run_route("clear_feagen_supfeasel_no-supfeasel", True, True, True, False, ["lightgbm"])
+        if local_result is not None:
+            self.update_best(*local_result)
 
         yaml_dict = {"best_root": self.best_result_root,
                      "best_model_name": self.best_model_name,

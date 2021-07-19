@@ -36,6 +36,8 @@ class GaussLightgbm(Model):
         self.lgb_eval = None
         self.lgb_test = None
 
+        self._model_param_dict = {}
+
     def __repr__(self):
         pass
 
@@ -54,6 +56,7 @@ class GaussLightgbm(Model):
 
             self._check_bunch(dataset=dataset)
             self._check_bunch(dataset=val_dataset)
+
             train_data = [dataset.data.values, dataset.target.values]
             validation_set = [val_dataset.data.values, val_dataset.target.values]
 
@@ -79,7 +82,6 @@ class GaussLightgbm(Model):
         assert self._train_flag is True
 
         self.lgb_train, self.lgb_eval = self.load_data(dataset=dataset, val_dataset=val_dataset)
-
         if self._model_param_dict is not None:
             params = self._model_param_dict
             self._lgb_model = lgb.train(params,
@@ -87,7 +89,7 @@ class GaussLightgbm(Model):
                                         num_boost_round=200,
                                         valid_sets=self.lgb_eval,
                                         early_stopping_rounds=2,
-                                        verbose_eval=0)
+                                        verbose_eval=True)
 
         else:
             raise ValueError("Model parameters is None.")
@@ -121,11 +123,10 @@ class GaussLightgbm(Model):
         assert isinstance(self.lgb_eval.get_label(), np.ndarray)
 
         metrics.evaluate(predict=y_pred, labels_map=self.lgb_eval.get_label())
-        metrics = metrics.metrics_result
+        metrics_result = metrics.metrics_result
         assert isinstance(metrics, MetricResult)
-        self._val_metrics = metrics
-
-        return metrics
+        self._val_metrics = metrics_result
+        return metrics_result
 
     def get_train_loss(self):
         pass

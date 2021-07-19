@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
+import pandas as pd
 from sklearn.metrics import roc_auc_score
 
 from entity.metrics.base_metric import BaseMetric
@@ -33,15 +34,15 @@ class AUC(BaseMetric):
         self._label_name = label_name
 
     def evaluate(self, predict, labels_map):
-        if len(labels_map.shape) > 1:
-            label = labels_map.loc[:, [self._label_name]]
-        else:
-            label = labels_map
-
-        if np.sum(label) == 0 or np.sum(label) == label.size:
+        """
+        :param predict: np.ndarray object, (n_sample)
+        :param labels_map: np.ndarray object, (n_samples)
+        :return: MetricResult object
+        """
+        if np.sum(labels_map) == 0 or np.sum(labels_map) == labels_map.shape[0]:
             self._metrics_result = MetricResult(name=self.name, result=float('nan'))
         else:
-            auc = roc_auc_score(y_true=label, y_score=predict)
+            auc = roc_auc_score(y_true=labels_map, y_score=predict)
             self._metrics_result = MetricResult(name=self.name, result=auc, meta={'#': predict.size})
 
         return self._metrics_result

@@ -76,7 +76,7 @@ class PreprocessRoute(Component):
         self._data_clear_flag = data_clear_flag
         self._feature_generator_flag = feature_generator_flag
         self._feature_selector_flag = feature_selector_flag
-        self._need_data_clear = False
+        self._need_data_clear = None
 
         self._val_data_path = val_data_path
         self._train_data_path = train_data_path
@@ -162,6 +162,7 @@ class PreprocessRoute(Component):
         self.type_inference.run(**entity_dict)
         # 数据清洗
         self.data_clear.run(**entity_dict)
+        self._need_data_clear = self.data_clear.need_data_clear
         # 特征生成
         self.feature_generator.run(**entity_dict)
         # 无监督特征选择

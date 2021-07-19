@@ -87,10 +87,12 @@ class TabularAutoML(BaseAutoML):
 
             for trial in range(self.trial_num):
                 if self._default_parameters is not None:
-                    params = self._default_parameters
+                    model = entity["model"]
+                    params = self._default_parameters.get(model.name)
+                    assert params is not None
+
                     receive_params = tuner.generate_parameters(trial)
                     params.update(receive_params)
-                    model = entity["model"]
                     model.update_params(**params)
                     model.train(**entity)
 
@@ -123,6 +125,7 @@ class TabularAutoML(BaseAutoML):
     def set_default_params(self):
         default_params_path = os.path.join(self._auto_ml_path, "default_parameters.json")
         with open(default_params_path, 'r') as json_file:
+            print(default_params_path)
             self._default_parameters = json.load(json_file)
 
     @property

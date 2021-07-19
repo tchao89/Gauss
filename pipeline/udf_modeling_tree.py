@@ -95,7 +95,7 @@ class UdfModelingTree(object):
         self.supervised_feature_selector_flag = supervised_feature_selector_flag
         self.model_zoo = model_zoo
         self.auto_ml = auto_ml
-        self.need_data_clear = False
+        self.need_data_clear = None
         self.best_model = None
         self.best_metric = None
         self.best_result_root = None
@@ -154,7 +154,9 @@ class UdfModelingTree(object):
         entity_dict = preprocess_chain.run()
         self.need_data_clear = preprocess_chain.need_data_clear
 
-        self.check_data(need_data_clear=self.need_data_clear, model_name=model_name)
+        # 如果未进行数据清洗, 并且模型需要数据清洗, 则返回None.
+        if self.check_data(need_data_clear=self.need_data_clear, model_name=model_name) is not True:
+            return None
 
         assert "dataset" in entity_dict and "val_dataset" in entity_dict
         work_model_root = work_root + "/model/" + model_name + "/"
@@ -199,9 +201,10 @@ class UdfModelingTree(object):
         assert isinstance(need_data_clear, bool)
         assert isinstance(model_name, str)
 
-        if not need_data_clear:
+        if need_data_clear is not True:
             if model_name not in ["lightgbm", "xgboost", "catboost"]:
-                raise ValueError("This model need data clear algorithms.")
+                return False
+        return True
 
     @classmethod
     def create_component(cls, component_name: str, **params):
@@ -228,15 +231,17 @@ class UdfModelingTree(object):
                         for model in self.model_zoo:
                             prefix = str(data_clear) + "_" + str(feature_generator) + "_" + str(
                                 unsupervised_feature_sel) + "_" + str(supervise_feature_sel)
+                            local_result = self.run_route(folder_prefix_str=prefix,
+                                                          data_clear_flag=data_clear,
+                                                          feature_generator_flag=feature_generator,
+                                                          unsupervised_feature_selector_flag=unsupervised_feature_sel,
+                                                          supervised_feature_selector_flag=supervise_feature_sel,
+                                                          model_name=model,
+                                                          auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
+                                                          selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config")
 
-                            self.update_best(*self.run_route(folder_prefix_str=prefix,
-                                                             data_clear_flag=data_clear,
-                                                             feature_generator_flag=feature_generator,
-                                                             unsupervised_feature_selector_flag=unsupervised_feature_sel,
-                                                             supervised_feature_selector_flag=supervise_feature_sel,
-                                                             model_name=model,
-                                                             auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
-                                                             selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config"))
+                            if local_result is not None:
+                                self.update_best(*local_result)
 
         yaml_dict = {"best_root": self.best_result_root,
                      "best_model_name": self.best_model_name,
@@ -250,4 +255,4 @@ class UdfModelingTree(object):
                      "unsupervised_feature_selector": self.unsupervised_feature_selector,
                      "supervised_feature_selector": self.supervised_feature_selector,
                      "auto_ml": self.auto_ml}
-        yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root+"/final_config.yaml")
+        yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/final_config.yaml")
