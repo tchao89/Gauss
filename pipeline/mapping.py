@@ -30,5 +30,6 @@ class EnvironmentConfigure(object):
         feature_dict.supervised_feature = "supervised_feature.yaml"
         feature_dict.label_encoding_path = "label_encoding_models"
         feature_dict.impute_path = "impute_models"
+        feature_dict.final_feature_config = "final_feature_config.yaml"
 
         return feature_dict

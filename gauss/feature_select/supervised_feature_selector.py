@@ -6,8 +6,6 @@ import os
 import json
 from typing import List
 
-import yaml
-
 from entity.dataset.base_dataset import BaseDataset
 from entity.dataset.plain_dataset import PlaintextDataset
 from gauss.feature_select.base_feature_selector import BaseFeatureSelector
@@ -17,7 +15,9 @@ from core.nni.algorithms.feature_engineering.gradient_selector import FeatureGra
 from core.nni.algorithms.feature_engineering.gbdt_selector import GBDTSelector
 from core.nni.algorithms.hpo.evolution_tuner import EvolutionTuner
 from gauss_factory.entity_factory import MetricsFactory, ModelFactory
+
 from utils.bunch import Bunch
+from utils.common_component import yaml_read, yaml_write, feature_list_generator
 
 
 class SupervisedFeatureSelector(BaseFeatureSelector):
@@ -123,8 +123,11 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         :param entity: input dataset, metrics
         :return:
         """
+        assert "dataset" in entity.keys()
+        assert "val_dataset" in entity.keys()
 
-        dataset = entity["dataset"]
+        original_dataset = entity["dataset"]
+        original_val_dataset = entity["val_dataset"]
 
         self.set_default_params()
         self.set_search_space()
@@ -187,18 +190,22 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
                     params["lgb_params"] = lgb_params_dict
 
-                feature_list = self.choose_selector(selector_name=model_name, dataset=dataset, params=params)
+                feature_list = self.choose_selector(selector_name=model_name, dataset=original_dataset, params=params)
                 # 将data和target包装成为PlainDataset对象
-                data = dataset.feature_choose(feature_list)
+                data = original_dataset.feature_choose(feature_list)
                 choose_feature_names = list(data.columns)
 
-                target = dataset.get_dataset().target
+                target = original_dataset.get_dataset().target
 
-                data_pair = Bunch(data=data, target=target, target_names=dataset.get_dataset().target_names)
-                train_dataset = PlaintextDataset(name="train_data", task_type=self._train_flag, data_pair=data_pair)
+                data_pair = Bunch(data=data, target=target, target_names=original_dataset.get_dataset().target_names)
+                train_dataset = PlaintextDataset(name="train_data", task_type=self._task_name, data_pair=data_pair)
 
-                val_dataset = train_dataset.split()
-                metrics.label_name = dataset.get_dataset().target_names[0]
+                val_data = original_val_dataset.feature_choose(feature_list)
+                val_target = original_val_dataset.get_dataset().target
+                val_data_pair = Bunch(data=val_data, target=val_target, target_names=original_dataset.get_dataset().target_names)
+                val_dataset = PlaintextDataset(name="val_dataset", task_type=self._task_name, data_pair=val_data_pair)
+
+                metrics.label_name = original_dataset.get_dataset().target_names[0]
 
                 model_params = Bunch(name=self._model_name,
                                      model_path=self._model_save_path,
@@ -207,6 +214,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
                 model_factory = ModelFactory()
                 model = model_factory.get_entity(entity_name=self._model_name, **model_params)
+
                 # 返回训练好的最佳模型
                 model_tuner.run(model=model, dataset=train_dataset, val_dataset=val_dataset, metrics=metrics)
                 new_metrics = metrics.metrics_result.result
@@ -231,6 +239,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
             best_model.model_save()
             # save features
             self.final_configure_generation()
+
             return best_model
 
     def _predict_run(self, **entity):
@@ -241,28 +250,30 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         assert self._model_save_path
         assert self._final_file_path
 
-        with open(self._final_file_path, "r", encoding="utf-8") as yaml_file:
-            features = yaml.load(yaml_file, Loader=yaml.FullLoader)
-            features = features["features"]
-
         model_params = Bunch(name=self._model_name,
                              model_path=self._model_save_path,
                              train_flag=self._train_flag,
                              task_type=self._task_name)
         model_factory = ModelFactory()
         model = model_factory.get_entity(entity_name=self._model_name, **model_params)
+
+        feature_conf = yaml_read(self._final_file_path)
+        features = feature_list_generator(feature_dict=feature_conf)
         data = dataset.feature_choose(features)
 
-        data_pair = Bunch(data=data, target=None, target_names=dataset.get_dataset().target_names)
+        data_pair = Bunch(data=data, target=None, target_names=None)
         dataset = PlaintextDataset(name="train_data", task_type=self._train_flag, data_pair=data_pair)
 
         return model.predict(dataset)
 
     def final_configure_generation(self):
-        yaml_dict = {"features": self._final_feature_names,
-                     "model": self._model_name}
-        with open(self._final_file_path, "w", encoding="utf-8") as yaml_file:
-            yaml.dump(yaml_dict, yaml_file)
+
+        feature_conf = yaml_read(yaml_file=self._feature_configure_path)
+        for item in feature_conf.keys():
+            if item not in self._final_feature_names:
+                feature_conf[item]["used"] = False
+
+        yaml_write(yaml_file=self._final_file_path, yaml_dict=feature_conf)
 
     @property
     def search_space(self):

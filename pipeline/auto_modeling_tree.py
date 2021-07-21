@@ -92,6 +92,7 @@ class AutoModelingTree(object):
         feature_dict.label_encoding_path = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().label_encoding_path)
         feature_dict.impute_path = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().impute_path)
         feature_dict.supervised_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().supervised_feature)
+        feature_dict.final_feature_config = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().final_feature_config)
 
         preprocess_chain = PreprocessRoute(name="PreprocessRoute",
                                            feature_path_dict=feature_dict,
@@ -123,17 +124,15 @@ class AutoModelingTree(object):
             work_model_root = work_root + "/model/" + model + "/"
             model_save_root = work_model_root + "model_save"
             # model_config_root = work_model_root + "/model_config"
+
             if self.check_data(need_data_clear=self.need_data_clear, model_name=model) is not True:
-                print(self.check_data(need_data_clear=self.need_data_clear, model_name=model))
-                print("111111111111111")
-                print(model)
                 continue
 
             core_chain = CoreRoute(name="core_route",
                                    train_flag=True,
                                    model_name=model,
                                    model_save_root=model_save_root,
-                                   target_feature_configure_path=feature_dict.supervised_feature,
+                                   target_feature_configure_path=feature_dict.final_feature_config,
                                    pre_feature_configure_path=feature_dict.unsupervised_feature,
                                    label_encoding_path=feature_dict.label_encoding_path,
                                    model_type="tree_model",

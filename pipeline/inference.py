@@ -12,7 +12,7 @@ import pandas as pd
 from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
 
-from utils.common_component import yaml_read
+from utils.common_component import yaml_read, feature_list_generator
 from utils.bunch import Bunch
 
 
@@ -60,7 +60,8 @@ class Inference(object):
                         "supervised_feature": work_feature_root + "/" + "supervised_feature.yaml",
                         "data_clear_feature": work_feature_root + "/" + "data_clear_feature.yaml",
                         "label_encoding_path": work_feature_root + "/" + "label_encoding_models",
-                        "impute_path": work_feature_root + "/" + "impute_models"
+                        "impute_path": work_feature_root + "/" + "impute_models",
+                        "final_feature_config": work_feature_root + "/" + "final_feature_config.yaml"
                         }
 
         preprocess_chain = PreprocessRoute(name="PreprocessRoute",
@@ -94,8 +95,8 @@ class Inference(object):
         core_chain = CoreRoute(name="core_route",
                                train_flag=False,
                                model_save_root=model_save_root,
-                               target_feature_configure_path=feature_dict["supervised_feature"],
-                               pre_feature_configure_path=feature_dict["unsupervised_feature"],
+                               target_feature_configure_path=feature_dict["final_feature_config"],
+                               pre_feature_configure_path=None,
                                model_name=self.conf.best_model_name,
                                label_encoding_path=self.best_root + "/feature/label_encoding_models",
                                model_type="tree_model",

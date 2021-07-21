@@ -13,16 +13,16 @@ import os.path
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
+from lightgbm.callback import final_metrics
 
 from entity.model.model import Model
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from utils.bunch import Bunch
-from utils.common_component import mkdir
+from utils.common_component import mkdir, yaml_read, yaml_write
 
 
 class GaussLightgbm(Model):
-
     def __init__(self, **params):
         super(GaussLightgbm, self).__init__(params["name"], params["model_path"], params["task_type"],
                                             params["train_flag"])
@@ -35,8 +35,6 @@ class GaussLightgbm(Model):
         self.lgb_train = None
         self.lgb_eval = None
         self.lgb_test = None
-
-        self._model_param_dict = {}
 
     def __repr__(self):
         pass
@@ -80,7 +78,6 @@ class GaussLightgbm(Model):
 
     def train(self, dataset: BaseDataset, val_dataset: BaseDataset, **entity):
         assert self._train_flag is True
-
         self.lgb_train, self.lgb_eval = self.load_data(dataset=dataset, val_dataset=val_dataset)
         if self._model_param_dict is not None:
             params = self._model_param_dict
@@ -124,7 +121,7 @@ class GaussLightgbm(Model):
 
         metrics.evaluate(predict=y_pred, labels_map=self.lgb_eval.get_label())
         metrics_result = metrics.metrics_result
-        assert isinstance(metrics, MetricResult)
+        assert isinstance(metrics_result, MetricResult)
         self._val_metrics = metrics_result
         return metrics_result
 
@@ -132,7 +129,7 @@ class GaussLightgbm(Model):
         pass
 
     def get_val_loss(self):
-        pass
+        return final_metrics
 
     def get_train_metric(self):
         pass
@@ -159,3 +156,6 @@ class GaussLightgbm(Model):
 
     def set_weight(self):
         pass
+
+    def feature_parse(self):
+        self._feature_dict = yaml_read(self._preprocessing_feature_config_path)

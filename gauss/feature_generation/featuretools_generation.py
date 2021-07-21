@@ -3,13 +3,15 @@
 # Copyright (c) 2020, Citic-Lab. All rights reserved.
 # Authors: citic-lab
 import shelve
+import operator
 
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 
 from core import featuretools as ft
-from core.featuretools.variable_types.variable import Discrete, Boolean, Numeric, Datetime
+from core.featuretools.variable_types.variable import Discrete, Boolean, Numeric
+
 from entity.dataset.base_dataset import BaseDataset
 from gauss.feature_generation.base_feature_generation import BaseFeatureGenerator
 from utils.Logger import logger
@@ -36,6 +38,9 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         # This is the feature description dictionary, which will generate a yaml file.
         self.yaml_dict = {}
 
+        self.generated_feature_names = None
+        self.index_name = "data_id"
+
     def _train_run(self, **entity):
         assert "dataset" in entity.keys()
         dataset = entity["dataset"]
@@ -50,10 +55,8 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         self.final_configure_generation(dataset=dataset)
 
     def _predict_run(self, **entity):
-        feature_tools_generation_conf = yaml_read(self._final_file_path)
-        assert "featuretools_generation" in feature_tools_generation_conf.keys()
 
-        if feature_tools_generation_conf["featuretools_generation"] is True:
+        if self._enable is True:
             assert "dataset" in entity.keys()
             dataset = entity['dataset']
 
@@ -78,8 +81,11 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
 
                         for item in status_list:
                             if label_dict.get(item) is None:
-                                logger.info("feature: " + str(col) + "has an abnormal value (unseen by label encoding): " + str(item))
-                                raise ValueError("feature: " + str(col) + " has an abnormal value (unseen by label encoding): " + str(item))
+                                logger.info(
+                                    "feature: " + str(col) + "has an abnormal value (unseen by label encoding): " + str(
+                                        item))
+                                raise ValueError("feature: " + str(
+                                    col) + " has an abnormal value (unseen by label encoding): " + str(item))
 
                         data[col] = le_model.transform(data[col])
 
@@ -107,8 +113,9 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
                 assert self.feature_configure[col]['ftype'] == 'datetime'
                 self.variable_types[col] = ft.variable_types.Datetime
 
-        es = self.entity_set.entity_from_dataframe(entity_id=self.name, dataframe=data, variable_types=self.variable_types,
-                                                   make_index=True, index='data_id')
+        es = self.entity_set.entity_from_dataframe(entity_id=self.name, dataframe=data,
+                                                   variable_types=self.variable_types,
+                                                   make_index=True, index=self.index_name)
 
         primitives = ft.list_primitives()
         trans_primitives = list(primitives[primitives['type'] == 'transform']['name'].values)
@@ -125,24 +132,21 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
             features, feature_names = ft.dfs(entityset=es, target_entity=self.name,
                                              trans_primitives=trans_primitives)
 
-            data = pd.concat([features, dataset.get_dataset().target], axis=1)
-            data = self.clean_dataset(data)
+            data = self.clean_dataset(features)
 
-            target = data.iloc[:, -1]
-            if dataset.get_dataset().get("target_names"):
-                dataset.get_dataset().data = data.drop(dataset.get_dataset().target_names, axis=1)
-                dataset.get_dataset().target = target
-            else:
-                dataset.get_dataset().data = data
+            dataset.get_dataset().data = data
+            # raw generated features.
             dataset.get_dataset().generated_feature_names = feature_names
+
+            self.generated_feature_names = list(data.columns)
 
     def _label_encoding(self, dataset: BaseDataset):
         feature_names = dataset.get_dataset().feature_names
         data = dataset.get_dataset().data
 
         for feature in feature_names:
-            if self.feature_configure[feature]['ftype'] == 'category' or self.feature_configure[feature]['ftype'] == 'bool':
-
+            if self.feature_configure[feature]['ftype'] == 'category' or \
+                    self.feature_configure[feature]['ftype'] == 'bool':
                 item_label_encoding = LabelEncoder()
                 item_label_encoding_model = item_label_encoding.fit(data[feature])
                 self.label_encoding[feature] = item_label_encoding_model
@@ -154,16 +158,34 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         with shelve.open(self._label_encoding_configure_path) as shelve_open:
             shelve_open['label_encoding'] = self.label_encoding
 
-    @classmethod
-    def clean_dataset(cls, df):
+    def clean_dataset(self, df):
         assert isinstance(df, pd.DataFrame), "df needs to be a pd.DataFrame"
-        df.dropna(inplace=True)
-        indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any(axis=1)
-        return df[indices_to_keep].astype(np.float64)
+
+        for col in df.columns:
+            if df[col].dtype == "object" or self.index_name in col:
+                df.drop([col], axis=1, inplace=True)
+
+        df.dropna(axis=1, inplace=True)
+        indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any()
+        features = indices_to_keep[indices_to_keep == True].index
+        return df[features].astype(np.float64)
 
     def final_configure_generation(self, dataset: BaseDataset):
+
         if self._enable:
             generated_feature_names = dataset.get_dataset().generated_feature_names
+            assert operator.eq(list(self.generated_feature_names), list(dataset.get_dataset().data.columns))
+
+            retain_features = []
+            for index, feature in enumerate(generated_feature_names):
+                if feature.name in self.generated_feature_names:
+                    retain_features.append(feature)
+
+            dataset.get_dataset().generated_feature_names = retain_features
+            generated_feature_names = dataset.get_dataset().generated_feature_names
+
+            assert operator.eq(list(generated_feature_names), list(self.generated_feature_names))
+            assert operator.eq(list(generated_feature_names), list(dataset.get_dataset().data.columns))
 
             for index, feature in enumerate(generated_feature_names):
 
@@ -179,12 +201,15 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
                 else:
                     raise ValueError("Unknown input feature ftype: " + str(feature.name))
 
-                item_dict = {"name": feature.name, "index": index, "dtype": dtype, "ftype": ftype}
+                item_dict = {"name": feature.name, "index": index, "dtype": dtype, "ftype": ftype, "used": True}
                 assert feature.name not in self.yaml_dict.keys()
-                self.yaml_dict[feature.name] = item_dict
+                if feature.name in self.generated_feature_names:
+                    self.yaml_dict[feature.name] = item_dict
+                dataset.get_dataset().generated_feature_names = list(self.generated_feature_names)
         else:
+
+            for item in self.feature_configure.keys():
+                self.feature_configure[item]["used"] = True
             self.yaml_dict = self.feature_configure
 
-        assert isinstance(self._enable, bool)
-        self.yaml_dict["featuretools_generation"] = self._enable
         yaml_write(yaml_dict=self.yaml_dict, yaml_file=self._final_file_path)

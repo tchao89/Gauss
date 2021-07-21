@@ -1,4 +1,3 @@
-import yaml
 
 import pandas as pd
 from scipy.stats import chi2
@@ -8,7 +7,7 @@ from gauss.feature_select.base_feature_selector import BaseFeatureSelector
 from entity.dataset.base_dataset import BaseDataset
 from core import featuretools as ft
 
-from utils.common_component import yaml_write, yaml_read
+from utils.common_component import yaml_write, yaml_read, feature_list_generator
 
 
 class UnsupervisedFeatureSelector(BaseFeatureSelector):
@@ -32,6 +31,8 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         self._label_encoding_configure_path = params["label_encoding_configure_path"]
         self._final_file_path = params["final_file_path"]
 
+        self._feature_conf = None
+
     def _train_run(self, **entity):
         """
 
@@ -44,10 +45,11 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         assert isinstance(dataset, BaseDataset)
         data = dataset.get_dataset().data
 
-        feature_conf = yaml_read(self._feature_configure_path)
+        self._feature_conf = yaml_read(self._feature_configure_path)
         # remove datetime features.
         for col in data.columns:
-            if feature_conf[col]["ftype"] not in ["category", "numerical", "bool"]:
+            if self._feature_conf[col]["ftype"] not in ["category", "numerical", "bool"]:
+                self._feature_conf[col]["used"] = False
                 data.drop([col], axis=1, inplace=True)
 
         if self._enable is True:
@@ -59,9 +61,8 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
 
             # unsupervised methods will vote for the best features, which will be finished in the future.
             data, generated_features_names = self._ft_method(features=data, feature_names=feature_names)
-
             dataset.get_dataset().data = data
-            dataset.get_dataset().generated_feature_names = list(data.columns)
+        dataset.get_dataset().generated_feature_names = list(data.columns)
 
         self.final_configure_generation(dataset=dataset)
 
@@ -71,12 +72,10 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         dataset = entity['dataset']
         conf = yaml_read(yaml_file=self._final_file_path)
 
-        assert "unsupervised_feature_selector" in conf.keys()
-        if conf["unsupervised_feature_selector"] is True:
-            conf.pop("unsupervised_feature_selector")
-            generated_feature_names = list(conf.keys())
+        if self._enable is True:
+            generated_feature_names = feature_list_generator(feature_dict=conf)
             dataset.get_dataset().data = dataset.get_dataset().data[generated_feature_names]
-            dataset.get_dataset().generated_feature_names = dataset.get_dataset().generated_feature_names
+            dataset.get_dataset().generated_feature_names = generated_feature_names
 
     @classmethod
     def _chi2_method(cls, features, target, k):
@@ -105,18 +104,12 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         return features, feature_names
 
     def final_configure_generation(self, dataset: BaseDataset):
+        if self._enable:
+            generated_feature_names = dataset.get_dataset().get("generated_feature_names")
+            assert generated_feature_names is not None
 
-        feature_conf_file = open(self._feature_configure_path, 'r', encoding='utf-8')
-        feature_conf = feature_conf_file.read()
-        feature_conf = yaml.load(feature_conf, Loader=yaml.FullLoader)
-        feature_conf_file.close()
+            for item in self._feature_conf.keys():
+                if item not in generated_feature_names:
+                    self._feature_conf[item]["used"] = False
 
-        yaml_dict = {}
-        data = dataset.get_dataset().data
-
-        for col_name in data.columns:
-            yaml_dict[col_name] = feature_conf[col_name]
-
-        assert isinstance(self._enable, bool)
-        yaml_dict["unsupervised_feature_selector"] = self._enable
-        yaml_write(yaml_dict=yaml_dict, yaml_file=self._final_file_path)
+        yaml_write(yaml_dict=self._feature_conf, yaml_file=self._final_file_path)

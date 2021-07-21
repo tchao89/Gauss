@@ -30,7 +30,7 @@ class TabularAutoML(BaseAutoML):
         # optional: "maximize", "minimize", depends on metrics for auto ml.
         self._optimize_mode = params["optimize_mode"]
         # trial num for auto ml.
-        self.trial_num = 5
+        self.trial_num = 15
         self._auto_ml_path = params["auto_ml_path"]
         self._default_parameters = None
         self._search_space = None
@@ -71,7 +71,7 @@ class TabularAutoML(BaseAutoML):
 
         assert "model" in entity and isinstance(entity["model"], Model)
         assert "dataset" in entity and isinstance(entity["dataset"], BaseDataset)
-        assert "val_dataset" in entity and isinstance(entity["dataset"], BaseDataset)
+        assert "val_dataset" in entity and isinstance(entity["val_dataset"], BaseDataset)
         assert "metrics" in entity and isinstance(entity["metrics"], BaseMetric)
 
         self.chose_tuner_set()

@@ -198,19 +198,14 @@ class TypeInference(BaseTypeInference):
 
             self.final_feature_configure.add_item_type(column_name=column, feature_item_conf=feature_item_configure)
 
+        # check if target columns is illegal.
         for label_index, label in enumerate(target):
-            feature_item_configure = FeatureItemConf()
 
             if self._task_name == 'regression':
                 assert target[label].dtypes == 'float64' and target[label].isna().sum() == 0
 
             if self._task_name == 'classification':
                 assert target[label].dtypes == 'int64'
-
-            feature_item_configure.name = label
-            feature_item_configure.index = label_index
-            feature_item_configure.dtype = str(target[label].dtype)
-            self.final_feature_configure.add_item_type(column_name=label, feature_item_conf=feature_item_configure)
 
         return self.final_feature_configure
 

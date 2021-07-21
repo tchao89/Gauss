@@ -133,7 +133,8 @@ class UdfModelingTree(object):
                         "unsupervised_feature": work_feature_root + "/" + EnvironmentConfigure.feature_dict().unsupervised_feature,
                         "supervised_feature": work_feature_root + "/" + EnvironmentConfigure.feature_dict().supervised_feature,
                         "label_encoding_path": work_feature_root + "/" + EnvironmentConfigure.feature_dict().label_encoding_path,
-                        "impute_path": work_feature_root + "/" + EnvironmentConfigure.feature_dict().impute_path}
+                        "impute_path": work_feature_root + "/" + EnvironmentConfigure.feature_dict().impute_path,
+                        "final_feature_config": work_feature_root + "/" + EnvironmentConfigure.feature_dict().final_feature_config}
 
         preprocess_chain = PreprocessRoute(name="PreprocessRoute",
                                            feature_path_dict=feature_dict,
@@ -161,12 +162,11 @@ class UdfModelingTree(object):
         assert "dataset" in entity_dict and "val_dataset" in entity_dict
         work_model_root = work_root + "/model/" + model_name + "/"
         model_save_root = work_model_root + "/model_save"
-        # model_config_root = work_model_root + "/model_config"
 
         core_chain = CoreRoute(name="core_route",
                                train_flag=True,
                                model_save_root=model_save_root,
-                               target_feature_configure_path=feature_dict["supervised_feature"],
+                               target_feature_configure_path=feature_dict["final_feature_config"],
                                pre_feature_configure_path=feature_dict["unsupervised_feature"],
                                model_name=model_name,
                                label_encoding_path=feature_dict["label_encoding_path"],
@@ -254,5 +254,7 @@ class UdfModelingTree(object):
                      "feature_generator": self.feature_generator,
                      "unsupervised_feature_selector": self.unsupervised_feature_selector,
                      "supervised_feature_selector": self.supervised_feature_selector,
-                     "auto_ml": self.auto_ml}
+                     "auto_ml": self.auto_ml,
+                     "best_metric": float(self.best_metric.result)}
+
         yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/final_config.yaml")

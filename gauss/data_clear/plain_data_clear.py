@@ -59,10 +59,7 @@ class PlainDataClear(BaseDataClear):
         self._data_clear_serialize()
 
     def _predict_run(self, **entity):
-        data_clear_conf = yaml_read(self._final_file_path)
-        assert "plain_data_clear" in data_clear_conf.keys()
-
-        if data_clear_conf["plain_data_clear"] is True:
+        if self._enable is True:
             assert "dataset" in entity.keys()
             dataset = entity["dataset"]
 
@@ -132,9 +129,6 @@ class PlainDataClear(BaseDataClear):
 
     def final_configure_generation(self):
         feature_conf = yaml_read(yaml_file=self._feature_configure_path)
-
-        assert isinstance(self._enable, bool)
-        feature_conf["plain_data_clear"] = self._enable
 
         with open(self._final_file_path, "w", encoding="utf-8") as yaml_file:
             yaml.dump(feature_conf, yaml_file)

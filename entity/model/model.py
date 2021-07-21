@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import abc
+from typing import List
 
 from entity.entity import Entity
 
@@ -14,14 +15,21 @@ class Model(Entity):
                  name: str,
                  model_path: str,
                  task_type: str,
-                 train_flag: bool
+                 train_flag: bool,
+                 supervised_feature_config: List[int] = None,
+                 preprocessing_feature_config_path: str = None
                  ):
 
         self._model_path = model_path
         self._task_type = task_type
         self._train_flag = train_flag
         self._train_finished = False
+
         self._model_param_dict = {}
+
+        self._supervised_feature_config = supervised_feature_config
+        self._preprocessing_feature_config_path = preprocessing_feature_config_path
+        self._feature_dict = {}
 
         super(Model, self).__init__(
             name=name,

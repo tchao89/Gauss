@@ -5,11 +5,16 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+from entity.dataset.plain_dataset import PlaintextDataset
 from utils.bunch import Bunch
 
 from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 from gauss_factory.entity_factory import MetricsFactory
+
+from utils.common_component import yaml_write, yaml_read, feature_list_generator
 
 
 class CoreRoute(Component):
@@ -18,8 +23,8 @@ class CoreRoute(Component):
                  train_flag: bool,
                  model_name: str,
                  model_save_root: str,
-                 target_feature_configure_path: str,
-                 pre_feature_configure_path: str,
+                 target_feature_configure_path: Any(str, None),
+                 pre_feature_configure_path: Any(str, None),
                  label_encoding_path: str,
                  model_type: str,
                  metrics_name: str,
@@ -50,6 +55,9 @@ class CoreRoute(Component):
         self._metrics_name = metrics_name
         self._auto_ml_path = auto_ml_path
         self._feature_selector_flag = feature_selector_flag
+
+        self._feature_config_path = pre_feature_configure_path
+        self._final_file_path = target_feature_configure_path
 
         self._model_type = model_type
 
@@ -102,13 +110,17 @@ class CoreRoute(Component):
 
         else:
             train_dataset = entity["dataset"]
+
             self.metrics.label_name = train_dataset.get_dataset().target_names[0]
+            feature_conf = yaml_read(self._feature_config_path)
 
             entity["model"] = self.model
             entity["metrics"] = self.metrics
 
             best_model = self.auto_ml.run(**entity)
             best_model.model_save()
+
+            yaml_write(yaml_dict=feature_conf, yaml_file=self._final_file_path)
 
         assert best_model is not None
         self.best_model = best_model
@@ -123,11 +135,18 @@ class CoreRoute(Component):
         assert self._model_save_path is not None
         assert self._train_flag is False
 
+        dataset = entity.get("dataset")
+
         if self._feature_selector_flag:
             result = self.feature_selector.run(**entity)
-
         else:
-            dataset = entity.get("dataset")
+
+            feature_conf = yaml_read(self._final_file_path)
+            features = feature_list_generator(feature_dict=feature_conf)
+            data = dataset.feature_choose(features)
+
+            data_pair = Bunch(data=data, target=None, target_names=None)
+            dataset = PlaintextDataset(name="train_data", task_type=self._train_flag, data_pair=data_pair)
 
             model_params = Bunch(name=self._model_name,
                                  model_path=self._model_save_path,

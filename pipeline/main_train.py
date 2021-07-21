@@ -4,11 +4,6 @@ from pipeline.auto_modeling_tree import AutoModelingTree
 from pipeline.udf_modeling_tree import UdfModelingTree
 from utils.common_component import yaml_read
 
-# this block just for test
-from pipeline.mapping import EnvironmentConfigure
-from utils.bunch import Bunch
-from utils.common_component import yaml_write
-
 
 def main(config=config_path):
     pipeline_configure = yaml_read(config)
@@ -32,6 +27,7 @@ def main(config=config_path):
                                            auto_ml=pipeline_configure.auto_ml)
 
         auto_model_tree.run()
+
     elif pipeline_configure.mode == "udf":
         udf_model_tree = UdfModelingTree(name="udf",
                                          work_root=pipeline_configure.work_root,
