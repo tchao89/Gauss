@@ -235,7 +235,7 @@ class TypeInference(BaseTypeInference):
                 if not exception:
                     logger.info('Customized feature ' + item[0] + " matches type inference. ")
             else:
-                logger.info(item[0] + "feature dose not exist in type inference.")
+                logger.info(item[0] + " feature dose not exist in type inference.")
 
     def final_configure_generation(self):
         yaml_dict = {}

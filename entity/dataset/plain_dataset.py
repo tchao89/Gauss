@@ -72,15 +72,18 @@ class PlaintextDataset(BaseDataset):
                 return str(combined_df.head(self._default_print_size))
 
             else:
-                return str(combined_df)
+                return str(self._bunch.keys())
 
-        else:
+        elif self.type_doc is not None:
             combined_df, _, _ = self._convert_data_dataframe(data=self._bunch.data,
                                                              target=self._bunch.target)
             if self.shape[0] > self._default_print_size:
                 return str(combined_df.head(self._default_print_size))
             else:
                 return str(combined_df)
+
+        else:
+            return str(self._bunch.data.columns)
 
     def get_dataset(self):
         return self._bunch

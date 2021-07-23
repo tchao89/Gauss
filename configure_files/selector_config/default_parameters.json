@@ -19,7 +19,7 @@
 
       "bagging_freq": 5,
 
-      "verbose": 1,
+      "verbosity": -1,
 
       "max_depth": 9,
 

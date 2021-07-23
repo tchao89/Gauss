@@ -1,0 +1,1314 @@
+-(balance):
+  dtype: float64
+  ftype: numerical
+  index: 141
+  name: -(balance)
+  used: false
+-(duration):
+  dtype: float64
+  ftype: numerical
+  index: 142
+  name: -(duration)
+  used: false
+0 - balance:
+  dtype: float64
+  ftype: numerical
+  index: 214
+  name: 0 - balance
+  used: false
+0 - duration:
+  dtype: float64
+  ftype: numerical
+  index: 215
+  name: 0 - duration
+  used: false
+1 % duration:
+  dtype: float64
+  ftype: numerical
+  index: 133
+  name: 1 % duration
+  used: false
+1 / duration:
+  dtype: float64
+  ftype: numerical
+  index: 25
+  name: 1 / duration
+  used: true
+ABSOLUTE(balance):
+  dtype: float64
+  ftype: numerical
+  index: 11
+  name: ABSOLUTE(balance)
+  used: false
+ABSOLUTE(duration):
+  dtype: float64
+  ftype: numerical
+  index: 12
+  name: ABSOLUTE(duration)
+  used: false
+AND(housing, loan):
+  dtype: int64
+  ftype: bool
+  index: 16
+  name: AND(housing, loan)
+  used: true
+CUM_MAX(balance):
+  dtype: float64
+  ftype: numerical
+  index: 17
+  name: CUM_MAX(balance)
+  used: true
+CUM_MAX(duration):
+  dtype: float64
+  ftype: numerical
+  index: 18
+  name: CUM_MAX(duration)
+  used: false
+CUM_MEAN(balance):
+  dtype: float64
+  ftype: numerical
+  index: 19
+  name: CUM_MEAN(balance)
+  used: true
+CUM_MEAN(duration):
+  dtype: float64
+  ftype: numerical
+  index: 20
+  name: CUM_MEAN(duration)
+  used: true
+CUM_MIN(balance):
+  dtype: float64
+  ftype: numerical
+  index: 21
+  name: CUM_MIN(balance)
+  used: true
+CUM_MIN(duration):
+  dtype: float64
+  ftype: numerical
+  index: 22
+  name: CUM_MIN(duration)
+  used: true
+CUM_SUM(balance):
+  dtype: float64
+  ftype: numerical
+  index: 23
+  name: CUM_SUM(balance)
+  used: true
+CUM_SUM(duration):
+  dtype: float64
+  ftype: numerical
+  index: 24
+  name: CUM_SUM(duration)
+  used: false
+IS_NULL(age):
+  dtype: int64
+  ftype: bool
+  index: 103
+  name: IS_NULL(age)
+  used: false
+IS_NULL(balance):
+  dtype: int64
+  ftype: bool
+  index: 104
+  name: IS_NULL(balance)
+  used: false
+IS_NULL(campaign):
+  dtype: int64
+  ftype: bool
+  index: 105
+  name: IS_NULL(campaign)
+  used: false
+IS_NULL(day):
+  dtype: int64
+  ftype: bool
+  index: 106
+  name: IS_NULL(day)
+  used: false
+IS_NULL(duration):
+  dtype: int64
+  ftype: bool
+  index: 107
+  name: IS_NULL(duration)
+  used: false
+IS_NULL(education):
+  dtype: int64
+  ftype: bool
+  index: 108
+  name: IS_NULL(education)
+  used: false
+IS_NULL(housing):
+  dtype: int64
+  ftype: bool
+  index: 109
+  name: IS_NULL(housing)
+  used: false
+IS_NULL(job):
+  dtype: int64
+  ftype: bool
+  index: 110
+  name: IS_NULL(job)
+  used: false
+IS_NULL(loan):
+  dtype: int64
+  ftype: bool
+  index: 111
+  name: IS_NULL(loan)
+  used: false
+IS_NULL(marital):
+  dtype: int64
+  ftype: bool
+  index: 112
+  name: IS_NULL(marital)
+  used: false
+IS_NULL(month):
+  dtype: int64
+  ftype: bool
+  index: 113
+  name: IS_NULL(month)
+  used: false
+NOT(housing):
+  dtype: int64
+  ftype: bool
+  index: 143
+  name: NOT(housing)
+  used: false
+NOT(loan):
+  dtype: int64
+  ftype: bool
+  index: 144
+  name: NOT(loan)
+  used: false
+OR(housing, loan):
+  dtype: int64
+  ftype: bool
+  index: 211
+  name: OR(housing, loan)
+  used: true
+PERCENTILE(balance):
+  dtype: float64
+  ftype: numerical
+  index: 212
+  name: PERCENTILE(balance)
+  used: true
+PERCENTILE(duration):
+  dtype: float64
+  ftype: numerical
+  index: 213
+  name: PERCENTILE(duration)
+  used: true
+age:
+  dtype: int64
+  ftype: category
+  index: 0
+  name: age
+  used: true
+age != None:
+  dtype: int64
+  ftype: bool
+  index: 200
+  name: age != None
+  used: false
+age != balance:
+  dtype: int64
+  ftype: bool
+  index: 145
+  name: age != balance
+  used: false
+age != campaign:
+  dtype: int64
+  ftype: bool
+  index: 146
+  name: age != campaign
+  used: false
+age != day:
+  dtype: int64
+  ftype: bool
+  index: 147
+  name: age != day
+  used: false
+age != duration:
+  dtype: int64
+  ftype: bool
+  index: 148
+  name: age != duration
+  used: false
+age != education:
+  dtype: int64
+  ftype: bool
+  index: 149
+  name: age != education
+  used: false
+age != housing:
+  dtype: int64
+  ftype: bool
+  index: 150
+  name: age != housing
+  used: false
+age != job:
+  dtype: int64
+  ftype: bool
+  index: 151
+  name: age != job
+  used: false
+age != loan:
+  dtype: int64
+  ftype: bool
+  index: 152
+  name: age != loan
+  used: false
+age != marital:
+  dtype: int64
+  ftype: bool
+  index: 153
+  name: age != marital
+  used: false
+age != month:
+  dtype: int64
+  ftype: bool
+  index: 154
+  name: age != month
+  used: false
+age = None:
+  dtype: int64
+  ftype: bool
+  index: 84
+  name: age = None
+  used: false
+age = balance:
+  dtype: int64
+  ftype: bool
+  index: 29
+  name: age = balance
+  used: false
+age = campaign:
+  dtype: int64
+  ftype: bool
+  index: 30
+  name: age = campaign
+  used: false
+age = day:
+  dtype: int64
+  ftype: bool
+  index: 31
+  name: age = day
+  used: true
+age = duration:
+  dtype: int64
+  ftype: bool
+  index: 32
+  name: age = duration
+  used: false
+age = education:
+  dtype: int64
+  ftype: bool
+  index: 33
+  name: age = education
+  used: false
+age = housing:
+  dtype: int64
+  ftype: bool
+  index: 34
+  name: age = housing
+  used: false
+age = job:
+  dtype: int64
+  ftype: bool
+  index: 35
+  name: age = job
+  used: true
+age = loan:
+  dtype: int64
+  ftype: bool
+  index: 36
+  name: age = loan
+  used: false
+age = marital:
+  dtype: int64
+  ftype: bool
+  index: 37
+  name: age = marital
+  used: false
+age = month:
+  dtype: int64
+  ftype: bool
+  index: 38
+  name: age = month
+  used: true
+age.isin(None):
+  dtype: int64
+  ftype: bool
+  index: 114
+  name: age.isin(None)
+  used: false
+balance:
+  dtype: float64
+  ftype: numerical
+  index: 1
+  name: balance
+  used: true
+balance != None:
+  dtype: int64
+  ftype: bool
+  index: 201
+  name: balance != None
+  used: false
+balance != campaign:
+  dtype: int64
+  ftype: bool
+  index: 155
+  name: balance != campaign
+  used: false
+balance != day:
+  dtype: int64
+  ftype: bool
+  index: 156
+  name: balance != day
+  used: false
+balance != duration:
+  dtype: int64
+  ftype: bool
+  index: 157
+  name: balance != duration
+  used: false
+balance != education:
+  dtype: int64
+  ftype: bool
+  index: 158
+  name: balance != education
+  used: false
+balance != housing:
+  dtype: int64
+  ftype: bool
+  index: 159
+  name: balance != housing
+  used: false
+balance != job:
+  dtype: int64
+  ftype: bool
+  index: 160
+  name: balance != job
+  used: false
+balance != loan:
+  dtype: int64
+  ftype: bool
+  index: 161
+  name: balance != loan
+  used: false
+balance != marital:
+  dtype: int64
+  ftype: bool
+  index: 162
+  name: balance != marital
+  used: false
+balance != month:
+  dtype: int64
+  ftype: bool
+  index: 163
+  name: balance != month
+  used: false
+balance % 1:
+  dtype: float64
+  ftype: numerical
+  index: 135
+  name: balance % 1
+  used: false
+balance % duration:
+  dtype: float64
+  ftype: numerical
+  index: 134
+  name: balance % duration
+  used: true
+balance * 1:
+  dtype: float64
+  ftype: numerical
+  index: 139
+  name: balance * 1
+  used: false
+balance * duration:
+  dtype: float64
+  ftype: numerical
+  index: 138
+  name: balance * duration
+  used: true
+balance + 0:
+  dtype: float64
+  ftype: numerical
+  index: 14
+  name: balance + 0
+  used: false
+balance + duration:
+  dtype: float64
+  ftype: numerical
+  index: 13
+  name: balance + duration
+  used: false
+balance - 0:
+  dtype: float64
+  ftype: numerical
+  index: 217
+  name: balance - 0
+  used: false
+balance - duration:
+  dtype: float64
+  ftype: numerical
+  index: 216
+  name: balance - duration
+  used: false
+balance / 1:
+  dtype: float64
+  ftype: numerical
+  index: 27
+  name: balance / 1
+  used: false
+balance / duration:
+  dtype: float64
+  ftype: numerical
+  index: 26
+  name: balance / duration
+  used: true
+balance < 0:
+  dtype: int64
+  ftype: bool
+  index: 131
+  name: balance < 0
+  used: false
+balance < duration:
+  dtype: int64
+  ftype: bool
+  index: 125
+  name: balance < duration
+  used: false
+balance <= 0:
+  dtype: int64
+  ftype: bool
+  index: 129
+  name: balance <= 0
+  used: false
+balance <= duration:
+  dtype: int64
+  ftype: bool
+  index: 127
+  name: balance <= duration
+  used: false
+balance = None:
+  dtype: int64
+  ftype: bool
+  index: 85
+  name: balance = None
+  used: false
+balance = campaign:
+  dtype: int64
+  ftype: bool
+  index: 39
+  name: balance = campaign
+  used: false
+balance = day:
+  dtype: int64
+  ftype: bool
+  index: 40
+  name: balance = day
+  used: false
+balance = duration:
+  dtype: int64
+  ftype: bool
+  index: 41
+  name: balance = duration
+  used: false
+balance = education:
+  dtype: int64
+  ftype: bool
+  index: 42
+  name: balance = education
+  used: true
+balance = housing:
+  dtype: int64
+  ftype: bool
+  index: 43
+  name: balance = housing
+  used: true
+balance = job:
+  dtype: int64
+  ftype: bool
+  index: 44
+  name: balance = job
+  used: true
+balance = loan:
+  dtype: int64
+  ftype: bool
+  index: 45
+  name: balance = loan
+  used: true
+balance = marital:
+  dtype: int64
+  ftype: bool
+  index: 46
+  name: balance = marital
+  used: true
+balance = month:
+  dtype: int64
+  ftype: bool
+  index: 47
+  name: balance = month
+  used: true
+balance > 0:
+  dtype: int64
+  ftype: bool
+  index: 101
+  name: balance > 0
+  used: true
+balance > duration:
+  dtype: int64
+  ftype: bool
+  index: 95
+  name: balance > duration
+  used: true
+balance >= 0:
+  dtype: int64
+  ftype: bool
+  index: 99
+  name: balance >= 0
+  used: false
+balance >= duration:
+  dtype: int64
+  ftype: bool
+  index: 97
+  name: balance >= duration
+  used: false
+balance.isin(None):
+  dtype: int64
+  ftype: bool
+  index: 115
+  name: balance.isin(None)
+  used: false
+campaign:
+  dtype: int64
+  ftype: category
+  index: 9
+  name: campaign
+  used: true
+campaign != None:
+  dtype: int64
+  ftype: bool
+  index: 202
+  name: campaign != None
+  used: false
+campaign != day:
+  dtype: int64
+  ftype: bool
+  index: 164
+  name: campaign != day
+  used: false
+campaign != duration:
+  dtype: int64
+  ftype: bool
+  index: 165
+  name: campaign != duration
+  used: false
+campaign != education:
+  dtype: int64
+  ftype: bool
+  index: 166
+  name: campaign != education
+  used: false
+campaign != housing:
+  dtype: int64
+  ftype: bool
+  index: 167
+  name: campaign != housing
+  used: false
+campaign != job:
+  dtype: int64
+  ftype: bool
+  index: 168
+  name: campaign != job
+  used: false
+campaign != loan:
+  dtype: int64
+  ftype: bool
+  index: 169
+  name: campaign != loan
+  used: false
+campaign != marital:
+  dtype: int64
+  ftype: bool
+  index: 170
+  name: campaign != marital
+  used: false
+campaign != month:
+  dtype: int64
+  ftype: bool
+  index: 171
+  name: campaign != month
+  used: false
+campaign = None:
+  dtype: int64
+  ftype: bool
+  index: 86
+  name: campaign = None
+  used: false
+campaign = day:
+  dtype: int64
+  ftype: bool
+  index: 48
+  name: campaign = day
+  used: true
+campaign = duration:
+  dtype: int64
+  ftype: bool
+  index: 49
+  name: campaign = duration
+  used: false
+campaign = education:
+  dtype: int64
+  ftype: bool
+  index: 50
+  name: campaign = education
+  used: true
+campaign = housing:
+  dtype: int64
+  ftype: bool
+  index: 51
+  name: campaign = housing
+  used: true
+campaign = job:
+  dtype: int64
+  ftype: bool
+  index: 52
+  name: campaign = job
+  used: true
+campaign = loan:
+  dtype: int64
+  ftype: bool
+  index: 53
+  name: campaign = loan
+  used: true
+campaign = marital:
+  dtype: int64
+  ftype: bool
+  index: 54
+  name: campaign = marital
+  used: true
+campaign = month:
+  dtype: int64
+  ftype: bool
+  index: 55
+  name: campaign = month
+  used: true
+campaign.isin(None):
+  dtype: int64
+  ftype: bool
+  index: 116
+  name: campaign.isin(None)
+  used: false
+day:
+  dtype: int64
+  ftype: category
+  index: 8
+  name: day
+  used: true
+day != None:
+  dtype: int64
+  ftype: bool
+  index: 203
+  name: day != None
+  used: false
+day != duration:
+  dtype: int64
+  ftype: bool
+  index: 172
+  name: day != duration
+  used: false
+day != education:
+  dtype: int64
+  ftype: bool
+  index: 173
+  name: day != education
+  used: false
+day != housing:
+  dtype: int64
+  ftype: bool
+  index: 174
+  name: day != housing
+  used: false
+day != job:
+  dtype: int64
+  ftype: bool
+  index: 175
+  name: day != job
+  used: false
+day != loan:
+  dtype: int64
+  ftype: bool
+  index: 176
+  name: day != loan
+  used: false
+day != marital:
+  dtype: int64
+  ftype: bool
+  index: 177
+  name: day != marital
+  used: false
+day != month:
+  dtype: int64
+  ftype: bool
+  index: 178
+  name: day != month
+  used: false
+day = None:
+  dtype: int64
+  ftype: bool
+  index: 87
+  name: day = None
+  used: false
+day = duration:
+  dtype: int64
+  ftype: bool
+  index: 56
+  name: day = duration
+  used: false
+day = education:
+  dtype: int64
+  ftype: bool
+  index: 57
+  name: day = education
+  used: true
+day = housing:
+  dtype: int64
+  ftype: bool
+  index: 58
+  name: day = housing
+  used: true
+day = job:
+  dtype: int64
+  ftype: bool
+  index: 59
+  name: day = job
+  used: true
+day = loan:
+  dtype: int64
+  ftype: bool
+  index: 60
+  name: day = loan
+  used: true
+day = marital:
+  dtype: int64
+  ftype: bool
+  index: 61
+  name: day = marital
+  used: true
+day = month:
+  dtype: int64
+  ftype: bool
+  index: 62
+  name: day = month
+  used: true
+day.isin(None):
+  dtype: int64
+  ftype: bool
+  index: 117
+  name: day.isin(None)
+  used: false
+duration:
+  dtype: float64
+  ftype: numerical
+  index: 10
+  name: duration
+  used: true
+duration != None:
+  dtype: int64
+  ftype: bool
+  index: 204
+  name: duration != None
+  used: false
+duration != education:
+  dtype: int64
+  ftype: bool
+  index: 179
+  name: duration != education
+  used: false
+duration != housing:
+  dtype: int64
+  ftype: bool
+  index: 180
+  name: duration != housing
+  used: false
+duration != job:
+  dtype: int64
+  ftype: bool
+  index: 181
+  name: duration != job
+  used: false
+duration != loan:
+  dtype: int64
+  ftype: bool
+  index: 182
+  name: duration != loan
+  used: false
+duration != marital:
+  dtype: int64
+  ftype: bool
+  index: 183
+  name: duration != marital
+  used: false
+duration != month:
+  dtype: int64
+  ftype: bool
+  index: 184
+  name: duration != month
+  used: false
+duration % 1:
+  dtype: float64
+  ftype: numerical
+  index: 136
+  name: duration % 1
+  used: false
+duration * 1:
+  dtype: float64
+  ftype: numerical
+  index: 140
+  name: duration * 1
+  used: false
+duration + 0:
+  dtype: float64
+  ftype: numerical
+  index: 15
+  name: duration + 0
+  used: false
+duration - 0:
+  dtype: float64
+  ftype: numerical
+  index: 218
+  name: duration - 0
+  used: false
+duration / 1:
+  dtype: float64
+  ftype: numerical
+  index: 28
+  name: duration / 1
+  used: false
+duration < 0:
+  dtype: int64
+  ftype: bool
+  index: 132
+  name: duration < 0
+  used: false
+duration < balance:
+  dtype: int64
+  ftype: bool
+  index: 126
+  name: duration < balance
+  used: false
+duration <= 0:
+  dtype: int64
+  ftype: bool
+  index: 130
+  name: duration <= 0
+  used: false
+duration <= balance:
+  dtype: int64
+  ftype: bool
+  index: 128
+  name: duration <= balance
+  used: false
+duration = None:
+  dtype: int64
+  ftype: bool
+  index: 88
+  name: duration = None
+  used: false
+duration = education:
+  dtype: int64
+  ftype: bool
+  index: 63
+  name: duration = education
+  used: false
+duration = housing:
+  dtype: int64
+  ftype: bool
+  index: 64
+  name: duration = housing
+  used: false
+duration = job:
+  dtype: int64
+  ftype: bool
+  index: 65
+  name: duration = job
+  used: false
+duration = loan:
+  dtype: int64
+  ftype: bool
+  index: 66
+  name: duration = loan
+  used: false
+duration = marital:
+  dtype: int64
+  ftype: bool
+  index: 67
+  name: duration = marital
+  used: false
+duration = month:
+  dtype: int64
+  ftype: bool
+  index: 68
+  name: duration = month
+  used: false
+duration > 0:
+  dtype: int64
+  ftype: bool
+  index: 102
+  name: duration > 0
+  used: false
+duration > balance:
+  dtype: int64
+  ftype: bool
+  index: 96
+  name: duration > balance
+  used: false
+duration >= 0:
+  dtype: int64
+  ftype: bool
+  index: 100
+  name: duration >= 0
+  used: false
+duration >= balance:
+  dtype: int64
+  ftype: bool
+  index: 98
+  name: duration >= balance
+  used: false
+duration.isin(None):
+  dtype: int64
+  ftype: bool
+  index: 118
+  name: duration.isin(None)
+  used: false
+education:
+  dtype: int64
+  ftype: category
+  index: 4
+  name: education
+  used: true
+education != None:
+  dtype: int64
+  ftype: bool
+  index: 205
+  name: education != None
+  used: false
+education != housing:
+  dtype: int64
+  ftype: bool
+  index: 185
+  name: education != housing
+  used: false
+education != job:
+  dtype: int64
+  ftype: bool
+  index: 186
+  name: education != job
+  used: false
+education != loan:
+  dtype: int64
+  ftype: bool
+  index: 187
+  name: education != loan
+  used: false
+education != marital:
+  dtype: int64
+  ftype: bool
+  index: 188
+  name: education != marital
+  used: false
+education != month:
+  dtype: int64
+  ftype: bool
+  index: 189
+  name: education != month
+  used: false
+education = None:
+  dtype: int64
+  ftype: bool
+  index: 89
+  name: education = None
+  used: false
+education = housing:
+  dtype: int64
+  ftype: bool
+  index: 69
+  name: education = housing
+  used: true
+education = job:
+  dtype: int64
+  ftype: bool
+  index: 70
+  name: education = job
+  used: true
+education = loan:
+  dtype: int64
+  ftype: bool
+  index: 71
+  name: education = loan
+  used: true
+education = marital:
+  dtype: int64
+  ftype: bool
+  index: 72
+  name: education = marital
+  used: true
+education = month:
+  dtype: int64
+  ftype: bool
+  index: 73
+  name: education = month
+  used: true
+education.isin(None):
+  dtype: int64
+  ftype: bool
+  index: 119
+  name: education.isin(None)
+  used: false
+housing:
+  dtype: int64
+  ftype: bool
+  index: 5
+  name: housing
+  used: true
+housing != None:
+  dtype: int64
+  ftype: bool
+  index: 206
+  name: housing != None
+  used: false
+housing != job:
+  dtype: int64
+  ftype: bool
+  index: 190
+  name: housing != job
+  used: false
+housing != loan:
+  dtype: int64
+  ftype: bool
+  index: 191
+  name: housing != loan
+  used: false
+housing != marital:
+  dtype: int64
+  ftype: bool
+  index: 192
+  name: housing != marital
+  used: false
+housing != month:
+  dtype: int64
+  ftype: bool
+  index: 193
+  name: housing != month
+  used: false
+housing * loan:
+  dtype: int64
+  ftype: bool
+  index: 137
+  name: housing * loan
+  used: false
+housing = None:
+  dtype: int64
+  ftype: bool
+  index: 90
+  name: housing = None
+  used: false
+housing = job:
+  dtype: int64
+  ftype: bool
+  index: 74
+  name: housing = job
+  used: true
+housing = loan:
+  dtype: int64
+  ftype: bool
+  index: 75
+  name: housing = loan
+  used: true
+housing = marital:
+  dtype: int64
+  ftype: bool
+  index: 76
+  name: housing = marital
+  used: true
+housing = month:
+  dtype: int64
+  ftype: bool
+  index: 77
+  name: housing = month
+  used: true
+housing.isin(None):
+  dtype: int64
+  ftype: bool
+  index: 120
+  name: housing.isin(None)
+  used: false
+job:
+  dtype: int64
+  ftype: category
+  index: 3
+  name: job
+  used: true
+job != None:
+  dtype: int64
+  ftype: bool
+  index: 207
+  name: job != None
+  used: false
+job != loan:
+  dtype: int64
+  ftype: bool
+  index: 194
+  name: job != loan
+  used: false
+job != marital:
+  dtype: int64
+  ftype: bool
+  index: 195
+  name: job != marital
+  used: false
+job != month:
+  dtype: int64
+  ftype: bool
+  index: 196
+  name: job != month
+  used: false
+job = None:
+  dtype: int64
+  ftype: bool
+  index: 91
+  name: job = None
+  used: false
+job = loan:
+  dtype: int64
+  ftype: bool
+  index: 78
+  name: job = loan
+  used: true
+job = marital:
+  dtype: int64
+  ftype: bool
+  index: 79
+  name: job = marital
+  used: true
+job = month:
+  dtype: int64
+  ftype: bool
+  index: 80
+  name: job = month
+  used: true
+job.isin(None):
+  dtype: int64
+  ftype: bool
+  index: 121
+  name: job.isin(None)
+  used: false
+loan:
+  dtype: int64
+  ftype: bool
+  index: 6
+  name: loan
+  used: true
+loan != None:
+  dtype: int64
+  ftype: bool
+  index: 208
+  name: loan != None
+  used: false
+loan != marital:
+  dtype: int64
+  ftype: bool
+  index: 197
+  name: loan != marital
+  used: false
+loan != month:
+  dtype: int64
+  ftype: bool
+  index: 198
+  name: loan != month
+  used: false
+loan = None:
+  dtype: int64
+  ftype: bool
+  index: 92
+  name: loan = None
+  used: false
+loan = marital:
+  dtype: int64
+  ftype: bool
+  index: 81
+  name: loan = marital
+  used: true
+loan = month:
+  dtype: int64
+  ftype: bool
+  index: 82
+  name: loan = month
+  used: true
+loan.isin(None):
+  dtype: int64
+  ftype: bool
+  index: 122
+  name: loan.isin(None)
+  used: false
+marital:
+  dtype: int64
+  ftype: category
+  index: 2
+  name: marital
+  used: true
+marital != None:
+  dtype: int64
+  ftype: bool
+  index: 209
+  name: marital != None
+  used: false
+marital != month:
+  dtype: int64
+  ftype: bool
+  index: 199
+  name: marital != month
+  used: false
+marital = None:
+  dtype: int64
+  ftype: bool
+  index: 93
+  name: marital = None
+  used: false
+marital = month:
+  dtype: int64
+  ftype: bool
+  index: 83
+  name: marital = month
+  used: true
+marital.isin(None):
+  dtype: int64
+  ftype: bool
+  index: 123
+  name: marital.isin(None)
+  used: false
+month:
+  dtype: int64
+  ftype: category
+  index: 7
+  name: month
+  used: true
+month != None:
+  dtype: int64
+  ftype: bool
+  index: 210
+  name: month != None
+  used: false
+month = None:
+  dtype: int64
+  ftype: bool
+  index: 94
+  name: month = None
+  used: false
+month.isin(None):
+  dtype: int64
+  ftype: bool
+  index: 124
+  name: month.isin(None)
+  used: false

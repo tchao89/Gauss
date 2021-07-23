@@ -1,0 +1,13 @@
+auto_ml: auto_ml
+best_metric: 0.6159611189232042
+best_model_name: lr
+best_root: /home/liangqian/PycharmProjects/Gauss/experiments/J0UhtT/True_True_True_True
+data_clear: plaindataclear
+dataset_name: plaindataset
+feature_generator: featuretools
+metric_name: auc
+supervised_feature_selector: supervised
+task_type: classification
+type_inference: typeinference
+unsupervised_feature_selector: unsupervised
+work_root: /home/liangqian/PycharmProjects/Gauss/experiments/J0UhtT

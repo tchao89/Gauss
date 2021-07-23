@@ -73,6 +73,8 @@ class PreprocessRoute(Component):
         # label encoding file path, .db文件
         assert "label_encoding_path" in feature_path_dict
 
+        self._entity_dict = None
+
         self._data_clear_flag = data_clear_flag
         self._feature_generator_flag = feature_generator_flag
         self._feature_selector_flag = feature_selector_flag
@@ -170,7 +172,7 @@ class PreprocessRoute(Component):
         # 数据拆分
         val_dataset = train_dataset.split()
         entity_dict["val_dataset"] = val_dataset
-        return entity_dict
+        self._entity_dict = entity_dict
 
     def _predict_run(self, **entity):
         entity_dict = {}
@@ -193,8 +195,12 @@ class PreprocessRoute(Component):
         # 无监督特征选择
         self.unsupervised_feature_selector.run(**entity_dict)
 
-        return entity_dict
+        self._entity_dict = entity_dict
 
     @property
     def need_data_clear(self):
         return self._need_data_clear
+
+    @property
+    def entity_dict(self):
+        return self._entity_dict

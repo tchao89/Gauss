@@ -111,7 +111,8 @@ class AutoModelingTree(object):
                                            feature_selector_name="unsupervised",
                                            feature_selector_flag=unsupervised_feature_generator_flag)
 
-        entity_dict = preprocess_chain.run()
+        preprocess_chain.run()
+        entity_dict = preprocess_chain.entity_dict
         self.need_data_clear = preprocess_chain.need_data_clear
 
         assert "dataset" in entity_dict and "val_dataset" in entity_dict
@@ -144,8 +145,9 @@ class AutoModelingTree(object):
                                    auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
                                    selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config")
 
-            local_model = core_chain.run(**entity_dict)
-            local_metric = local_model.val_metrics
+            core_chain.run(**entity_dict)
+            local_model = core_chain.optimal_model
+            local_metric = core_chain.optimal_metrics
 
             if best_model is None:
                 best_model = local_model
@@ -163,7 +165,7 @@ class AutoModelingTree(object):
 
     @classmethod
     def compare(cls, local_best_metric, best_metric):
-        return best_metric.result - local_best_metric.result
+        return best_metric - local_best_metric
 
     @classmethod
     def check_data(cls, need_data_clear, model_name):
@@ -185,7 +187,7 @@ class AutoModelingTree(object):
 
     def run(self):
         local_result = self.run_route(
-            folder_prefix_str="no-clear_no-feagen_no-unsupfeasel_no-supfeasel",
+            folder_prefix_str="no-clear_feagen_no-unsupfeasel_no-supfeasel",
             data_clear_flag=False,
             feature_generator_flag=True,
             unsupervised_feature_generator_flag=False,
@@ -196,6 +198,22 @@ class AutoModelingTree(object):
             self.update_best(*local_result)
 
         local_result = self.run_route("clear_feagen_supfeasel_no-supfeasel", True, True, True, False, ["lightgbm"])
+
+        if local_result is not None:
+            self.update_best(*local_result)
+
+        local_result = self.run_route("no-clear_feagen_supfeasel_supfeasel", False, True, True, True, ["lightgbm"])
+
+        if local_result is not None:
+            self.update_best(*local_result)
+
+        local_result = self.run_route("no-clear_no-feagen_no-supfeasel_no-supfeasel", False, False, False, False, ["lightgbm"])
+
+        if local_result is not None:
+            self.update_best(*local_result)
+
+        local_result = self.run_route("no-clear_no-feagen_no-supfeasel_supfeasel", False, False, False, True, ["lightgbm"])
+
         if local_result is not None:
             self.update_best(*local_result)
 
@@ -210,5 +228,7 @@ class AutoModelingTree(object):
                      "feature_generator": self.feature_generator,
                      "unsupervised_feature_selector": self.unsupervised_feature_selector,
                      "supervised_feature_selector": self.supervised_feature_selector,
-                     "auto_ml": self.auto_ml}
+                     "auto_ml": self.auto_ml,
+                     "best_metric": float(self.best_metric)}
+
         yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/final_config.yaml")

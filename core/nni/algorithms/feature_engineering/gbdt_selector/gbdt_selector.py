@@ -91,7 +91,8 @@ class GBDTSelector(FeatureSelector):
                                lgb_train,
                                num_boost_round=self.num_boost_round,
                                valid_sets=lgb_eval,
-                               early_stopping_rounds=self.early_stopping_rounds)
+                               early_stopping_rounds=self.early_stopping_rounds,
+                               verbose_eval=False)
 
         self.feature_importance = self.model.feature_importance(self.importance_type)
 

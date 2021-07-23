@@ -98,15 +98,21 @@ class CoreRoute(Component):
 
         self.feature_selector = self.create_component(component_name="supervisedfeatureselector", **s_params)
 
-        self.best_model = None
-        self.best_val_metric = None
+        if self._train_flag:
+            self._best_model = None
+            self._best_metrics = None
+
+        if not self._train_flag:
+            self._result = None
 
     def _train_run(self, **entity):
         assert "dataset" in entity
         assert "val_dataset" in entity
 
         if self._feature_selector_flag:
-            best_model = self.feature_selector.run(**entity)
+            self.feature_selector.run(**entity)
+            self._best_model = self.feature_selector.optimal_model
+            self._best_metrics = self.feature_selector.optimal_metrics
 
         else:
             train_dataset = entity["dataset"]
@@ -117,14 +123,14 @@ class CoreRoute(Component):
             entity["model"] = self.model
             entity["metrics"] = self.metrics
 
-            best_model = self.auto_ml.run(**entity)
-            best_model.model_save()
+            self.auto_ml.run(**entity)
+
+            self._best_model = self.auto_ml.optimal_model
+            self._best_metrics = self.auto_ml.optimal_metrics
+
+            self._best_model.model_save()
 
             yaml_write(yaml_dict=feature_conf, yaml_file=self._final_file_path)
-
-        assert best_model is not None
-        self.best_model = best_model
-        return best_model
 
     def _predict_run(self, **entity):
         """
@@ -138,7 +144,10 @@ class CoreRoute(Component):
         dataset = entity.get("dataset")
 
         if self._feature_selector_flag:
-            result = self.feature_selector.run(**entity)
+
+            self.feature_selector.run(**entity)
+            self._result = self.feature_selector.result
+
         else:
 
             feature_conf = yaml_read(self._final_file_path)
@@ -155,9 +164,25 @@ class CoreRoute(Component):
 
             model = self.create_entity(entity_name=self._model_name, **model_params)
 
-            return model.predict(dataset)
+            self._result = model.predict(dataset)
 
-        return result
+    @property
+    def optimal_model(self):
+        assert self._train_flag
+        assert self._best_model is not None
+        return self._best_model
+
+    @property
+    def optimal_metrics(self):
+        assert self._train_flag
+        assert self._best_metrics is not None
+        return self._best_metrics
+
+    @property
+    def result(self):
+        assert not self._train_flag
+        assert self._result is not None
+        return self._result
 
     @classmethod
     def create_component(cls, component_name: str, **params):
@@ -183,8 +208,7 @@ class CoreRoute(Component):
         pass
     
     def get_eval_metric(self):
-        assert self.best_model is not None
-        return self.best_model.val_metrics
+        pass
 
     def get_eval_result(self,  **entity):
         pass

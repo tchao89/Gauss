@@ -55,12 +55,12 @@ class GaussLightgbm(Model):
             self._check_bunch(dataset=dataset)
             self._check_bunch(dataset=val_dataset)
 
-            train_data = [dataset.data.values, dataset.target.values]
-            validation_set = [val_dataset.data.values, val_dataset.target.values]
+            train_data = [dataset.data.values, dataset.target.values.flatten()]
+            validation_set = [val_dataset.data.values, val_dataset.target.values.flatten()]
 
-            lgb_train = lgb.Dataset(data=train_data[0], label=train_data[1], free_raw_data=False)
+            lgb_train = lgb.Dataset(data=train_data[0], label=train_data[1], free_raw_data=False, silent=True)
             lgb_eval = lgb.Dataset(data=validation_set[0], label=validation_set[1], reference=lgb_train,
-                                   free_raw_data=False)
+                                   free_raw_data=False, silent=True)
 
             return lgb_train, lgb_eval
         else:
@@ -86,7 +86,7 @@ class GaussLightgbm(Model):
                                         num_boost_round=200,
                                         valid_sets=self.lgb_eval,
                                         early_stopping_rounds=2,
-                                        verbose_eval=True)
+                                        verbose_eval=False)
 
         else:
             raise ValueError("Model parameters is None.")

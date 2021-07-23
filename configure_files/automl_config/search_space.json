@@ -1,5 +1,5 @@
-{
-  "num_leaves": {"_type": "choice",
+{"lightgbm": {
+    "num_leaves": {"_type": "choice",
                  "_value": [10, 20, 30, 40, 50, 60]
                  },
   "learning_rate": {"_type": "choice",
@@ -20,5 +20,21 @@
   "lambda_l2": {
       "_type": "uniform",
       "_value": [0, 0.9]
-  }
 }
+},
+  "lr": {
+
+    "alpha": {"_type": "choice",
+              "_value": [0.0001, 0.0005, 0.001, 0.002, 0.003]
+                    },
+    "learning_rate": {"_type": "choice",
+              "_value": ["constant", "optimal", "invscaling", "adaptive"]
+                    },
+    "eta0": {"_type": "choice",
+          "_value": [0.01, 0.05, 0.1, 0.2, 0.3]
+  },
+    "l1_ratio": {"_type": "choice",
+          "_value": [0, 0.15, 0.3, 0.5, 0.8, 1]
+  }
+  }
+  }

@@ -1,8 +1,18 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2021, Citic-Lab. All rights reserved.
+# Authors: Lab
 import argparse
 
 from pipeline.auto_modeling_tree import AutoModelingTree
 from pipeline.udf_modeling_tree import UdfModelingTree
 from utils.common_component import yaml_read
+
+# this block just for test
+from pipeline.mapping import EnvironmentConfigure
+from utils.bunch import Bunch
+from utils.common_component import yaml_write
+from utils.Logger import logger
 
 
 def main(config=config_path):
@@ -63,3 +73,5 @@ if __name__ == "__main__":
         main(args.config)
     else:
         main()
+
+    logger.info(environ_configure.work_root)

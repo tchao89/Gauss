@@ -12,7 +12,7 @@ import pandas as pd
 from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
 
-from utils.common_component import yaml_read, feature_list_generator
+from utils.common_component import yaml_read
 from utils.bunch import Bunch
 
 
@@ -80,17 +80,13 @@ class Inference(object):
                                            feature_selector_name=self.unsupervised_feature_selector,
                                            feature_selector_flag=self.unsupervised_feature_selector_flag)
 
-        entity_dict = preprocess_chain.run()
+        preprocess_chain.run()
+        entity_dict = preprocess_chain.entity_dict
 
         assert "dataset" in entity_dict
         work_model_root = self.best_root + "/model/" + self.conf.best_model_name
         model_save_root = work_model_root + "/model_save"
-        model_config_root = work_model_root + "/model_config"
-
-        ################################################
-        if os.path.isfile(model_config_root):
-            model_conf = yaml_read(model_config_root)
-        ################################################
+        # model_config_root = work_model_root + "/model_config"
 
         core_chain = CoreRoute(name="core_route",
                                train_flag=False,
@@ -109,5 +105,6 @@ class Inference(object):
                                selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config"
                                )
 
-        predict_result = core_chain.run(**entity_dict)
+        core_chain.run(**entity_dict)
+        predict_result = core_chain.result
         self.output_result(predict_result=predict_result)

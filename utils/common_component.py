@@ -3,6 +3,8 @@
 # Copyright (c) 2020, Citic-Lab. All rights reserved.
 # Authors: citic-lab
 import os
+from typing import List
+
 import yaml
 
 def mkdir(path: str):
@@ -38,6 +40,25 @@ def feature_list_generator(feature_dict: dict):
     feature_list = []
     for item in feature_dict.keys():
         if feature_dict[item]["used"] is True:
+            feature_list.append(item)
+    feature_list.sort(key=get_item)
+
+    return feature_list
+
+def feature_list_selector(feature_dict: dict, feature_indexes: List[int]):
+    def get_item(dict_key):
+        return feature_dict[dict_key]["index"]
+
+    used_features = []
+    for item in feature_dict.keys():
+        if feature_dict[item]["used"] is True:
+            used_features.append(item)
+    used_features.sort(key=get_item)
+
+    feature_list = []
+
+    for index, item in enumerate(used_features):
+        if index in feature_indexes:
             feature_list.append(item)
     feature_list.sort(key=get_item)
 

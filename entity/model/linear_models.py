@@ -57,8 +57,8 @@ class GaussLinearModels(Model):
             self._check_bunch(dataset=dataset)
             self._check_bunch(dataset=val_dataset)
 
-            train_data = [dataset.data.values, dataset.target.values]
-            validation_set = [val_dataset.data.values, val_dataset.target.values]
+            train_data = [dataset.data.values, dataset.target.values.flatten()]
+            validation_set = [val_dataset.data.values, val_dataset.target.values.flatten()]
 
             return train_data, validation_set
         else:
@@ -82,26 +82,19 @@ class GaussLinearModels(Model):
         if self._model_param_dict is not None:
             params = self._model_param_dict
 
-            if self._name == "lr":
-                params["loss"] = "log"
-
             if self._task_type == "classification":
                 self._linear_model = SGDClassifier(loss=params["loss"], penalty=params["penalty"],
-                                                   alpha=params["alpha"], l1_ratio=params["l1-ratio"],
+                                                   alpha=params["alpha"], l1_ratio=params["l1_ratio"],
                                                    learning_rate=params["learning_rate"], eta0=params["eta0"],
-                                                   early_stopping=params["early_stopping"],
-                                                   class_weight=params["weight"],
-                                                   n_jobs=-1, max_iter=10000)
+                                                   n_jobs=params["n_jobs"], max_iter=params["max_iter"])
 
                 self._linear_model.fit(X=self.lr_train[0], y=self.lr_train[1])
 
             elif self._task_type == "regression":
                 self._linear_model = SGDRegressor(loss=params["loss"], penalty=params["penalty"],
-                                                  alpha=params["alpha"], l1_ratio=params["l1-ratio"],
+                                                  alpha=params["alpha"], l1_ratio=params["l1_ratio"],
                                                   learning_rate=params["learning_rate"], eta0=params["eta0"],
-                                                  early_stopping=params["early_stopping"],
-                                                  class_weight=params["weight"],
-                                                  n_jobs=-1, max_iter=10000)
+                                                  n_jobs=params["n_jobs"], max_iter=params["max_iter"])
 
                 self._linear_model.fit(X=self.lr_train[0], y=self.lr_train[1])
 
@@ -117,8 +110,8 @@ class GaussLinearModels(Model):
         with shelve.open(filename=os.path.join(self._model_path, self.file_name)) as shelve_open:
             self._linear_model = shelve_open[self.file_name]
 
-        inference_result = self._linear_model.predict(self.lr_test)
-        inference_result = pd.DataFrame({"result": inference_result})
+        inference_result = self._linear_model.predict_proba(self.lr_test)
+        inference_result = pd.DataFrame({"result": inference_result[:, 1]})
 
         return inference_result
 
@@ -142,7 +135,6 @@ class GaussLinearModels(Model):
         metrics = metrics.metrics_result
         assert isinstance(metrics, MetricResult)
         self._val_metrics = metrics
-
         return metrics
 
     def get_train_loss(self):

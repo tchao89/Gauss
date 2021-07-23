@@ -35,6 +35,11 @@ class TabularAutoML(BaseAutoML):
         self._default_parameters = None
         self._search_space = None
 
+        self._best_model = None
+        self._best_metrics = None
+
+        self._result = None
+
     def chose_tuner_set(self):
         """This method will fill self.opt_tuners, which contains all opt tuners you need in this experiment.
 
@@ -83,7 +88,7 @@ class TabularAutoML(BaseAutoML):
 
         for tuner_algorithms in self.opt_tuners:
             tuner = tuner_algorithms
-            tuner.update_search_space(self._search_space)
+            tuner.update_search_space(self._search_space.get(entity["model"].name))
 
             for trial in range(self.trial_num):
                 if self._default_parameters is not None:
@@ -113,10 +118,20 @@ class TabularAutoML(BaseAutoML):
                     tuner.receive_trial_result(trial, receive_params, metrics)
                 else:
                     raise ValueError("Default parameters is None.")
+        self._best_model = best_model
+        self._best_metrics = best_metrics
         return best_model
 
     def _predict_run(self, **entity):
         pass
+
+    @property
+    def optimal_model(self):
+        return self._best_model
+
+    @property
+    def optimal_metrics(self):
+        return self._best_metrics
 
     @property
     def default_params(self):
@@ -125,7 +140,6 @@ class TabularAutoML(BaseAutoML):
     def set_default_params(self):
         default_params_path = os.path.join(self._auto_ml_path, "default_parameters.json")
         with open(default_params_path, 'r') as json_file:
-            print(default_params_path)
             self._default_parameters = json.load(json_file)
 
     @property

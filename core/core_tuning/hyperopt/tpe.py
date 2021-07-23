@@ -9,7 +9,7 @@ from builtins import map
 from builtins import zip
 from builtins import range
 from past.utils import old_div
-import logging
+# import logging
 import time
 
 import numpy as np
@@ -26,7 +26,7 @@ from . import rand
 __authors__ = "James Bergstra"
 __license__ = "3-clause BSD License"
 __contact__ = "github.com/jaberg/hyperopt"
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 EPS = 1e-12
 
@@ -833,7 +833,7 @@ def suggest(new_ids, domain, trials, seed,
     (s_prior_weight, observed, observed_loss, specs, opt_idxs, opt_vals) \
         = tpe_transform(domain, prior_weight, gamma)
     tt = time.time() - t0
-    logger.info('tpe_transform took %f seconds' % tt)
+    # logger.info('tpe_transform took %f seconds' % tt)
 
     best_docs = dict()
     best_docs_loss = dict()
@@ -859,11 +859,11 @@ def suggest(new_ids, domain, trials, seed,
     tids = [k for k, v in tid_docs]
     docs = [v for k, v in tid_docs]
 
-    if docs:
-        logger.info('TPE using %i/%i trials with best loss %f' % (
-            len(docs), len(trials), min(best_docs_loss.values())))
-    else:
-        logger.info('TPE using 0 trials')
+    # if docs:
+    #     logger.info('TPE using %i/%i trials with best loss %f' % (
+    #         len(docs), len(trials), min(best_docs_loss.values())))
+    # else:
+    #     logger.info('TPE using 0 trials')
 
     if len(docs) < n_startup_jobs:
         # N.B. THIS SEEDS THE RNG BASED ON THE new_id

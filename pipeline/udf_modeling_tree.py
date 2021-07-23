@@ -152,7 +152,8 @@ class UdfModelingTree(object):
                                            feature_selector_name="unsupervised",
                                            feature_selector_flag=unsupervised_feature_selector_flag)
 
-        entity_dict = preprocess_chain.run()
+        preprocess_chain.run()
+        entity_dict = preprocess_chain.entity_dict
         self.need_data_clear = preprocess_chain.need_data_clear
 
         # 如果未进行数据清洗, 并且模型需要数据清洗, 则返回None.
@@ -179,9 +180,10 @@ class UdfModelingTree(object):
                                auto_ml_path=auto_ml_path,
                                selector_config_path=selector_config_path)
 
-        local_model = core_chain.run(**entity_dict)
-        local_metric = local_model.val_metrics
-
+        core_chain.run(**entity_dict)
+        local_metric = core_chain.optimal_metrics
+        assert local_metric is not None
+        local_model = core_chain.optimal_model
         return local_model, local_metric, work_root, model_name
 
     # local_best_model, local_best_metric, local_best_work_root, local_best_model_name
@@ -194,7 +196,7 @@ class UdfModelingTree(object):
 
     @classmethod
     def compare(cls, local_best_metric, best_metric):
-        return best_metric.result - local_best_metric.result
+        return best_metric - local_best_metric
 
     @classmethod
     def check_data(cls, need_data_clear, model_name):
@@ -223,11 +225,9 @@ class UdfModelingTree(object):
     def run(self):
 
         for data_clear in self.data_clear_flag:
-
             for feature_generator in self.feature_generator_flag:
                 for unsupervised_feature_sel in self.unsupervised_feature_selector_flag:
                     for supervise_feature_sel in self.supervised_feature_selector_flag:
-
                         for model in self.model_zoo:
                             prefix = str(data_clear) + "_" + str(feature_generator) + "_" + str(
                                 unsupervised_feature_sel) + "_" + str(supervise_feature_sel)
@@ -255,6 +255,6 @@ class UdfModelingTree(object):
                      "unsupervised_feature_selector": self.unsupervised_feature_selector,
                      "supervised_feature_selector": self.supervised_feature_selector,
                      "auto_ml": self.auto_ml,
-                     "best_metric": float(self.best_metric.result)}
+                     "best_metric": float(self.best_metric)}
 
         yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/final_config.yaml")

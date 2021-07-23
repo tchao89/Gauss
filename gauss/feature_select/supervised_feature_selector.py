@@ -13,11 +13,11 @@ from gauss.auto_ml.tabular_auto_ml import TabularAutoML
 
 from core.nni.algorithms.feature_engineering.gradient_selector import FeatureGradientSelector
 from core.nni.algorithms.feature_engineering.gbdt_selector import GBDTSelector
-from core.nni.algorithms.hpo.evolution_tuner import EvolutionTuner
+from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
 from gauss_factory.entity_factory import MetricsFactory, ModelFactory
 
 from utils.bunch import Bunch
-from utils.common_component import yaml_read, yaml_write, feature_list_generator
+from utils.common_component import yaml_read, yaml_write, feature_list_generator, feature_list_selector
 
 
 class SupervisedFeatureSelector(BaseFeatureSelector):
@@ -57,7 +57,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         # selector names
         self._feature_selector_names = ["gradient_feature_selector", "GBDTSelector"]
         # max trail num for selector tuner
-        self.selector_trial_num = 3
+        self.selector_trial_num = 1
         # default parameters concludes tree selector parameters and gradient parameters.
         # format: {"gradient_feature_selector": {"order": 4, "n_epochs": 100},
         # "GBDTSelector": {"lgb_params": {}, "eval_ratio", 0.3, "importance_type": "gain", "early_stopping_rounds": 100}}
@@ -67,6 +67,13 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         # generated parameters
         self._new_parameters = None
         self._task_name = params["task_name"]
+
+        self._optimal_model = None
+        self._optimal_metrics = None
+        if self._train_flag:
+            self._unsupervised_feature_conf = yaml_read(self._feature_configure_path)
+        else:
+            self._result = None
 
     @property
     def feature_selector_names(self):
@@ -111,12 +118,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 res[key] = key_value
         return res
 
-    def run(self, **entity):
-        if self._train_flag:
-            return self._train_run(**entity)
-        else:
-            return self._predict_run(**entity)
-
     def _train_run(self, **entity):
         """
 
@@ -140,7 +141,10 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         metrics = metrics_factory.get_entity(entity_name=self._metrics_name, **metrics_params)
         self._optimize_mode = metrics.optimize_mode
 
-        selector_tuner = EvolutionTuner(optimize_mode=self._optimize_mode)
+        selector_tuner = HyperoptTuner(algorithm_name="random_search", optimize_mode=self._optimize_mode)
+
+        best_metrics = None
+        best_model = None
 
         for model_name in self._feature_selector_names:
             # 梯度特征选择
@@ -172,9 +176,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                                         optimize_mode=self._optimize_mode,
                                         auto_ml_path=self._auto_ml_path)
 
-            best_metrics = None
-            best_model = None
-
             for trial in range(self.selector_trial_num):
                 params = self._new_parameters
                 receive_params = selector_tuner.generate_parameters(trial)
@@ -192,21 +193,18 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
                 feature_list = self.choose_selector(selector_name=model_name, dataset=original_dataset, params=params)
                 # 将data和target包装成为PlainDataset对象
-                data = original_dataset.feature_choose(feature_list)
-                choose_feature_names = list(data.columns)
-
+                features = feature_list_selector(feature_dict=self._unsupervised_feature_conf, feature_indexes=feature_list)
+                data = original_dataset.feature_choose(features)
                 target = original_dataset.get_dataset().target
-
                 data_pair = Bunch(data=data, target=target, target_names=original_dataset.get_dataset().target_names)
                 train_dataset = PlaintextDataset(name="train_data", task_type=self._task_name, data_pair=data_pair)
 
-                val_data = original_val_dataset.feature_choose(feature_list)
+                val_data = original_val_dataset.feature_choose(features)
                 val_target = original_val_dataset.get_dataset().target
                 val_data_pair = Bunch(data=val_data, target=val_target, target_names=original_dataset.get_dataset().target_names)
                 val_dataset = PlaintextDataset(name="val_dataset", task_type=self._task_name, data_pair=val_data_pair)
 
                 metrics.label_name = original_dataset.get_dataset().target_names[0]
-
                 model_params = Bunch(name=self._model_name,
                                      model_path=self._model_save_path,
                                      train_flag=self._train_flag,
@@ -217,30 +215,33 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
                 # 返回训练好的最佳模型
                 model_tuner.run(model=model, dataset=train_dataset, val_dataset=val_dataset, metrics=metrics)
-                new_metrics = metrics.metrics_result.result
+
+                new_metrics = model_tuner.optimal_metrics
+                new_model = model_tuner.optimal_model
+
+                selector_tuner.receive_trial_result(trial, receive_params, new_metrics)
 
                 if best_metrics is None:
-                    best_metrics = metrics.metrics_result.result
+                    best_metrics = new_metrics
 
                 if best_model is None:
-                    best_model = model
+                    best_model = new_model
 
                 if self._final_feature_names is None:
-                    self._final_feature_names = choose_feature_names
+                    self._final_feature_names = features
 
                 if new_metrics > best_metrics:
                     best_metrics = new_metrics
                     best_model = model
-                    self._final_feature_names = choose_feature_names
-
-                selector_tuner.receive_trial_result(trial, receive_params, metrics.metrics_result.result)
+                    self._final_feature_names = features
 
             # save model
             best_model.model_save()
             # save features
             self.final_configure_generation()
 
-            return best_model
+        self._optimal_metrics = best_metrics
+        self._optimal_model = best_model
 
     def _predict_run(self, **entity):
         assert self.train_flag is False
@@ -254,6 +255,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                              model_path=self._model_save_path,
                              train_flag=self._train_flag,
                              task_type=self._task_name)
+
         model_factory = ModelFactory()
         model = model_factory.get_entity(entity_name=self._model_name, **model_params)
 
@@ -264,7 +266,19 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         data_pair = Bunch(data=data, target=None, target_names=None)
         dataset = PlaintextDataset(name="train_data", task_type=self._train_flag, data_pair=data_pair)
 
-        return model.predict(dataset)
+        self._result = model.predict(dataset)
+
+    @property
+    def result(self):
+        return self._result
+
+    @property
+    def optimal_model(self):
+        return self._optimal_model
+
+    @property
+    def optimal_metrics(self):
+        return self._optimal_metrics
 
     def final_configure_generation(self):
 

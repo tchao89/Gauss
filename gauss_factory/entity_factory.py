@@ -53,7 +53,7 @@ class ModelFactory(AbstractGauss):
             # parameters: name: str, label_name: str
             return GaussLightgbm(**params)
         elif entity_name.lower() == "lr":
-            return GaussLogisticRegression(**params)
+            return GaussLinearModels(**params)
         return None
 
     def get_component(self, component_name: str):
