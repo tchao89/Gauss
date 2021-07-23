@@ -79,6 +79,7 @@ class TypeInference(BaseTypeInference):
     def _bool_column_selector(self, feature_name: str, dataset: pd.DataFrame):
 
         if self.init_feature_configure is not None \
+                and self.init_feature_configure.feature_dict.get(feature_name) is not None \
                 and self.init_feature_configure.feature_dict.get(feature_name).ftype == 'bool' \
                 and self.init_feature_configure.feature_dict.get(feature_name).dtype == 'int64' or 'string':
 
@@ -98,6 +99,7 @@ class TypeInference(BaseTypeInference):
                 return False
 
         if self.init_feature_configure is not None \
+                and self.init_feature_configure.feature_dict.get(feature_name) is not None \
                 and self.init_feature_configure.feature_dict[feature_name].ftype == 'datetime' \
                 and self.init_feature_configure.feature_dict[feature_name].dtype == 'string':
 

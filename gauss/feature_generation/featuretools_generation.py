@@ -46,49 +46,48 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         dataset = entity["dataset"]
         self._set_feature_configure()
         assert self.feature_configure is not None
+        self._label_encoding(dataset=dataset)
+        self._label_encoding_serialize()
 
         if self._enable:
-            self._label_encoding(dataset=dataset)
-            self._label_encoding_serialize()
             self._ft_generator(dataset=dataset)
 
         self.final_configure_generation(dataset=dataset)
 
     def _predict_run(self, **entity):
 
+        assert "dataset" in entity.keys()
+        dataset = entity['dataset']
+
+        data = dataset.get_dataset().data
+        assert isinstance(data, pd.DataFrame)
+
+        feature_names = dataset.get_dataset().feature_names
+
+        self._set_feature_configure()
+        assert self.feature_configure is not None
+
+        with shelve.open(self._label_encoding_configure_path) as shelve_open:
+            le_model_list = shelve_open['label_encoding']
+
+            for col in feature_names:
+                if self.feature_configure[col]['ftype'] == "category" or self.feature_configure[col]['ftype'] == "bool":
+                    assert le_model_list.get(col)
+                    le_model = le_model_list[col]
+
+                    label_dict = dict(zip(le_model.classes_, le_model.transform(le_model.classes_)))
+                    status_list = data[col].unique().tolist()
+
+                    for item in status_list:
+                        if label_dict.get(item) is None:
+                            logger.info(
+                                "feature: " + str(col) + "has an abnormal value (unseen by label encoding): " + str(
+                                    item))
+                            raise ValueError("feature: " + str(
+                                col) + " has an abnormal value (unseen by label encoding): " + str(item))
+
+                    data[col] = le_model.transform(data[col])
         if self._enable is True:
-            assert "dataset" in entity.keys()
-            dataset = entity['dataset']
-
-            data = dataset.get_dataset().data
-            assert isinstance(data, pd.DataFrame)
-
-            feature_names = dataset.get_dataset().feature_names
-
-            self._set_feature_configure()
-            assert self.feature_configure is not None
-
-            with shelve.open(self._label_encoding_configure_path) as shelve_open:
-                le_model_list = shelve_open['label_encoding']
-
-                for col in feature_names:
-                    if self.feature_configure[col]['ftype'] == "category":
-                        assert le_model_list.get(col)
-                        le_model = le_model_list[col]
-
-                        label_dict = dict(zip(le_model.classes_, le_model.transform(le_model.classes_)))
-                        status_list = data[col].unique().tolist()
-
-                        for item in status_list:
-                            if label_dict.get(item) is None:
-                                logger.info(
-                                    "feature: " + str(col) + "has an abnormal value (unseen by label encoding): " + str(
-                                        item))
-                                raise ValueError("feature: " + str(
-                                    col) + " has an abnormal value (unseen by label encoding): " + str(item))
-
-                        data[col] = le_model.transform(data[col])
-
             self._ft_generator(dataset=dataset)
 
     def _set_feature_configure(self):

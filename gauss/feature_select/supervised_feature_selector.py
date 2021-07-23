@@ -265,7 +265,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         data_pair = Bunch(data=data, target=None, target_names=None)
         dataset = PlaintextDataset(name="train_data", task_type=self._train_flag, data_pair=data_pair)
-
         self._result = model.predict(dataset)
 
     @property

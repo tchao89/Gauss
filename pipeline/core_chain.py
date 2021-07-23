@@ -144,7 +144,6 @@ class CoreRoute(Component):
         dataset = entity.get("dataset")
 
         if self._feature_selector_flag:
-
             self.feature_selector.run(**entity)
             self._result = self.feature_selector.result
 
