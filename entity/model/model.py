@@ -5,19 +5,19 @@
 from __future__ import annotations
 
 import abc
-from typing import List
 
 from entity.entity import Entity
+from utils.common_component import feature_list_generator
 
 
 class Model(Entity):
     def __init__(self,
                  name: str,
                  model_path: str,
+                 model_config_root: str,
                  task_type: str,
                  train_flag: bool,
-                 supervised_feature_config: List[int] = None,
-                 preprocessing_feature_config_path: str = None
+                 model_config: dict = None
                  ):
 
         self._model_path = model_path
@@ -25,11 +25,13 @@ class Model(Entity):
         self._train_flag = train_flag
         self._train_finished = False
 
-        self._model_param_dict = {}
+        # model_config is a dict containing all features and these attributes used in the model.
+        self._model_config = model_config
+        # model_config save root
+        self._model_config_root = model_config_root
 
-        self._supervised_feature_config = supervised_feature_config
-        self._preprocessing_feature_config_path = preprocessing_feature_config_path
-        self._feature_dict = {}
+        self._model_param_dict = {}
+        self._feature_list = feature_list_generator(feature_dict=self._model_config)
 
         super(Model, self).__init__(
             name=name,

@@ -132,6 +132,7 @@ class AutoModelingTree(object):
         for model in model_zoo:
             work_model_root = work_root + "/model/" + model + "/"
             model_save_root = work_model_root + "model_save"
+            model_config_root = work_model_root + "/model_config"
 
             if check_data(already_data_clear=self.already_data_clear, model_name=model) is not True:
                 continue
@@ -140,6 +141,7 @@ class AutoModelingTree(object):
                                    train_flag=True,
                                    model_name=model,
                                    model_save_root=model_save_root,
+                                   model_config_root=model_config_root,
                                    target_feature_configure_path=feature_dict.final_feature_config,
                                    pre_feature_configure_path=feature_dict.unsupervised_feature,
                                    label_encoding_path=feature_dict.label_encoding_path,

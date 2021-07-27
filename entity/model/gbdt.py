@@ -17,16 +17,19 @@ from lightgbm.callback import final_metrics
 
 from entity.model.model import Model
 from entity.dataset.base_dataset import BaseDataset
+from entity.dataset.plain_dataset import PlaintextDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from utils.bunch import Bunch
-from utils.common_component import mkdir, yaml_read, yaml_write
+from utils.common_component import mkdir, yaml_write
 
 
 class GaussLightgbm(Model):
     def __init__(self, **params):
-        super(GaussLightgbm, self).__init__(params["name"], params["model_path"], params["task_type"],
-                                            params["train_flag"])
-        self.file_name = self.name + ".txt"
+        super(GaussLightgbm, self).__init__(params["name"], params["model_path"], params["model_config_root"], params["task_type"],
+                                            params["train_flag"], params["model_config"])
+
+        self.model_file_name = self.name + ".txt"
+        self.config_file_name = self.name + ".yaml"
 
         self._lgb_model = None
         self._val_metrics = None
@@ -46,8 +49,23 @@ class GaussLightgbm(Model):
         :param dataset:
         :return: lgb.Dataset
         """
+
         # dataset is a bunch object, including data, target, feature_names, target_names, generated_feature_names.
         if self._train_flag:
+
+            if self._feature_list is not None:
+
+                data = dataset.feature_choose(self._feature_list)
+                target = dataset.get_dataset().target
+                data_pair = Bunch(data=data, target=target, target_names=dataset.get_dataset().target_names)
+                dataset = PlaintextDataset(name="train_data", task_type=self._task_type, data_pair=data_pair)
+
+                val_data = val_dataset.feature_choose(self._feature_list)
+                val_target = val_dataset.get_dataset().target
+                val_data_pair = Bunch(data=val_data, target=val_target,
+                                      target_names=dataset.get_dataset().target_names)
+                val_dataset = PlaintextDataset(name="val_dataset", task_type=self._task_type, data_pair=val_data_pair)
+
             assert val_dataset is not None
             dataset = dataset.get_dataset()
             val_dataset = val_dataset.get_dataset()
@@ -149,13 +167,11 @@ class GaussLightgbm(Model):
             assert os.path.isdir(self._model_path)
         except AssertionError:
             mkdir(self._model_path)
-        self._lgb_model.save_model(os.path.join(self._model_path, self.file_name))
+        self._lgb_model.save_model(os.path.join(self._model_path, self.model_file_name))
+        yaml_write(yaml_dict=self._model_config, yaml_file=os.path.join(self._model_config_root, self.config_file_name))
 
     def update_params(self, **params):
         self._model_param_dict.update(params)
 
     def set_weight(self):
         pass
-
-    def feature_parse(self):
-        self._feature_dict = yaml_read(self._preprocessing_feature_config_path)

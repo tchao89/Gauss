@@ -65,3 +65,7 @@ class BaseDataset(Entity):
     @abc.abstractmethod
     def union(self, dataset: BaseDataset):
         pass
+
+    @abc.abstractmethod
+    def feature_choose(self, feature_list):
+        pass

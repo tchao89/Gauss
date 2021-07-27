@@ -52,12 +52,15 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         self._model_save_path = params["model_save_path"]
         self._final_file_path = params["final_file_path"]
 
+        self._model_config_root = params["model_config_root"]
+        self._feature_conf = params["model_config"]
+
         self._optimize_mode = None
 
         # selector names
         self._feature_selector_names = ["gradient_feature_selector", "GBDTSelector"]
         # max trail num for selector tuner
-        self.selector_trial_num = 1
+        self.selector_trial_num = 2
         # default parameters concludes tree selector parameters and gradient parameters.
         # format: {"gradient_feature_selector": {"order": 4, "n_epochs": 100},
         # "GBDTSelector": {"lgb_params": {}, "eval_ratio", 0.3, "importance_type": "gain", "early_stopping_rounds": 100}}
@@ -177,6 +180,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                                         auto_ml_path=self._auto_ml_path)
 
             for trial in range(self.selector_trial_num):
+
                 params = self._new_parameters
                 receive_params = selector_tuner.generate_parameters(trial)
                 # feature selector hyper-parameters
@@ -194,28 +198,24 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 feature_list = self.choose_selector(selector_name=model_name, dataset=original_dataset, params=params)
                 # 将data和target包装成为PlainDataset对象
                 features = feature_list_selector(feature_dict=self._unsupervised_feature_conf, feature_indexes=feature_list)
+                model_config = {}
 
-                data = original_dataset.feature_choose(features)
-                target = original_dataset.get_dataset().target
-                data_pair = Bunch(data=data, target=target, target_names=original_dataset.get_dataset().target_names)
-                train_dataset = PlaintextDataset(name="train_data", task_type=self._task_name, data_pair=data_pair)
-
-                val_data = original_val_dataset.feature_choose(features)
-                val_target = original_val_dataset.get_dataset().target
-                val_data_pair = Bunch(data=val_data, target=val_target, target_names=original_dataset.get_dataset().target_names)
-                val_dataset = PlaintextDataset(name="val_dataset", task_type=self._task_name, data_pair=val_data_pair)
+                for feature in features:
+                    model_config[feature] = self._feature_conf[feature]
 
                 metrics.label_name = original_dataset.get_dataset().target_names[0]
                 model_params = Bunch(name=self._model_name,
                                      model_path=self._model_save_path,
                                      train_flag=self._train_flag,
-                                     task_type=self._task_name)
+                                     task_type=self._task_name,
+                                     model_config_root=self._model_config_root,
+                                     model_config=model_config)
 
                 model_factory = ModelFactory()
                 model = model_factory.get_entity(entity_name=self._model_name, **model_params)
 
                 # 返回训练好的最佳模型
-                model_tuner.run(model=model, dataset=train_dataset, val_dataset=val_dataset, metrics=metrics)
+                model_tuner.run(model=model, dataset=original_dataset, val_dataset=original_val_dataset, metrics=metrics)
 
                 new_metrics = model_tuner.optimal_metrics
                 new_model = model_tuner.optimal_model

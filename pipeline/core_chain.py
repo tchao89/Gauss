@@ -23,6 +23,7 @@ class CoreRoute(Component):
                  train_flag: bool,
                  model_name: str,
                  model_save_root: str,
+                 model_config_root: str,
                  target_feature_configure_path: Any(str, None),
                  pre_feature_configure_path: Any(str, None),
                  label_encoding_path: str,
@@ -51,6 +52,7 @@ class CoreRoute(Component):
         self._model_name = model_name
         # 模型保存根目录
         self._model_save_path = model_save_root
+        self._model_config_root = model_config_root
         self._task_type = task_type
         self._metrics_name = metrics_name
         self._auto_ml_path = auto_ml_path
@@ -66,8 +68,12 @@ class CoreRoute(Component):
         self.metrics = metrics_factory.get_entity(entity_name=self._metrics_name, **metrics_params)
         self._optimize_mode = self.metrics.optimize_mode
 
+        self._feature_conf = yaml_read(self._feature_config_path)
+
         model_params = Bunch(name=self._model_name,
                              model_path=self._model_save_path,
+                             model_config_root=model_config_root,
+                             model_config=self._feature_conf,
                              train_flag=self._train_flag,
                              task_type=self._task_type)
 
@@ -88,6 +94,8 @@ class CoreRoute(Component):
                          enable=self.enable,
                          metrics_name=self._metrics_name,
                          task_name=task_type,
+                         model_config_root=model_config_root,
+                         model_config=self._feature_conf,
                          feature_config_path=pre_feature_configure_path,
                          final_file_path=target_feature_configure_path,
                          label_encoding_configure_path=label_encoding_path,
