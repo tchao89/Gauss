@@ -194,6 +194,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 feature_list = self.choose_selector(selector_name=model_name, dataset=original_dataset, params=params)
                 # 将data和target包装成为PlainDataset对象
                 features = feature_list_selector(feature_dict=self._unsupervised_feature_conf, feature_indexes=feature_list)
+
                 data = original_dataset.feature_choose(features)
                 target = original_dataset.get_dataset().target
                 data_pair = Bunch(data=data, target=target, target_names=original_dataset.get_dataset().target_names)

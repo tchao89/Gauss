@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2020, Citic-Lab. All rights reserved.
 # Authors: citic-lab
+import copy
 import shelve
 
 import yaml
@@ -45,28 +46,30 @@ class PlainDataClear(BaseDataClear):
         self.default_num_impute_model = SimpleImputer(missing_values=self.missing_values, strategy="mean")
 
         self.impute_models = {}
-        self._need_data_clear = None
+        self._already_data_clear = None
 
     def _train_run(self, **entity):
         if self._enable:
-            self._need_data_clear = True
+            self._already_data_clear = True
             assert "dataset" in entity.keys()
             self._clean(dataset=entity["dataset"])
         else:
-            self._need_data_clear = False
+            self._already_data_clear = False
 
         self.final_configure_generation()
         self._data_clear_serialize()
 
     def _predict_run(self, **entity):
+        assert "dataset" in entity.keys()
+        dataset = entity["dataset"]
+
+        data = dataset.get_dataset().data
+        assert isinstance(data, pd.DataFrame)
+
+        feature_names = dataset.get_dataset().feature_names
+        self._aberrant_modify(data=data)
+
         if self._enable is True:
-            assert "dataset" in entity.keys()
-            dataset = entity["dataset"]
-
-            data = dataset.get_dataset().data
-            assert isinstance(data, pd.DataFrame)
-
-            feature_names = dataset.get_dataset().feature_names
             with shelve.open(self._data_clear_configure_path) as shelve_open:
                 dc_model_list = shelve_open['impute_models']
 
@@ -75,17 +78,20 @@ class PlainDataClear(BaseDataClear):
                     item_data = data[col].values.reshape(-1, 1)
                     item_data = dc_model_list.get(col).transform(item_data)
                     data[col] = item_data.reshape(1, -1).squeeze(axis=0)
+            self._type_consistency_modify(data=data)
 
     def _clean(self, dataset: BaseDataset):
         data = dataset.get_dataset().data
         feature_names = dataset.get_dataset().feature_names
 
         assert isinstance(data, pd.DataFrame)
+        self._aberrant_modify(data=data)
 
         feature_conf = yaml_read(self._feature_configure_path)
 
         for feature in feature_names:
             item_data = data[feature].values
+
             # feature configuration, dict type
             item_conf = feature_conf[feature]
 
@@ -106,21 +112,58 @@ class PlainDataClear(BaseDataClear):
             else:
 
                 if item_conf['ftype'] == "numerical":
-                    impute_model = self.default_num_impute_model
+                    impute_model = copy.deepcopy(self.default_num_impute_model)
 
                 else:
                     assert item_conf['ftype'] in ["category", "bool", "datetime"]
-                    impute_model = self.default_cat_impute_model
+                    impute_model = copy.deepcopy(self.default_cat_impute_model)
 
             item_data = item_data.reshape(-1, 1)
-            impute_model = impute_model.fit(item_data)
 
+            impute_model = impute_model.fit(item_data)
             item_data = impute_model.transform(item_data)
             item_data = item_data.reshape(1, -1).squeeze(axis=0)
 
             self.impute_models[feature] = impute_model
 
             data[feature] = item_data
+        self._type_consistency_modify(data=data)
+
+    def _aberrant_modify(self, data: pd.DataFrame):
+        feature_conf = yaml_read(self._feature_configure_path)
+
+        for col in data.columns:
+            dtype = feature_conf[col]["dtype"]
+            check_nan = [self._type_check(item, dtype) for item in data[col]]
+
+            if not all(check_nan):
+                data[col] = data[col].where(check_nan)
+
+    @classmethod
+    def _type_check(cls, item, dtype):
+        """
+        this method is used to infer if a type of an object is int, float or string based on TypeInference object.
+        :param item:
+        :param dtype: dtype of a feature in feature configure file.
+        :return:
+        """
+        assert dtype in ["int64", "float64", "string"]
+
+        # When dtype is int, np.nan or string item can exist.
+        if dtype == "int64":
+            try:
+                int(item)
+                return True
+            except ValueError:
+                return False
+
+        if dtype == "float64":
+            try:
+                float(item)
+                return True
+            except ValueError:
+                return False
+        return True
 
     def _data_clear_serialize(self):
         # 序列化label encoding模型字典
@@ -134,5 +177,11 @@ class PlainDataClear(BaseDataClear):
             yaml.dump(feature_conf, yaml_file)
 
     @property
-    def need_data_clear(self):
-        return self._need_data_clear
+    def already_data_clear(self):
+        return self._already_data_clear
+
+    def _type_consistency_modify(self, data: pd.DataFrame):
+        feature_conf = yaml_read(self._feature_configure_path)
+        for col in data.columns:
+            dtype = feature_conf[col]["dtype"]
+            data[col] = data[col].astype(dtype=dtype)

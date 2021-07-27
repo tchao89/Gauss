@@ -54,6 +54,8 @@ class PlaintextDataset(BaseDataset):
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
         # by the length of validation dataset.
         self._val_start = None
+        # This value is a bool value, and true means plaindataset has missing values and need to clear.
+        self._need_data_clear = False
 
     def __repr__(self):
         assert self._bunch is not None
@@ -326,3 +328,11 @@ class PlaintextDataset(BaseDataset):
         return PlaintextDataset(name="train_data",
                                 task_type="train",
                                 data_pair=Bunch(data=val_data, target=val_target))
+
+    @property
+    def need_data_clear(self):
+        return self._need_data_clear
+
+    @need_data_clear.setter
+    def need_data_clear(self, data_clear: bool):
+        self._need_data_clear = data_clear

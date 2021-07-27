@@ -76,6 +76,13 @@ class TypeInference(BaseTypeInference):
         for col in entity["dataset"].get_dataset().data.columns:
             assert col in list(conf)
 
+    def _string_column_selector(self, feature_name: str):
+        if self.init_feature_configure is not None \
+                and self.init_feature_configure.feature_dict.get(feature_name) is not None \
+                and self.init_feature_configure.feature_dict.get(feature_name).dtype == 'string':
+
+            self.final_feature_configure.feature_dict[feature_name].dtype = 'string'
+
     def _bool_column_selector(self, feature_name: str, dataset: pd.DataFrame):
 
         if self.init_feature_configure is not None \
@@ -104,7 +111,7 @@ class TypeInference(BaseTypeInference):
                 and self.init_feature_configure.feature_dict[feature_name].dtype == 'string':
 
             column_unique = list(set(dataset[feature_name]))
-            print(map(datetime_map, column_unique))
+
             if all(map(datetime_map, column_unique)):
                 self.final_feature_configure.feature_dict[feature_name].ftype = 'datetime'
 
@@ -118,6 +125,7 @@ class TypeInference(BaseTypeInference):
 
             elif self.final_feature_configure.feature_dict[column].dtype == 'float64':
                 self.final_feature_configure.feature_dict[column].ftype = 'numerical'
+
             else:
                 assert self.final_feature_configure.feature_dict[column].dtype == 'int64'
 
@@ -161,6 +169,7 @@ class TypeInference(BaseTypeInference):
 
                 if int_count + data[column].isna().sum() == data[column].shape[0]:
                     feature_item_configure.dtype = "int64"
+                    dataset.already_data_clear = True
 
                 else:
                     feature_item_configure.dtype = "float64"
@@ -184,6 +193,7 @@ class TypeInference(BaseTypeInference):
                         str_coordinate.append(index)
 
                 if float_count/data.shape[0] > self.dtype_threshold:
+                    dataset.already_data_clear = True
 
                     feature_item_configure.dtype = 'float64'
                     detect_column = copy.deepcopy(data[column])
@@ -195,10 +205,12 @@ class TypeInference(BaseTypeInference):
                             int_count += 1
                     if int_count + detect_column.isna().sum() == detect_column.shape[0]:
                         feature_item_configure.dtype = "int64"
+
                 else:
                     feature_item_configure.dtype = 'string'
 
             self.final_feature_configure.add_item_type(column_name=column, feature_item_conf=feature_item_configure)
+            self._string_column_selector(feature_name=column)
 
         # check if target columns is illegal.
         for label_index, label in enumerate(target):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2020, Citic-Lab. All rights reserved.
-# Authors: luoqing
+# Copyright (c) 2021, Citic-Lab. All rights reserved.
+# Authors: Lab
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import os.path
 from typing import List
 
 from utils.bunch import Bunch
+from utils.exception import PipeLineLogicError
 from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 
@@ -78,7 +79,7 @@ class PreprocessRoute(Component):
         self._data_clear_flag = data_clear_flag
         self._feature_generator_flag = feature_generator_flag
         self._feature_selector_flag = feature_selector_flag
-        self._need_data_clear = None
+        self._already_data_clear = None
 
         self._val_data_path = val_data_path
         self._train_data_path = train_data_path
@@ -164,7 +165,11 @@ class PreprocessRoute(Component):
         self.type_inference.run(**entity_dict)
         # 数据清洗
         self.data_clear.run(**entity_dict)
-        self._need_data_clear = self.data_clear.need_data_clear
+        self._already_data_clear = self.data_clear.already_data_clear
+
+        if self._already_data_clear is False and train_dataset.need_data_clear is True and self._feature_generator_flag:
+            raise PipeLineLogicError("Aberrant dataset can not generate additional features.")
+
         # 特征生成
         self.feature_generator.run(**entity_dict)
         # 无监督特征选择
@@ -198,8 +203,8 @@ class PreprocessRoute(Component):
         self._entity_dict = entity_dict
 
     @property
-    def need_data_clear(self):
-        return self._need_data_clear
+    def already_data_clear(self):
+        return self._already_data_clear
 
     @property
     def entity_dict(self):

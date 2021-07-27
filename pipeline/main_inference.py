@@ -9,7 +9,7 @@ from pipeline.inference import Inference
 
 
 # test programming
-pipeline_dict = yaml_read(yaml_file="/home/liangqian/PycharmProjects/Gauss/experiments/nv1gJl/final_config.yaml")
+pipeline_dict = yaml_read(yaml_file="/home/liangqian/PycharmProjects/Gauss/experiments/4HJMhX/final_config.yaml")
 best_root = pipeline_dict["best_root"]
 work_root = pipeline_dict["work_root"]
 

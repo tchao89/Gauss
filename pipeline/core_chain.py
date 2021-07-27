@@ -110,6 +110,7 @@ class CoreRoute(Component):
         assert "val_dataset" in entity
 
         if self._feature_selector_flag:
+
             self.feature_selector.run(**entity)
             self._best_model = self.feature_selector.optimal_model
             self._best_metrics = self.feature_selector.optimal_metrics

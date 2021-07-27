@@ -49,7 +49,7 @@ class Inference(object):
 
     def output_result(self, predict_result: pd.DataFrame):
         assert isinstance(predict_result, pd.DataFrame)
-        predict_result.to_csv(os.path.join(self.out_put_path, "result.txt"))
+        predict_result.to_csv(os.path.join(self.out_put_path, "result.txt"), index=False)
 
     def run(self):
         work_feature_root = self.best_root + "/feature"

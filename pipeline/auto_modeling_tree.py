@@ -7,13 +7,16 @@ from __future__ import annotations
 
 import os
 
+from typing import List
+
 from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
 from pipeline.mapping import EnvironmentConfigure
+from pipeline.base import compare, check_data
 
-from typing import List
 from utils.common_component import yaml_write
 from utils.bunch import Bunch
+from utils.exception import PipeLineLogicError
 
 
 # This class is used to train model.
@@ -53,7 +56,7 @@ class AutoModelingTree(object):
         self.unsupervised_feature_selector = unsupervised_feature_selector
         self.supervised_feature_selector = supervised_feature_selector
         self.auto_ml = auto_ml
-        self.need_data_clear = None
+        self.already_data_clear = None
         self.best_model = None
         self.best_metric = None
         self.best_result_root = None
@@ -111,9 +114,14 @@ class AutoModelingTree(object):
                                            feature_selector_name="unsupervised",
                                            feature_selector_flag=unsupervised_feature_generator_flag)
 
-        preprocess_chain.run()
+        try:
+            preprocess_chain.run()
+        except PipeLineLogicError as e:
+            print(e)
+            return None
+
         entity_dict = preprocess_chain.entity_dict
-        self.need_data_clear = preprocess_chain.need_data_clear
+        self.already_data_clear = preprocess_chain.already_data_clear
 
         assert "dataset" in entity_dict and "val_dataset" in entity_dict
 
@@ -124,9 +132,8 @@ class AutoModelingTree(object):
         for model in model_zoo:
             work_model_root = work_root + "/model/" + model + "/"
             model_save_root = work_model_root + "model_save"
-            # model_config_root = work_model_root + "/model_config"
 
-            if self.check_data(need_data_clear=self.need_data_clear, model_name=model) is not True:
+            if check_data(already_data_clear=self.already_data_clear, model_name=model) is not True:
                 continue
 
             core_chain = CoreRoute(name="core_route",
@@ -156,30 +163,16 @@ class AutoModelingTree(object):
             if best_model_name is None:
                 best_model_name = model
 
-            if best_metric is None or (self.compare(local_metric, best_metric)) < 0:
+            if best_metric is None or (compare(local_metric, best_metric)) < 0:
                 best_model = local_model
                 best_metric = local_metric
                 best_model_name = model
 
         return best_model, best_metric, work_root, best_model_name
 
-    @classmethod
-    def compare(cls, local_best_metric, best_metric):
-        return best_metric - local_best_metric
-
-    @classmethod
-    def check_data(cls, need_data_clear, model_name):
-        assert isinstance(need_data_clear, bool)
-        assert isinstance(model_name, str)
-
-        if not need_data_clear:
-            if model_name not in ["lightgbm", "xgboost", "catboost"]:
-                return False
-        return True
-
     # local_best_model, local_best_metric, local_best_work_root, local_best_model_name
     def update_best(self, *params):
-        if self.best_metric is None or self.compare(params[1], self.best_metric) < 0:
+        if self.best_metric is None or compare(params[1], self.best_metric) < 0:
             self.best_model = params[0]
             self.best_metric = params[1]
             self.best_result_root = params[2]

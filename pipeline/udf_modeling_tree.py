@@ -7,10 +7,12 @@ from __future__ import annotations
 
 from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
+from pipeline.base import check_data, compare
 
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 
 from utils.common_component import yaml_write
+from utils.exception import PipeLineLogicError
 from pipeline.mapping import EnvironmentConfigure
 
 
@@ -95,7 +97,7 @@ class UdfModelingTree(object):
         self.supervised_feature_selector_flag = supervised_feature_selector_flag
         self.model_zoo = model_zoo
         self.auto_ml = auto_ml
-        self.need_data_clear = None
+        self.already_data_clear = None
         self.best_model = None
         self.best_metric = None
         self.best_result_root = None
@@ -152,12 +154,17 @@ class UdfModelingTree(object):
                                            feature_selector_name="unsupervised",
                                            feature_selector_flag=unsupervised_feature_selector_flag)
 
-        preprocess_chain.run()
+        try:
+            preprocess_chain.run()
+        except PipeLineLogicError as e:
+            print(e)
+            return None
+
         entity_dict = preprocess_chain.entity_dict
-        self.need_data_clear = preprocess_chain.need_data_clear
+        self.already_data_clear = preprocess_chain.already_data_clear
 
         # 如果未进行数据清洗, 并且模型需要数据清洗, 则返回None.
-        if self.check_data(need_data_clear=self.need_data_clear, model_name=model_name) is not True:
+        if check_data(already_data_clear=self.already_data_clear, model_name=model_name) is not True:
             return None
 
         assert "dataset" in entity_dict and "val_dataset" in entity_dict
@@ -186,28 +193,6 @@ class UdfModelingTree(object):
         local_model = core_chain.optimal_model
         return local_model, local_metric, work_root, model_name
 
-    # local_best_model, local_best_metric, local_best_work_root, local_best_model_name
-    def update_best(self, *params):
-        if self.best_metric is None or self.compare(params[1], self.best_metric) < 0:
-            self.best_model = params[0]
-            self.best_metric = params[1]
-            self.best_result_root = params[2]
-            self.best_model_name = params[3]
-
-    @classmethod
-    def compare(cls, local_best_metric, best_metric):
-        return best_metric - local_best_metric
-
-    @classmethod
-    def check_data(cls, need_data_clear, model_name):
-        assert isinstance(need_data_clear, bool)
-        assert isinstance(model_name, str)
-
-        if need_data_clear is not True:
-            if model_name not in ["lightgbm", "xgboost", "catboost"]:
-                return False
-        return True
-
     @classmethod
     def create_component(cls, component_name: str, **params):
 
@@ -221,6 +206,14 @@ class UdfModelingTree(object):
         gauss_factory = GaussFactoryProducer()
         entity_factory = gauss_factory.get_factory(choice="entity")
         return entity_factory.get_entity(entity_name=entity_name, **params)
+
+    # local_best_model, local_best_metric, local_best_work_root, local_best_model_name
+    def update_best(self, *params):
+        if self.best_metric is None or compare(params[1], self.best_metric) < 0:
+            self.best_model = params[0]
+            self.best_metric = params[1]
+            self.best_result_root = params[2]
+            self.best_model_name = params[3]
 
     def run(self):
 

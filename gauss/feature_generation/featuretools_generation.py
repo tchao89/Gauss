@@ -81,7 +81,7 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
                     for item in status_list:
                         if label_dict.get(item) is None:
                             logger.info(
-                                "feature: " + str(col) + "has an abnormal value (unseen by label encoding): " + str(
+                                "feature: " + str(col) + " has an abnormal value (unseen by label encoding): " + str(
                                     item))
                             raise ValueError("feature: " + str(
                                 col) + " has an abnormal value (unseen by label encoding): " + str(item))

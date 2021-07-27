@@ -99,6 +99,7 @@ class TabularAutoML(BaseAutoML):
                     receive_params = tuner.generate_parameters(trial)
                     params.update(receive_params)
                     model.update_params(**params)
+
                     model.train(**entity)
 
                     model.eval(**entity)
