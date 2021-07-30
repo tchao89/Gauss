@@ -15,14 +15,14 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 
-from entity.model.model import Model
+from entity.model.model import ModelWrapper
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from utils.bunch import Bunch
 from utils.common_component import mkdir
 
 
-class GaussLinearModels(Model):
+class GaussLinearModels(ModelWrapper):
     def __init__(self, **params):
         super(GaussLinearModels, self).__init__(params["name"], params["model_path"], params["task_type"],
                                                 params["train_flag"])

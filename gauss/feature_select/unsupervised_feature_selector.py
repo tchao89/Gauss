@@ -73,7 +73,7 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         conf = yaml_read(yaml_file=self._final_file_path)
 
         if self._enable is True:
-            generated_feature_names = feature_list_generator(feature_dict=conf)
+            generated_feature_names = feature_list_generator(feature_conf=conf)
             dataset.get_dataset().data = dataset.get_dataset().data[generated_feature_names]
             dataset.get_dataset().generated_feature_names = generated_feature_names
 

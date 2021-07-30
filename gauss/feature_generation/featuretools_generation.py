@@ -76,7 +76,7 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
                     le_model = le_model_list[col]
 
                     label_dict = dict(zip(le_model.classes_, le_model.transform(le_model.classes_)))
-                    status_list = data[col].unique().tolist()
+                    status_list = data[col].unique()
 
                     for item in status_list:
                         if label_dict.get(item) is None:

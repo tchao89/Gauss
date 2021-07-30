@@ -13,9 +13,9 @@ import os.path
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
-from lightgbm.callback import final_metrics
+# from lightgbm.callback import final_metrics
 
-from entity.model.model import Model
+from entity.model.model import ModelWrapper
 from entity.dataset.base_dataset import BaseDataset
 from entity.dataset.plain_dataset import PlaintextDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
@@ -23,16 +23,18 @@ from utils.bunch import Bunch
 from utils.common_component import mkdir, yaml_write
 
 
-class GaussLightgbm(Model):
+class GaussLightgbm(ModelWrapper):
     def __init__(self, **params):
-        super(GaussLightgbm, self).__init__(params["name"], params["model_path"], params["model_config_root"], params["task_type"],
-                                            params["train_flag"], params["model_config"])
+        super(GaussLightgbm, self).__init__(name=params["name"],
+                                            model_path=params["model_path"],
+                                            model_config_root=params["model_config_root"],
+                                            feature_config_root=params["feature_config_root"],
+                                            task_type=params["task_type"],
+                                            train_flag=params["train_flag"])
 
         self.model_file_name = self.name + ".txt"
-        self.config_file_name = self.name + ".yaml"
-
-        self._lgb_model = None
-        self._val_metrics = None
+        self.model_config_file_name = self.name + ".yaml"
+        self.feature_config_file_name = self.name + ".yaml"
 
         # lgb.Dataset
         self.lgb_train = None
@@ -54,7 +56,6 @@ class GaussLightgbm(Model):
         if self._train_flag:
 
             if self._feature_list is not None:
-
                 data = dataset.feature_choose(self._feature_list)
                 target = dataset.get_dataset().target
                 data_pair = Bunch(data=data, target=target, target_names=dataset.get_dataset().target_names)
@@ -96,15 +97,25 @@ class GaussLightgbm(Model):
 
     def train(self, dataset: BaseDataset, val_dataset: BaseDataset, **entity):
         assert self._train_flag is True
+
         self.lgb_train, self.lgb_eval = self.load_data(dataset=dataset, val_dataset=val_dataset)
-        if self._model_param_dict is not None:
-            params = self._model_param_dict
-            self._lgb_model = lgb.train(params,
-                                        self.lgb_train,
-                                        num_boost_round=200,
-                                        valid_sets=self.lgb_eval,
-                                        early_stopping_rounds=2,
-                                        verbose_eval=False)
+        if self._model_params is not None:
+
+            self._model_config = {
+                "Name": self.name,
+                "Normalization": False,
+                "Standardization": False,
+                "OnehotEncoding": False,
+                "ModelParameters": self._model_params
+            }
+
+            params = self._model_params
+            self._model = lgb.train(params,
+                                    self.lgb_train,
+                                    num_boost_round=200,
+                                    valid_sets=self.lgb_eval,
+                                    early_stopping_rounds=2,
+                                    verbose_eval=False)
 
         else:
             raise ValueError("Model parameters is None.")
@@ -113,11 +124,11 @@ class GaussLightgbm(Model):
         assert self._train_flag is False
 
         self.lgb_test = self.load_data(dataset=test_dataset)
-        assert os.path.isfile(self._model_path + "/" + self.file_name)
+        assert os.path.isfile(self._model_path + "/" + self.model_file_name)
 
-        self._lgb_model = lgb.Booster(model_file=self._model_path + "/" + self.file_name)
+        self._model = lgb.Booster(model_file=self._model_path + "/" + self.model_file_name)
 
-        inference_result = self._lgb_model.predict(self.lgb_test)
+        inference_result = self._model.predict(self.lgb_test)
         inference_result = pd.DataFrame({"result": inference_result})
         return inference_result
 
@@ -132,7 +143,7 @@ class GaussLightgbm(Model):
 
     def eval(self, metrics: BaseMetric, **entity):
         # 默认生成的为预测值的概率值，传入metrics之后再处理.
-        y_pred = self._lgb_model.predict(self.lgb_eval.get_data(), num_iteration=self._lgb_model.best_iteration)
+        y_pred = self._model.predict(self.lgb_eval.get_data(), num_iteration=self._model.best_iteration)
 
         assert isinstance(y_pred, np.ndarray)
         assert isinstance(self.lgb_eval.get_label(), np.ndarray)
@@ -140,38 +151,49 @@ class GaussLightgbm(Model):
         metrics.evaluate(predict=y_pred, labels_map=self.lgb_eval.get_label())
         metrics_result = metrics.metrics_result
         assert isinstance(metrics_result, MetricResult)
-        self._val_metrics = metrics_result
+
+        self._metrics_result = metrics_result
         return metrics_result
 
     def get_train_loss(self):
         pass
 
     def get_val_loss(self):
-        return final_metrics
+        pass
 
     def get_train_metric(self):
         pass
 
     @property
     def val_metrics(self):
-        return self._val_metrics
+        return self._metrics_result
 
     def model_save(self, model_path=None):
+
         if model_path is not None:
             self._model_path = model_path
 
         assert self._model_path is not None
-        assert self._lgb_model is not None
+        assert self._model is not None
 
         try:
             assert os.path.isdir(self._model_path)
         except AssertionError:
             mkdir(self._model_path)
-        self._lgb_model.save_model(os.path.join(self._model_path, self.model_file_name))
-        yaml_write(yaml_dict=self._model_config, yaml_file=os.path.join(self._model_config_root, self.config_file_name))
+
+        self._model.save_model(os.path.join(self._model_path, self.model_file_name))
+
+        yaml_write(yaml_dict=self._model_config,
+                   yaml_file=os.path.join(self._model_config_root, self.model_config_file_name))
+
+        yaml_write(yaml_dict={"features": self._feature_list},
+                   yaml_file=os.path.join(self._feature_config_root, self.feature_config_file_name))
 
     def update_params(self, **params):
-        self._model_param_dict.update(params)
+        if self._model_params is None:
+            self._model_params = {}
+
+        self._model_params.update(params)
 
     def set_weight(self):
         pass

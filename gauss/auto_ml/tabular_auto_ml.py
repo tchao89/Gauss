@@ -9,7 +9,7 @@ from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
 from core.nni.algorithms.hpo.evolution_tuner import EvolutionTuner
 from gauss.auto_ml.base_auto_ml import BaseAutoML
 from entity.dataset.base_dataset import BaseDataset
-from entity.model.model import Model
+from entity.model.model import ModelWrapper
 from entity.metrics.base_metric import BaseMetric
 
 
@@ -30,12 +30,14 @@ class TabularAutoML(BaseAutoML):
         # optional: "maximize", "minimize", depends on metrics for auto ml.
         self._optimize_mode = params["optimize_mode"]
         # trial num for auto ml.
-        self.trial_num = 2
+        self.trial_num = 3
         self._auto_ml_path = params["auto_ml_path"]
         self._default_parameters = None
         self._search_space = None
 
-        self._best_model = None
+        self._is_final_set = True
+        # self._model should be entity.model.Model object
+        self._model = None
         self._best_metrics = None
 
         self._result = None
@@ -66,7 +68,16 @@ class TabularAutoML(BaseAutoML):
         else:
             raise RuntimeError('Not support tuner algorithm in tabular auto-ml algorithms.')
 
+    @property
+    def is_final_set(self):
+        return self._is_final_set
+
+    @is_final_set.setter
+    def is_final_set(self, final_set: bool):
+        self._is_final_set = final_set
+
     def run(self, **entity):
+
         if self._train_flag:
             return self._train_run(**entity)
         else:
@@ -74,7 +85,7 @@ class TabularAutoML(BaseAutoML):
 
     def _train_run(self, **entity):
 
-        assert "model" in entity and isinstance(entity["model"], Model)
+        assert "model" in entity and isinstance(entity["model"], ModelWrapper)
         assert "dataset" in entity and isinstance(entity["dataset"], BaseDataset)
         assert "val_dataset" in entity and isinstance(entity["val_dataset"], BaseDataset)
         assert "metrics" in entity and isinstance(entity["metrics"], BaseMetric)
@@ -83,55 +94,49 @@ class TabularAutoML(BaseAutoML):
         self.set_search_space()
         self.set_default_params()
 
-        best_model = None
-        best_metrics = None
+        self._model = entity["model"]
 
         for tuner_algorithms in self.opt_tuners:
+
             tuner = tuner_algorithms
             tuner.update_search_space(self._search_space.get(entity["model"].name))
 
             for trial in range(self.trial_num):
-
+                print("round: ", trial)
                 if self._default_parameters is not None:
-                    model = entity["model"]
-                    params = self._default_parameters.get(model.name)
+
+                    params = self._default_parameters.get(self._model.name)
                     assert params is not None
 
                     receive_params = tuner.generate_parameters(trial)
                     params.update(receive_params)
-                    model.update_params(**params)
 
-                    model.train(**entity)
+                    self._model.update_params(**params)
 
-                    model.eval(**entity)
-                    metrics = model.val_metrics.result
+                    self._model.train(**entity)
+
+                    self._model.eval(**entity)
+
+                    self._model.update_best_model()
+
+                    if self._is_final_set is True:
+                        self._model.final_set()
+
+                    metrics = self._model.val_metrics.result
                     # get model which has been trained.
-
-                    if best_model is None:
-                        best_model = model
-
-                    if best_metrics is None:
-                        best_metrics = metrics
-
-                    if metrics > best_metrics:
-                        best_model = model
-                        best_metrics = metrics
 
                     tuner.receive_trial_result(trial, receive_params, metrics)
                 else:
                     raise ValueError("Default parameters is None.")
 
-        self._best_model = best_model
-        self._best_metrics = best_metrics
-
-        return best_model
+        self._best_metrics = self._model.val_metrics.result
 
     def _predict_run(self, **entity):
         pass
 
     @property
-    def optimal_model(self):
-        return self._best_model
+    def model_wrapper(self):
+        return self._model
 
     @property
     def optimal_metrics(self):
@@ -154,3 +159,7 @@ class TabularAutoML(BaseAutoML):
         search_space_path = os.path.join(self._auto_ml_path, "search_space.json")
         with open(search_space_path, 'r') as json_file:
             self._search_space = json.load(json_file)
+
+    @property
+    def model(self):
+        return self._model

@@ -1,0 +1,40 @@
+features:
+- age
+- job
+- marital
+- education
+- balance
+- housing
+- day
+- month
+- duration
+- campaign
+- AND(housing, loan)
+- CUM_MEAN(balance)
+- CUM_MEAN(duration)
+- CUM_SUM(balance)
+- 1 / duration
+- balance / duration
+- balance = education
+- balance = housing
+- campaign = education
+- campaign = housing
+- campaign = loan
+- campaign = marital
+- campaign = month
+- day = education
+- education = housing
+- education = job
+- education = marital
+- education = month
+- housing = marital
+- housing = month
+- job = loan
+- job = month
+- loan = marital
+- marital = month
+- balance % duration
+- balance * duration
+- OR(housing, loan)
+- PERCENTILE(balance)
+- PERCENTILE(duration)

@@ -133,6 +133,7 @@ class AutoModelingTree(object):
             work_model_root = work_root + "/model/" + model + "/"
             model_save_root = work_model_root + "model_save"
             model_config_root = work_model_root + "/model_config"
+            feature_config_root = work_model_root + "/feature_config"
 
             if check_data(already_data_clear=self.already_data_clear, model_name=model) is not True:
                 continue
@@ -142,6 +143,7 @@ class AutoModelingTree(object):
                                    model_name=model,
                                    model_save_root=model_save_root,
                                    model_config_root=model_config_root,
+                                   feature_config_root=feature_config_root,
                                    target_feature_configure_path=feature_dict.final_feature_config,
                                    pre_feature_configure_path=feature_dict.unsupervised_feature,
                                    label_encoding_path=feature_dict.label_encoding_path,
@@ -155,8 +157,8 @@ class AutoModelingTree(object):
                                    selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config")
 
             core_chain.run(**entity_dict)
-            local_model = core_chain.optimal_model
             local_metric = core_chain.optimal_metrics
+            local_model = core_chain.optimal_model
 
             if best_model is None:
                 best_model = local_model

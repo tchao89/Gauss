@@ -52,7 +52,7 @@ class TypeInference(BaseTypeInference):
 
         if params["source_file_path"] != "null":
             self.init_feature_configure = FeatureConf(name="source feature path", file_path=params["source_file_path"])
-            self.init_feature_configure.parse()
+            self.init_feature_configure.parse(method="user")
         else:
             self.init_feature_configure = None
 

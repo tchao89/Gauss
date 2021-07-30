@@ -3,7 +3,9 @@
 # Copyright (c) 2020, Citic-Lab. All rights reserved.
 # Authors: citic-lab
 import os
-from typing import List
+from typing import List, Any
+
+from entity.feature_configuration.feature_config import FeatureConf
 
 import yaml
 
@@ -33,7 +35,19 @@ def yaml_read(yaml_file: str):
 
     return yaml_dict
 
-def feature_list_generator(feature_dict: dict):
+def feature_list_generator(feature_conf):
+    feature_dict = {}
+    if isinstance(feature_conf, dict):
+        feature_dict = feature_conf
+    else:
+        assert isinstance(feature_conf, FeatureConf)
+        # name: FeatureItemConf
+        feature_conf = feature_conf.feature_dict
+        for item in feature_conf.keys():
+            item = feature_conf[item]
+            item_dict = {"name": item.name, "index": item.index, "dtype": item.dtype, "ftype": item.ftype, "used": item.used}
+            feature_dict[item.name] = item_dict
+
     def get_item(dict_key):
         return feature_dict[dict_key]["index"]
 
@@ -45,7 +59,19 @@ def feature_list_generator(feature_dict: dict):
 
     return feature_list
 
-def feature_list_selector(feature_dict: dict, feature_indexes: List[int]):
+def feature_list_selector(feature_conf: Any, feature_indexes: List[int]):
+    feature_dict = {}
+    if isinstance(feature_conf, dict):
+        feature_dict = feature_conf
+    else:
+        assert isinstance(feature_conf, FeatureConf)
+        # name: FeatureItemConf
+        feature_conf = feature_conf.feature_dict
+        for item in feature_conf.keys():
+            item = feature_conf[item]
+            item_dict = {"name": item.name, "index": item.index, "dtype": item.dtype, "ftype": item.ftype, "used": item.used}
+            feature_dict[item.name] = item_dict
+
     def get_item(dict_key):
         return feature_dict[dict_key]["index"]
 
