@@ -7,7 +7,7 @@ from __future__ import annotations
 import abc
 
 from entity.entity import Entity
-from utils.common_component import feature_list_selector
+from utils.common_component import feature_list_generator
 
 
 class ModelWrapper(Entity):
@@ -129,9 +129,9 @@ class ModelWrapper(Entity):
         self._model_params = self._best_model_params
         self._feature_list = self._best_feature_list
 
-    def update_feature_conf(self, feature_conf, feature_list):
+    def update_feature_conf(self, feature_conf):
         self._feature_conf = feature_conf
-        self._feature_list = feature_list_selector(feature_conf=self._feature_conf, feature_indexes=feature_list)
+        self._feature_list = feature_list_generator(feature_conf=self._feature_conf)
         return self._feature_list
 
     @abc.abstractmethod

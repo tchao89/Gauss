@@ -178,6 +178,7 @@ class GaussLightgbm(ModelWrapper):
 
         try:
             assert os.path.isdir(self._model_path)
+
         except AssertionError:
             mkdir(self._model_path)
 

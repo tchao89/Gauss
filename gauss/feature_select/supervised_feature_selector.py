@@ -4,10 +4,10 @@
 # Authors: citic-lab
 import os
 import json
+import operator
 from typing import List
 
 from entity.dataset.base_dataset import BaseDataset
-from entity.dataset.plain_dataset import PlaintextDataset
 from entity.model.model import ModelWrapper
 from entity.metrics.base_metric import MetricResult
 from gauss.feature_select.base_feature_selector import BaseFeatureSelector
@@ -15,10 +15,8 @@ from gauss.feature_select.base_feature_selector import BaseFeatureSelector
 from core.nni.algorithms.feature_engineering.gradient_selector import FeatureGradientSelector
 from core.nni.algorithms.feature_engineering.gbdt_selector import GBDTSelector
 from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
-from gauss_factory.entity_factory import ModelFactory
 
-from utils.bunch import Bunch
-from utils.common_component import yaml_read, yaml_write, feature_list_generator
+from utils.common_component import yaml_read, yaml_write
 
 
 class SupervisedFeatureSelector(BaseFeatureSelector):
@@ -55,7 +53,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         self._model_config_root = params["model_config_root"]
         self._feature_config_root = params["feature_config_root"]
-        self._model_config = params["model_config"]
 
         self._optimize_mode = None
 
@@ -75,9 +72,8 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         self._optimal_model = None
         self._optimal_metrics = None
-        if self._train_flag:
-            self._unsupervised_feature_conf = yaml_read(self._feature_configure_path)
-        else:
+
+        if not self._train_flag:
             self._result = None
 
     @property
@@ -134,9 +130,13 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         assert "model" in entity.keys()
         assert "metrics" in entity.keys()
         assert "auto_ml" in entity.keys()
+        assert "feature_configure" in entity.keys()
 
         original_dataset = entity["dataset"]
+
         original_val_dataset = entity["val_dataset"]
+
+        feature_configure = entity["feature_configure"]
 
         self.set_default_params()
         self.set_search_space()
@@ -198,14 +198,19 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                     params["lgb_params"] = lgb_params_dict
 
                 feature_list = self.choose_selector(selector_name=model_name, dataset=original_dataset, params=params)
-                print(model_name, "Round: ", trial)
-                print("feature list: ", len(feature_list))
+
                 metrics.label_name = original_dataset.get_dataset().target_names[0]
 
-                model.update_feature_conf(feature_conf=self._unsupervised_feature_conf, feature_list=feature_list)
+                feature_configure.file_path = self._feature_configure_path
+
+                feature_configure.parse(method="system")
+                feature_configure.feature_selector(feature_list=feature_list)
+
+                model.update_feature_conf(feature_conf=feature_configure)
 
                 # 返回训练好的最佳模型
                 model_tuner.run(model=model, dataset=original_dataset, val_dataset=original_val_dataset, metrics=metrics)
+
                 assert isinstance(model.val_metrics, MetricResult)
                 new_metrics = model.val_metrics.result
 
@@ -217,6 +222,14 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         if model_tuner.is_final_set is False:
             model.final_set()
+
+    @classmethod
+    def update_feature_conf(cls, feature_conf, feature_list):
+        for feature in feature_conf.keys():
+            if feature_conf[feature]["index"] not in feature_list:
+                feature_conf[feature]["used"] = False
+
+        return feature_conf
 
     def _predict_run(self, **entity):
         assert self.train_flag is False
@@ -244,7 +257,8 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
     @property
     def search_space(self):
-        return self.search_space()
+        assert self._search_space is not None
+        return self._search_space
 
     def set_search_space(self):
         search_space_path = os.path.join(self._selector_config_path, "search_space.json")

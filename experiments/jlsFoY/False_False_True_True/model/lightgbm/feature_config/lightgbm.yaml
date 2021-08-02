@@ -1,0 +1,9 @@
+features:
+- age
+- job
+- balance
+- housing
+- day
+- month
+- duration
+- campaign

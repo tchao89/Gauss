@@ -15,7 +15,7 @@ from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 from gauss_factory.entity_factory import MetricsFactory
 
-from utils.common_component import yaml_write, yaml_read, feature_list_selector
+from utils.common_component import yaml_write, yaml_read
 
 
 class CoreRoute(Component):
@@ -69,6 +69,10 @@ class CoreRoute(Component):
         if self._train_flag:
             self._best_metrics = None
             self._best_model = None
+            # create feature configure
+            feature_conf_params = Bunch(name="featureconfigure", file_path=self._feature_config_path)
+            self.feature_conf = self.create_entity(entity_name="featureconfigure", **feature_conf_params)
+            self.feature_conf.parse(method="system")
             self._feature_conf = yaml_read(self._feature_config_path)
 
         if not self._train_flag:
@@ -109,7 +113,6 @@ class CoreRoute(Component):
                          task_name=task_type,
                          model_config_root=model_config_root,
                          feature_config_root=feature_config_root,
-                         model_config=self._feature_conf,
                          feature_config_path=pre_feature_configure_path,
                          final_file_path=target_feature_configure_path,
                          label_encoding_configure_path=label_encoding_path,
@@ -130,6 +133,7 @@ class CoreRoute(Component):
         if self._feature_selector_flag:
 
             entity["auto_ml"] = self.auto_ml
+            entity["feature_configure"] = self.feature_conf
 
             self.feature_selector.run(**entity)
 
@@ -144,7 +148,9 @@ class CoreRoute(Component):
             yaml_write(yaml_dict=feature_conf, yaml_file=self._final_file_path)
 
         self._best_model = entity["model"]
-        self._best_metrics = entity["model"].val_metrics.result
+        # self._best_metrics is a MetricsResult object.
+        self._best_metrics = entity["model"].val_metrics
+
         entity["model"].model_save()
 
     def _predict_run(self, **entity):

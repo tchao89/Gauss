@@ -2,8 +2,6 @@
 #
 # Copyright (c) 2020, Citic-Lab. All rights reserved.
 # Authors: citic-lab
-def compare(local_best_metric, best_metric):
-    return best_metric - local_best_metric
 
 def check_data(already_data_clear, model_name):
     assert isinstance(already_data_clear, bool)

@@ -9,6 +9,7 @@ import yaml
 
 from entity.entity import Entity
 from utils.bunch import Bunch
+from utils.common_component import yaml_read, yaml_write
 
 
 class FeatureItemConf(object):
@@ -22,9 +23,10 @@ class FeatureItemConf(object):
         self._dtype = dtype
         self._index = index
         self._size = size
-
         if used is None:
             self._used = True
+        else:
+            self._used = used
 
         if default_value is None:
             if dtype == "string" or dtype == "date":
@@ -160,10 +162,7 @@ class FeatureConf(Entity):
                         item_configure.ftype = "datetime"
                         self._feature_dict[item] = item_configure
         else:
-            init_conf_file = open(self._file_path, 'r', encoding='utf-8')
-            init_conf = init_conf_file.read()
-            feature_dict = yaml.load(init_conf, Loader=yaml.FullLoader)
-            init_conf_file.close()
+            feature_dict = yaml_read(yaml_file=self._file_path)
 
             for key in feature_dict.keys():
                 feature_item = feature_dict[key]
@@ -187,15 +186,29 @@ class FeatureConf(Entity):
         assert (key in self._feature_dict)
         assert (ftype in ("numerical", "category", "bool"))
 
-    def write(self, feature_conf: FeatureConf, method=None):
+    def write(self, save_path="./feature_conf.yaml"):
         assert self._feature_dict is not None
-        assert method is not None
+        features = {}
 
-        if method == "user":
-            pass
+        feature_dict = self._feature_dict
+        for item_conf in feature_dict.keys():
+            item_dict = {"name": item_conf.name, "dtype": item_conf.dtype, "ftype": item_conf.ftype,
+                         "index": item_conf.index, "used": item_conf.used}
+            features[item_conf.name] = item_dict
+        yaml_write(yaml_dict=features, yaml_file=save_path)
 
-        elif method == "system":
-            pass
+    def feature_selector(self, feature_list):
+        for feature in self._feature_dict.keys():
+            if self._feature_dict[feature].index not in feature_list:
+                self._feature_dict[feature].used = False
+            else:
+                assert self._feature_dict[feature].used is True
 
-        else:
-            raise ValueError(method + " type is illegal, method type must be \"user\" or \"system\". ")
+    @property
+    def file_path(self):
+        return self._file_path
+
+    @file_path.setter
+    def file_path(self, file_path):
+        assert os.path.isfile(file_path)
+        self._file_path = file_path

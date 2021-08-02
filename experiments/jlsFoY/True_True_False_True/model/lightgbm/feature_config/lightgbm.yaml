@@ -1,0 +1,176 @@
+features:
+- age
+- job
+- marital
+- education
+- balance
+- housing
+- loan
+- day
+- month
+- duration
+- campaign
+- ABSOLUTE(balance)
+- ABSOLUTE(duration)
+- balance + duration
+- balance + 0
+- duration + 0
+- AND(housing, loan)
+- CUM_MAX(balance)
+- CUM_MAX(duration)
+- CUM_MEAN(balance)
+- CUM_MEAN(duration)
+- CUM_MIN(balance)
+- CUM_MIN(duration)
+- CUM_SUM(balance)
+- CUM_SUM(duration)
+- 1 / duration
+- balance / duration
+- balance / 1
+- duration / 1
+- age = balance
+- age = campaign
+- age = day
+- age = duration
+- age = education
+- age = housing
+- age = job
+- age = loan
+- age = marital
+- age = month
+- balance = campaign
+- balance = day
+- balance = duration
+- balance = education
+- balance = housing
+- balance = job
+- balance = loan
+- balance = marital
+- balance = month
+- campaign = day
+- campaign = duration
+- campaign = education
+- campaign = housing
+- campaign = job
+- campaign = loan
+- campaign = marital
+- campaign = month
+- day = duration
+- day = education
+- day = housing
+- day = job
+- day = loan
+- day = marital
+- day = month
+- duration = education
+- duration = housing
+- duration = job
+- duration = loan
+- duration = marital
+- duration = month
+- education = housing
+- education = job
+- education = loan
+- education = marital
+- education = month
+- housing = job
+- housing = loan
+- housing = marital
+- housing = month
+- job = loan
+- job = marital
+- job = month
+- loan = marital
+- loan = month
+- marital = month
+- age = None
+- balance = None
+- campaign = None
+- day = None
+- duration = None
+- education = None
+- housing = None
+- job = None
+- loan = None
+- marital = None
+- month = None
+- balance > duration
+- duration > balance
+- balance >= duration
+- duration >= balance
+- balance >= 0
+- balance > 0
+- housing.isin(None)
+- job.isin(None)
+- balance <= 0
+- balance % duration
+- housing * loan
+- balance * duration
+- -(balance)
+- -(duration)
+- NOT(housing)
+- age != marital
+- age != month
+- balance != campaign
+- balance != day
+- balance != duration
+- balance != education
+- balance != housing
+- balance != job
+- balance != loan
+- balance != marital
+- balance != month
+- campaign != day
+- campaign != duration
+- campaign != education
+- campaign != housing
+- campaign != job
+- campaign != loan
+- campaign != marital
+- campaign != month
+- day != duration
+- day != education
+- day != housing
+- day != job
+- day != loan
+- day != marital
+- day != month
+- duration != education
+- duration != housing
+- duration != job
+- duration != loan
+- duration != marital
+- duration != month
+- education != housing
+- education != job
+- education != loan
+- education != marital
+- education != month
+- housing != job
+- housing != loan
+- housing != marital
+- housing != month
+- job != loan
+- job != marital
+- job != month
+- loan != marital
+- loan != month
+- marital != month
+- age != None
+- balance != None
+- campaign != None
+- day != None
+- duration != None
+- education != None
+- housing != None
+- job != None
+- loan != None
+- marital != None
+- month != None
+- OR(housing, loan)
+- PERCENTILE(balance)
+- PERCENTILE(duration)
+- 0 - balance
+- 0 - duration
+- balance - duration
+- duration - 0

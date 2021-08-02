@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
-from pipeline.base import check_data, compare
+from pipeline.base import check_data
 
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 
@@ -214,7 +214,7 @@ class UdfModelingTree(object):
 
     # local_best_model, local_best_metric, local_best_work_root, local_best_model_name
     def update_best(self, *params):
-        if self.best_metric is None or compare(params[1], self.best_metric) < 0:
+        if self.best_metric is None or self.best_metric.__cmp__(params[1]) < 0:
             self.best_model = params[0]
             self.best_metric = params[1]
             self.best_result_root = params[2]
@@ -253,6 +253,6 @@ class UdfModelingTree(object):
                      "unsupervised_feature_selector": self.unsupervised_feature_selector,
                      "supervised_feature_selector": self.supervised_feature_selector,
                      "auto_ml": self.auto_ml,
-                     "best_metric": float(self.best_metric)}
+                     "best_metric": float(self.best_metric.result)}
 
         yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/final_config.yaml")

@@ -108,8 +108,8 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
             generated_feature_names = dataset.get_dataset().get("generated_feature_names")
             assert generated_feature_names is not None
 
-            for item in self._feature_conf.keys():
+            for item in list(self._feature_conf.keys()):
                 if item not in generated_feature_names:
-                    self._feature_conf[item]["used"] = False
+                    self._feature_conf.pop(item)
 
         yaml_write(yaml_dict=self._feature_conf, yaml_file=self._final_file_path)

@@ -12,7 +12,7 @@ from typing import List
 from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
 from pipeline.mapping import EnvironmentConfigure
-from pipeline.base import compare, check_data
+from pipeline.base import check_data
 
 from utils.common_component import yaml_write
 from utils.bunch import Bunch
@@ -167,7 +167,7 @@ class AutoModelingTree(object):
             if best_model_name is None:
                 best_model_name = model
 
-            if best_metric is None or (compare(local_metric, best_metric)) < 0:
+            if best_metric is None or best_metric.__cmp__(local_metric) < 0:
                 best_model = local_model
                 best_metric = local_metric
                 best_model_name = model
@@ -176,7 +176,7 @@ class AutoModelingTree(object):
 
     # local_best_model, local_best_metric, local_best_work_root, local_best_model_name
     def update_best(self, *params):
-        if self.best_metric is None or compare(params[1], self.best_metric) < 0:
+        if self.best_metric is None or self.best_metric.__cmp__(params[1]) < 0:
             self.best_model = params[0]
             self.best_metric = params[1]
             self.best_result_root = params[2]

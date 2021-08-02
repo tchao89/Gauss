@@ -102,7 +102,7 @@ class TabularAutoML(BaseAutoML):
             tuner.update_search_space(self._search_space.get(entity["model"].name))
 
             for trial in range(self.trial_num):
-                print("round: ", trial)
+
                 if self._default_parameters is not None:
 
                     params = self._default_parameters.get(self._model.name)
