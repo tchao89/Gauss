@@ -1,0 +1,12 @@
+features:
+- age
+- job
+- marital
+- education
+- balance
+- housing
+- loan
+- day
+- month
+- duration
+- campaign

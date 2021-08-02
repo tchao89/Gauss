@@ -187,6 +187,7 @@ class GaussLightgbm(ModelWrapper):
         yaml_write(yaml_dict=self._model_config,
                    yaml_file=os.path.join(self._model_config_root, self.model_config_file_name))
 
+        assert self._feature_list is not None
         yaml_write(yaml_dict={"features": self._feature_list},
                    yaml_file=os.path.join(self._feature_config_root, self.feature_config_file_name))
 

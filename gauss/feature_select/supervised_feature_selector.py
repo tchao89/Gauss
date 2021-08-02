@@ -4,7 +4,6 @@
 # Authors: citic-lab
 import os
 import json
-import operator
 from typing import List
 
 from entity.dataset.base_dataset import BaseDataset

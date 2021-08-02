@@ -1,0 +1,41 @@
+features:
+- age
+- job
+- marital
+- education
+- balance
+- housing
+- loan
+- day
+- month
+- duration
+- campaign
+- CUM_MAX(balance)
+- CUM_MAX(duration)
+- CUM_MEAN(balance)
+- CUM_MEAN(duration)
+- age = education
+- age = marital
+- balance = duration
+- balance = education
+- balance = housing
+- balance = job
+- balance = loan
+- balance = marital
+- campaign = day
+- campaign = housing
+- campaign = job
+- day = duration
+- day = education
+- day = housing
+- day = job
+- day = month
+- duration = job
+- duration = month
+- education = housing
+- education = job
+- housing = job
+- housing = loan
+- housing = marital
+- housing = month
+- job = loan

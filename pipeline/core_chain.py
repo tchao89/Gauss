@@ -62,6 +62,7 @@ class CoreRoute(Component):
         self._feature_selector_flag = feature_selector_flag
 
         self._feature_config_path = pre_feature_configure_path
+
         self._final_file_path = target_feature_configure_path
 
         self._model_type = model_type
@@ -70,10 +71,8 @@ class CoreRoute(Component):
             self._best_metrics = None
             self._best_model = None
             # create feature configure
-            feature_conf_params = Bunch(name="featureconfigure", file_path=self._feature_config_path)
+            feature_conf_params = Bunch(name="featureconfigure", file_path=None)
             self.feature_conf = self.create_entity(entity_name="featureconfigure", **feature_conf_params)
-            self.feature_conf.parse(method="system")
-            self._feature_conf = yaml_read(self._feature_config_path)
 
         if not self._train_flag:
             self._result = None
@@ -90,7 +89,6 @@ class CoreRoute(Component):
                              model_path=self._model_save_path,
                              model_config_root=model_config_root,
                              feature_config_root=feature_config_root,
-                             model_config=self._feature_conf,
                              train_flag=self._train_flag,
                              task_type=self._task_type)
 
@@ -131,9 +129,8 @@ class CoreRoute(Component):
         entity["metrics"] = self.metrics
 
         if self._feature_selector_flag:
-
-            entity["auto_ml"] = self.auto_ml
             entity["feature_configure"] = self.feature_conf
+            entity["auto_ml"] = self.auto_ml
 
             self.feature_selector.run(**entity)
 
@@ -143,6 +140,11 @@ class CoreRoute(Component):
             self.metrics.label_name = train_dataset.get_dataset().target_names[0]
             feature_conf = yaml_read(self._feature_config_path)
 
+            self.feature_conf.file_path = self._feature_config_path
+            self.feature_conf.parse(method="system")
+            self.feature_conf.feature_selector(feature_list=None)
+
+            entity["model"].update_feature_conf(feature_conf=self.feature_conf)
             self.auto_ml.run(**entity)
 
             yaml_write(yaml_dict=feature_conf, yaml_file=self._final_file_path)

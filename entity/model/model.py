@@ -132,6 +132,7 @@ class ModelWrapper(Entity):
     def update_feature_conf(self, feature_conf):
         self._feature_conf = feature_conf
         self._feature_list = feature_list_generator(feature_conf=self._feature_conf)
+        assert self._feature_list is not None
         return self._feature_list
 
     @abc.abstractmethod

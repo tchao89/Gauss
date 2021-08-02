@@ -197,8 +197,13 @@ class FeatureConf(Entity):
             features[item_conf.name] = item_dict
         yaml_write(yaml_dict=features, yaml_file=save_path)
 
-    def feature_selector(self, feature_list):
+    def feature_selector(self, feature_list=None):
+
         for feature in self._feature_dict.keys():
+            if feature_list is None:
+                self._feature_dict[feature].used = True
+                continue
+
             if self._feature_dict[feature].index not in feature_list:
                 self._feature_dict[feature].used = False
             else:
