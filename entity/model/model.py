@@ -62,11 +62,6 @@ class ModelWrapper(Entity):
         if self._best_feature_list is None:
             self._best_feature_list = self._feature_list
 
-        print(self._best_metrics_result)
-        print(self._metrics_result)
-        print("best feature list: ", len(self._best_feature_list))
-        print("feature list: ", len(self._feature_list))
-
         if self._metrics_result.result > self._best_metrics_result.result:
             self._best_model = self._model
             self._best_model_params = self._model_params

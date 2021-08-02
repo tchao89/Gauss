@@ -188,4 +188,14 @@ class FeatureConf(Entity):
         assert (ftype in ("numerical", "category", "bool"))
 
     def write(self, feature_conf: FeatureConf, method=None):
-        pass
+        assert self._feature_dict is not None
+        assert method is not None
+
+        if method == "user":
+            pass
+
+        elif method == "system":
+            pass
+
+        else:
+            raise ValueError(method + " type is illegal, method type must be \"user\" or \"system\". ")
