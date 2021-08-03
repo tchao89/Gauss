@@ -109,6 +109,7 @@ class TabularAutoML(BaseAutoML):
                     assert params is not None
 
                     receive_params = tuner.generate_parameters(trial)
+
                     params.update(receive_params)
 
                     self._model.update_params(**params)
@@ -120,7 +121,7 @@ class TabularAutoML(BaseAutoML):
                     self._model.update_best_model()
 
                     if self._is_final_set is True:
-                        self._model.final_set()
+                        self._model.set_best_model()
 
                     metrics = self._model.val_metrics.result
                     # get model which has been trained.

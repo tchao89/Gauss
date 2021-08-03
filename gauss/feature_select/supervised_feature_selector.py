@@ -208,19 +208,20 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 model.update_feature_conf(feature_conf=feature_configure)
 
                 # 返回训练好的最佳模型
-                model_tuner.run(model=model, dataset=original_dataset, val_dataset=original_val_dataset, metrics=metrics)
+                model_tuner.run(model=model, dataset=original_dataset, val_dataset=original_val_dataset,
+                                metrics=metrics)
 
                 assert isinstance(model.val_metrics, MetricResult)
                 new_metrics = model.val_metrics.result
 
                 selector_tuner.receive_trial_result(trial, receive_params, new_metrics)
 
+        if model_tuner.is_final_set is False:
+            model.set_best_model()
+
         # save features
         self._final_feature_names = model.feature_list
         self.final_configure_generation()
-
-        if model_tuner.is_final_set is False:
-            model.final_set()
 
     @classmethod
     def update_feature_conf(cls, feature_conf, feature_list):
@@ -235,11 +236,12 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         dataset = entity["dataset"]
         model = entity["model"]
+        feature_config = entity["feature_configure"]
 
         assert self._model_save_path
         assert self._final_file_path
 
-        self._result = model.predict(dataset)
+        self._result = model.predict(dataset=dataset, feature_conf=feature_config)
 
     @property
     def result(self):

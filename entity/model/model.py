@@ -48,7 +48,6 @@ class ModelWrapper(Entity):
         )
 
     def update_best_model(self):
-        assert self._model is not None
 
         if self._best_model is None:
             self._best_model = self._model
@@ -67,6 +66,12 @@ class ModelWrapper(Entity):
             self._best_model_params = self._model_params
             self._best_metrics_result = self._metrics_result
             self._best_feature_list = self._feature_list
+
+        self.update_best()
+
+    @abc.abstractmethod
+    def update_best(self):
+        pass
 
     @abc.abstractmethod
     def train(self, **entity):
@@ -123,11 +128,16 @@ class ModelWrapper(Entity):
     def update_params(self, **params):
         self._model_params.update(params)
 
+    @abc.abstractmethod
+    def set_best(self):
+        pass
+
     # This method will convert self.best_object to self.object and set self.best_object to None.
-    def final_set(self):
+    def set_best_model(self):
         self._model = self._best_model
         self._model_params = self._best_model_params
         self._feature_list = self._best_feature_list
+        self.set_best()
 
     def update_feature_conf(self, feature_conf):
         self._feature_conf = feature_conf

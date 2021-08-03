@@ -15,7 +15,7 @@ from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 from gauss_factory.entity_factory import MetricsFactory
 
-from utils.common_component import yaml_write, yaml_read
+from utils.common_component import yaml_write, yaml_read, feature_list_generator
 
 
 class CoreRoute(Component):
@@ -70,13 +70,13 @@ class CoreRoute(Component):
         if self._train_flag:
             self._best_metrics = None
             self._best_model = None
-            # create feature configure
-            feature_conf_params = Bunch(name="featureconfigure", file_path=None)
-            self.feature_conf = self.create_entity(entity_name="featureconfigure", **feature_conf_params)
-
-        if not self._train_flag:
+        else:
             self._result = None
             self._feature_conf = None
+
+        # create feature configure
+        feature_conf_params = Bunch(name="featureconfigure", file_path=None)
+        self.feature_conf = self.create_entity(entity_name="featureconfigure", **feature_conf_params)
 
         # create metrics and set optimize_mode
         metrics_factory = MetricsFactory()
@@ -165,24 +165,17 @@ class CoreRoute(Component):
         entity["model"] = self.model
         assert self._model_save_path is not None
         assert self._train_flag is False
+        entity["feature_configure"] = self.feature_conf
+        entity["feature_configure"].file_path = self._final_file_path
 
-        dataset = entity.get("dataset")
-
-        feature_list = yaml_read(os.path.join(self._feature_config_root, self._model_name + ".yaml")).get("features")
-        data = dataset.feature_choose(feature_list)
-
-        data_pair = Bunch(data=data, target=None, target_names=None)
-        dataset = PlaintextDataset(name="train_data", task_type=self._train_flag, data_pair=data_pair)
-
-        entity["dataset"] = dataset
+        entity["feature_configure"].parse(method="system")
 
         if self._feature_selector_flag:
             self.feature_selector.run(**entity)
             self._result = self.feature_selector.result
 
         else:
-
-            self._result = self.model.predict(dataset)
+            self._result = self.model.predict(dataset=entity.get("dataset"))
 
     @property
     def optimal_metrics(self):

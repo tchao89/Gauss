@@ -62,6 +62,8 @@ class AutoModelingTree(object):
         self.best_result_root = None
         self.best_model_name = None
 
+        self.pipeline_config = None
+
     def run_route(self,
                   folder_prefix_str,
                   data_clear_flag: bool,
@@ -71,18 +73,13 @@ class AutoModelingTree(object):
                   model_zoo: List[str]):
 
         work_root = self.work_root + "/" + folder_prefix_str
-        pipeline_configure_path = work_root + "/" + "pipeline/configure.yaml"
+
         pipeline_configure = {"data_clear_flag": data_clear_flag,
                               "feature_generator_flag": feature_generator_flag,
                               "unsupervised_feature_selector_flag": unsupervised_feature_generator_flag,
                               "supervised_feature_selector_flag": supervised_feature_selector_flag,
                               "metric_name": self.metric_name,
                               "task_type": self.task_type}
-
-        try:
-            yaml_write(yaml_file=pipeline_configure_path, yaml_dict=pipeline_configure)
-        except FileNotFoundError:
-            yaml_write(yaml_file=pipeline_configure_path, yaml_dict=pipeline_configure)
 
         work_feature_root = work_root + "/feature"
         feature_dict = Bunch()
@@ -128,6 +125,7 @@ class AutoModelingTree(object):
         best_model = None
         best_metric = None
         best_model_name = None
+        best_pipeline_config = None
 
         for model in model_zoo:
             work_model_root = work_root + "/model/" + model + "/"
@@ -166,13 +164,16 @@ class AutoModelingTree(object):
                 best_metric = local_metric
             if best_model_name is None:
                 best_model_name = model
+            if best_pipeline_config is None:
+                best_pipeline_config = pipeline_configure
 
             if best_metric is None or best_metric.__cmp__(local_metric) < 0:
                 best_model = local_model
                 best_metric = local_metric
                 best_model_name = model
+                best_pipeline_config = pipeline_configure
 
-        return best_model, best_metric, work_root, best_model_name
+        return best_model, best_metric, work_root, best_model_name, pipeline_configure
 
     # local_best_model, local_best_metric, local_best_work_root, local_best_model_name
     def update_best(self, *params):
@@ -181,6 +182,7 @@ class AutoModelingTree(object):
             self.best_metric = params[1]
             self.best_result_root = params[2]
             self.best_model_name = params[3]
+            self.pipeline_config = params[4]
 
     def run(self):
         local_result = self.run_route(
@@ -226,6 +228,7 @@ class AutoModelingTree(object):
                      "unsupervised_feature_selector": self.unsupervised_feature_selector,
                      "supervised_feature_selector": self.supervised_feature_selector,
                      "auto_ml": self.auto_ml,
-                     "best_metric": float(self.best_metric)}
+                     "best_metric": float(self.best_metric.result)}
 
-        yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/final_config.yaml")
+        yaml_dict.update(self.pipeline_config)
+        yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/pipeline_config.yaml")

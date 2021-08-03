@@ -24,7 +24,7 @@ class Inference(object):
 
         self.name = name
         self.work_root = work_root
-        self.root_conf = self.work_root + "/" + "inference_config.yaml"
+        self.root_conf = self.work_root + "/" + "inference_user_config.yaml"
 
         self.conf = Bunch(**yaml_read(self.root_conf))
 

@@ -1,6 +1,0 @@
-data_clear_flag: true
-feature_generator_flag: false
-metric_name: auc
-supervised_feature_selector_flag: true
-task_type: classification
-unsupervised_feature_selector_flag: true

@@ -8,7 +8,7 @@ from utils.common_component import yaml_read, yaml_write
 from pipeline.inference import Inference
 
 
-def main(config=work_root + "/inference_config.yaml"):
+def main(config=work_root + "/inference_user_config.yaml"):
     configure = yaml_read(config)
     inference = Inference(name="inference", work_root=pipeline_dict["work_root"], out_put_path=configure["out_put_path"])
     inference.run()

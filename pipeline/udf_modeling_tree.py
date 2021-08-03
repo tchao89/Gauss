@@ -103,6 +103,8 @@ class UdfModelingTree(object):
         self.best_result_root = None
         self.best_model_name = None
 
+        self.pipeline_config = None
+
     def run_route(self,
                   folder_prefix_str,
                   data_clear_flag,
@@ -114,7 +116,6 @@ class UdfModelingTree(object):
                   selector_config_path):
 
         work_root = self.work_root + "/" + folder_prefix_str
-        pipeline_configure_path = work_root + "/" + "pipeline/configure.yaml"
 
         pipeline_configure = {"data_clear_flag": data_clear_flag,
                               "feature_generator_flag": feature_generator_flag,
@@ -123,8 +124,6 @@ class UdfModelingTree(object):
                               "metric_name": self.metric_name,
                               "task_type": self.task_type
                               }
-
-        yaml_write(yaml_file=pipeline_configure_path, yaml_dict=pipeline_configure)
 
         work_feature_root = work_root + "/feature"
 
@@ -196,7 +195,7 @@ class UdfModelingTree(object):
         local_metric = core_chain.optimal_metrics
         assert local_metric is not None
         local_model = core_chain.optimal_model
-        return local_model, local_metric, work_root, model_name
+        return local_model, local_metric, work_root, model_name, pipeline_configure
 
     @classmethod
     def create_component(cls, component_name: str, **params):
@@ -219,6 +218,7 @@ class UdfModelingTree(object):
             self.best_metric = params[1]
             self.best_result_root = params[2]
             self.best_model_name = params[3]
+            self.pipeline_config = params[4]
 
     def run(self):
 
@@ -244,8 +244,6 @@ class UdfModelingTree(object):
         yaml_dict = {"best_root": self.best_result_root,
                      "best_model_name": self.best_model_name,
                      "work_root": self.work_root,
-                     "task_type": self.task_type,
-                     "metric_name": self.metric_name,
                      "dataset_name": self.dataset_type,
                      "type_inference": self.type_inference,
                      "data_clear": self.data_clear,
@@ -254,5 +252,5 @@ class UdfModelingTree(object):
                      "supervised_feature_selector": self.supervised_feature_selector,
                      "auto_ml": self.auto_ml,
                      "best_metric": float(self.best_metric.result)}
-
-        yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/final_config.yaml")
+        yaml_dict.update(self.pipeline_config)
+        yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/pipeline_config.yaml")
