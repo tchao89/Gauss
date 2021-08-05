@@ -45,6 +45,7 @@ class GaussLightgbm(ModelWrapper):
         pass
 
     def load_data(self, dataset: BaseDataset, val_dataset: BaseDataset = None):
+        # 处理cat数据
         """
 
         :param val_dataset:
