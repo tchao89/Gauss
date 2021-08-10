@@ -59,12 +59,14 @@ class TFPlainDataset(BaseDataset):
             if params.get("drop_remainder") else True
 
         # hyper-parameters
-        self._batch_size = tf.placeholder(dtype=tf.int64, shape=())
+        self._batch_size = tf.compat.v1.placeholder(dtype=tf.int64, shape=())
         self._batch_size_param = 8
 
     def __repr__(self):
-        return str(self._df_dataset.head())
-
+        if not self._selected_features:
+            return str(self._df_dataset.head())
+        else:
+            return str(self._df_dataset[self._selected_features].head())
 
     def update_dataset_feature_config(self, features: list):
         """update private attribute selected_features, which are actually
