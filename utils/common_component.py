@@ -5,8 +5,6 @@
 import os
 from typing import List, Any
 
-from entity.feature_configuration.feature_config import FeatureConf
-
 import yaml
 
 def mkdir(path: str):
@@ -40,7 +38,6 @@ def feature_list_generator(feature_conf):
     if isinstance(feature_conf, dict):
         feature_dict = feature_conf
     else:
-        assert isinstance(feature_conf, FeatureConf)
         # name: FeatureItemConf
         feature_conf = feature_conf.feature_dict
         for item in feature_conf.keys():
@@ -64,7 +61,6 @@ def feature_list_selector(feature_conf: Any, feature_indexes: List[int]):
     if isinstance(feature_conf, dict):
         feature_dict = feature_conf
     else:
-        assert isinstance(feature_conf, FeatureConf)
         # name: FeatureItemConf
         feature_conf = feature_conf.feature_dict
         for item in feature_conf.keys():
@@ -79,6 +75,8 @@ def feature_list_selector(feature_conf: Any, feature_indexes: List[int]):
     for item in feature_dict.keys():
         if feature_dict[item]["used"] is True:
             used_features.append(item)
+        else:
+            raise ValueError("Supervised selected features must have \" true\" used type.")
     used_features.sort(key=get_item)
 
     feature_list = []

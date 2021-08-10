@@ -102,13 +102,14 @@ class TabularAutoML(BaseAutoML):
             tuner.update_search_space(self._search_space.get(entity["model"].name))
 
             for trial in range(self.trial_num):
-                print("round: ", trial)
+
                 if self._default_parameters is not None:
 
                     params = self._default_parameters.get(self._model.name)
                     assert params is not None
 
                     receive_params = tuner.generate_parameters(trial)
+
                     params.update(receive_params)
 
                     self._model.update_params(**params)
@@ -120,7 +121,7 @@ class TabularAutoML(BaseAutoML):
                     self._model.update_best_model()
 
                     if self._is_final_set is True:
-                        self._model.final_set()
+                        self._model.set_best_model()
 
                     metrics = self._model.val_metrics.result
                     # get model which has been trained.

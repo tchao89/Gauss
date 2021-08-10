@@ -1,53 +1,62 @@
-class A:
-    def __init__(self, a, b, c):
-        self.value = a
-        self.b = b
-        self.c = c
+import ctypes
 
-class lgb_model(object):
-    def __init__(self, x, y="test model", z=None):
-        if z is None:
-            z = {"model": "a"}
+lib = ctypes.cdll.LoadLibrary("/home/liangqian/PycharmProjects/Gauss/test_dataset/TestLib.so")
 
-        self.a = A(x, y, z)
+print("Test int io...")
+func = lib.receiveInt
+func.argtypes = [ctypes.c_int]
+func.restype = ctypes.c_int
+print(func(100))
+print()
 
-class ModelRepr(object):
+print("Test double io...")
+func = lib.receiveDouble
+func.argtypes = [ctypes.c_double]
+func.restype = ctypes.c_double
+print(func(3.14))
+print()
 
-    def __init__(self):
-        self._model = None
-        self._best_model = None
+print("Test char io...")
+func = lib.receiveChar
+func.argtypes = [ctypes.c_char]
+func.restype = ctypes.c_char
+print(func(ctypes.c_char(b'a')))
+print()
 
-    def train(self, x):
-        self._model = lgb_model(x)
+print("Test string io...")
+func = lib.receiveString
+func.argtypes = [ctypes.c_char_p]
+func.restype = ctypes.c_char_p
+print(func(b"(This is a test string.)"))
+print()
 
-    def eval(self):
-        return self._model.x
-
-    def update_best_model(self):
-        assert self._model is not None
-
-        if self._best_model is None:
-
-            self._best_model = self._model
-        else:
-
-            if self._model.a.value > self._best_model.a.value:
-                self._best_model = self._model
-
-    @property
-    def best_model(self):
-        return self._best_model
-
-    @property
-    def last_model(self):
-        return self._model
+print("Test struct io...")
 
 
-data = [6, 5, 3, 7, 12, 9, 10]
-model_repr = ModelRepr()
+class Struct(ctypes.Structure):
+    _fields_ = [('name', ctypes.c_char_p),
+                ('age', ctypes.c_int),
+                ('score', ctypes.c_float * 3)]
 
-for i in data:
-    model_repr.train(x=i)
-    model_repr.update_best_model()
-    print("best model: ", model_repr.best_model.a.value)
-    print("last model: ", model_repr.last_model.a.value)
+
+lib.argtypes = [Struct]
+lib.receiveStruct.restype = Struct
+array = [85, 93, 95]
+st = lib.receiveStruct(Struct(b'XiaoMing', 16, (ctypes.c_float * 3)(*array)))
+print(str(st.name) + ' ' + str(st.age) + ' ' + str(st.score[0]) + ' in python')
+print()
+
+print('Test struct pointer io...')
+lib.receiveStructPtr.restype = ctypes.POINTER(Struct)
+lib.receiveStructPtr.argtypes = [ctypes.POINTER(Struct)]
+p = lib.receiveStructPtr(Struct(b"XiaoHuang", 19, (ctypes.c_float * 3)(*array)))
+print(str(p.contents.name) + ' ' + str(p.contents.age) + ' ' + str(p.contents.score[0]) + ' in python')
+print()
+
+print('Test struct array io...')
+lib.receiveStructArray.restype = ctypes.POINTER(Struct)
+lib.receiveStructArray.argtypes = [ctypes.ARRAY(Struct, 2), ctypes.c_int]
+array = [Struct(b'student1', 19, (ctypes.c_float * 3)(91, 92, 93)),
+         Struct(b'student2', 18, (ctypes.c_float * 3)(88, 95, 92))]
+p = lib.receiveStructArray(ctypes.ARRAY(Struct, 2)(*array), 2)
+print(str(p.contents.name) + ' ' + str(p.contents.age) + ' ' + str(p.contents.score[2]) + ' in python')

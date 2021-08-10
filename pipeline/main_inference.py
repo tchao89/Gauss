@@ -8,7 +8,17 @@ from utils.common_component import yaml_read, yaml_write
 from pipeline.inference import Inference
 
 
-def main(config=work_root + "/inference_config.yaml"):
+# test programming
+pipeline_dict = yaml_read(yaml_file="/home/liangqian/PycharmProjects/Gauss/experiments/9P5Cf1/pipeline_config.yaml")
+work_root = pipeline_dict["work_root"]
+
+pipeline_dict.update(yaml_read(yaml_file=work_root + "/pipeline_config.yaml"))
+pipeline_dict["test_data_path"] = "/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_with_string_predict.csv"
+pipeline_dict["out_put_path"] = pipeline_dict["work_root"]
+
+yaml_write(yaml_dict=pipeline_dict, yaml_file=work_root + "/inference_user_config.yaml")
+
+def main(config=work_root + "/inference_user_config.yaml"):
     configure = yaml_read(config)
     inference = Inference(name="inference", work_root=pipeline_dict["work_root"], out_put_path=configure["out_put_path"])
     inference.run()

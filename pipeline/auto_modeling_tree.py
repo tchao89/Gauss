@@ -12,50 +12,26 @@ from typing import List
 from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
 from pipeline.mapping import EnvironmentConfigure
-from pipeline.base import compare, check_data
+from pipeline.base import check_data
+from pipeline.base_modeling_tree import BaseModelingTree
 
-from utils.common_component import yaml_write
 from utils.bunch import Bunch
 from utils.exception import PipeLineLogicError
 
 
 # This class is used to train model.
-class AutoModelingTree(object):
+class AutoModelingTree(BaseModelingTree):
 
-    def __init__(self,
-                 name: str,
-                 work_root: str,
-                 task_type: str,
-                 metric_name: str,
-                 train_data_path: str,
-                 val_data_path: str = None,
-                 feature_configure_path: str = None,
-                 target_names: List[str] = None,
-                 dataset_type: str = "plain",
-                 type_inference: str = "plain",
-                 data_clear: str = "plain",
-                 feature_generator: str = "featuretools",
-                 unsupervised_feature_selector: str = "unsupervised",
-                 supervised_feature_selector: str = "supervised",
-                 auto_ml: str = "plain"
-                 ):
+    def __init__(self, name: str, work_root: str, task_type: str, metric_name: str, train_data_path: str,
+                 val_data_path: str = None, feature_configure_path: str = None, target_names: List[str] = None,
+                 dataset_type: str = "plain", type_inference: str = "plain", data_clear: str = "plain",
+                 feature_generator: str = "featuretools", unsupervised_feature_selector: str = "unsupervised",
+                 supervised_feature_selector: str = "supervised", auto_ml: str = "plain"):
 
-        self.name = name
-        # experiment root path
-        self.work_root = work_root
-        self.task_type = task_type
-        self.metric_name = metric_name
-        self.train_data_path = train_data_path
-        self.val_data_path = val_data_path
-        self.target_names = target_names
-        self.feature_configure_path = feature_configure_path
-        self.dataset_type = dataset_type
-        self.type_inference = type_inference
-        self.data_clear = data_clear
-        self.feature_generator = feature_generator
-        self.unsupervised_feature_selector = unsupervised_feature_selector
-        self.supervised_feature_selector = supervised_feature_selector
-        self.auto_ml = auto_ml
+        super().__init__(name, work_root, task_type, metric_name, train_data_path, val_data_path, target_names,
+                         feature_configure_path, dataset_type, type_inference, data_clear, feature_generator,
+                         unsupervised_feature_selector, supervised_feature_selector, auto_ml)
+
         self.already_data_clear = None
         self.best_model = None
         self.best_metric = None
@@ -71,18 +47,13 @@ class AutoModelingTree(object):
                   model_zoo: List[str]):
 
         work_root = self.work_root + "/" + folder_prefix_str
-        pipeline_configure_path = work_root + "/" + "pipeline/configure.yaml"
+
         pipeline_configure = {"data_clear_flag": data_clear_flag,
                               "feature_generator_flag": feature_generator_flag,
                               "unsupervised_feature_selector_flag": unsupervised_feature_generator_flag,
                               "supervised_feature_selector_flag": supervised_feature_selector_flag,
                               "metric_name": self.metric_name,
                               "task_type": self.task_type}
-
-        try:
-            yaml_write(yaml_file=pipeline_configure_path, yaml_dict=pipeline_configure)
-        except FileNotFoundError:
-            yaml_write(yaml_file=pipeline_configure_path, yaml_dict=pipeline_configure)
 
         work_feature_root = work_root + "/feature"
         feature_dict = Bunch()
@@ -128,6 +99,7 @@ class AutoModelingTree(object):
         best_model = None
         best_metric = None
         best_model_name = None
+        best_pipeline_config = None
 
         for model in model_zoo:
             work_model_root = work_root + "/model/" + model + "/"
@@ -166,23 +138,18 @@ class AutoModelingTree(object):
                 best_metric = local_metric
             if best_model_name is None:
                 best_model_name = model
+            if best_pipeline_config is None:
+                best_pipeline_config = pipeline_configure
 
-            if best_metric is None or (compare(local_metric, best_metric)) < 0:
+            if best_metric is None or best_metric.__cmp__(local_metric) < 0:
                 best_model = local_model
                 best_metric = local_metric
                 best_model_name = model
+                best_pipeline_config = pipeline_configure
 
-        return best_model, best_metric, work_root, best_model_name
+        return best_model, best_metric, work_root, best_model_name, pipeline_configure
 
-    # local_best_model, local_best_metric, local_best_work_root, local_best_model_name
-    def update_best(self, *params):
-        if self.best_metric is None or compare(params[1], self.best_metric) < 0:
-            self.best_model = params[0]
-            self.best_metric = params[1]
-            self.best_result_root = params[2]
-            self.best_model_name = params[3]
-
-    def run(self):
+    def _run(self):
         local_result = self.run_route(
             folder_prefix_str="no-clear_feagen_no-unsupfeasel_no-supfeasel",
             data_clear_flag=False,
@@ -213,19 +180,3 @@ class AutoModelingTree(object):
 
         if local_result is not None:
             self.update_best(*local_result)
-
-        yaml_dict = {"best_root": self.best_result_root,
-                     "best_model_name": self.best_model_name,
-                     "work_root": self.work_root,
-                     "task_type": self.task_type,
-                     "metric_name": self.metric_name,
-                     "dataset_name": self.dataset_type,
-                     "type_inference": self.type_inference,
-                     "data_clear": self.data_clear,
-                     "feature_generator": self.feature_generator,
-                     "unsupervised_feature_selector": self.unsupervised_feature_selector,
-                     "supervised_feature_selector": self.supervised_feature_selector,
-                     "auto_ml": self.auto_ml,
-                     "best_metric": float(self.best_metric)}
-
-        yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/final_config.yaml")

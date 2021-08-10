@@ -20,7 +20,7 @@ from entity.dataset.base_dataset import BaseDataset
 from entity.dataset.plain_dataset import PlaintextDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from utils.bunch import Bunch
-from utils.common_component import mkdir, yaml_write
+from utils.common_component import mkdir, yaml_write, feature_list_generator
 
 
 class GaussLightgbm(ModelWrapper):
@@ -45,6 +45,7 @@ class GaussLightgbm(ModelWrapper):
         pass
 
     def load_data(self, dataset: BaseDataset, val_dataset: BaseDataset = None):
+        # 处理cat数据
         """
 
         :param val_dataset:
@@ -120,10 +121,17 @@ class GaussLightgbm(ModelWrapper):
         else:
             raise ValueError("Model parameters is None.")
 
-    def predict(self, test_dataset: BaseDataset):
+    def predict(self, dataset: BaseDataset, **entity):
         assert self._train_flag is False
 
-        self.lgb_test = self.load_data(dataset=test_dataset)
+        if entity.get("feature_conf") is not None:
+            features = feature_list_generator(feature_conf=entity.get("feature_conf"))
+            data = dataset.feature_choose(features)
+
+            data_pair = Bunch(data=data, target=None, target_names=None)
+            dataset = PlaintextDataset(name="inference_data", task_type=self._train_flag, data_pair=data_pair)
+
+        self.lgb_test = self.load_data(dataset=dataset)
         assert os.path.isfile(self._model_path + "/" + self.model_file_name)
 
         self._model = lgb.Booster(model_file=self._model_path + "/" + self.model_file_name)
@@ -178,6 +186,7 @@ class GaussLightgbm(ModelWrapper):
 
         try:
             assert os.path.isdir(self._model_path)
+
         except AssertionError:
             mkdir(self._model_path)
 
@@ -186,6 +195,7 @@ class GaussLightgbm(ModelWrapper):
         yaml_write(yaml_dict=self._model_config,
                    yaml_file=os.path.join(self._model_config_root, self.model_config_file_name))
 
+        assert self._feature_list is not None
         yaml_write(yaml_dict={"features": self._feature_list},
                    yaml_file=os.path.join(self._feature_config_root, self.feature_config_file_name))
 
@@ -196,4 +206,10 @@ class GaussLightgbm(ModelWrapper):
         self._model_params.update(params)
 
     def set_weight(self):
+        pass
+
+    def update_best(self):
+        pass
+
+    def set_best(self):
         pass

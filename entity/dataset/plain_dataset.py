@@ -319,8 +319,8 @@ class PlaintextDataset(BaseDataset):
         val_target = self._bunch.target.iloc[self._val_start:]
         self._bunch.target = self._bunch.target.iloc[:self._val_start]
 
-        self._bunch.data = self._bunch.data.reset_index(drop=True)
-        self._bunch.target = self._bunch.target.reset_index(drop=True)
+        self._bunch.data.reset_index(drop=True, inplace=True)
+        self._bunch.target.reset_index(drop=True, inplace=True)
 
         val_data = val_data.reset_index(drop=True)
         val_target = val_target.reset_index(drop=True)

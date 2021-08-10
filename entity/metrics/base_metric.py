@@ -17,16 +17,19 @@ from entity.entity import Entity
 class MetricResult(Entity):
     """Class for metric result."""
 
-    def __init__(self, name: str, result: float, meta=None):
+    def __init__(self, name: str, result: float, optimize_mode: str, meta=None):
         """Construct a metric result.
         :param result: The metric's result.
         :param meta: A map of other meta metarmation.
         """
+        assert optimize_mode is not None
 
+        self._optimize_mode = optimize_mode
         if meta is None:
             meta = {}
         self._result = result
         self._meta = meta
+
         super(MetricResult, self).__init__(
             name=name,
         )
@@ -45,6 +48,14 @@ class MetricResult(Entity):
             return "%f (%s)" % (self._result, meta_str)
         else:
             return "%f" % self._result
+
+    def __cmp__(self, other):
+        assert self._optimize_mode in ["maximize", "minimize"]
+
+        if self._optimize_mode == "maximize":
+            return self._result - other.result
+        else:
+            return - self._result + other.result
 
 
 class BaseMetric(Entity, ABC):

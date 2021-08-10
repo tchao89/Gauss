@@ -15,7 +15,7 @@ from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 from gauss_factory.entity_factory import MetricsFactory
 
-from utils.common_component import yaml_write, yaml_read, feature_list_selector
+from utils.common_component import yaml_write, yaml_read, feature_list_generator
 
 
 class CoreRoute(Component):
@@ -62,6 +62,7 @@ class CoreRoute(Component):
         self._feature_selector_flag = feature_selector_flag
 
         self._feature_config_path = pre_feature_configure_path
+
         self._final_file_path = target_feature_configure_path
 
         self._model_type = model_type
@@ -69,11 +70,13 @@ class CoreRoute(Component):
         if self._train_flag:
             self._best_metrics = None
             self._best_model = None
-            self._feature_conf = yaml_read(self._feature_config_path)
-
-        if not self._train_flag:
+        else:
             self._result = None
             self._feature_conf = None
+
+        # create feature configure
+        feature_conf_params = Bunch(name="featureconfigure", file_path=None)
+        self.feature_conf = self.create_entity(entity_name="featureconfigure", **feature_conf_params)
 
         # create metrics and set optimize_mode
         metrics_factory = MetricsFactory()
@@ -86,7 +89,6 @@ class CoreRoute(Component):
                              model_path=self._model_save_path,
                              model_config_root=model_config_root,
                              feature_config_root=feature_config_root,
-                             model_config=self._feature_conf,
                              train_flag=self._train_flag,
                              task_type=self._task_type)
 
@@ -109,7 +111,6 @@ class CoreRoute(Component):
                          task_name=task_type,
                          model_config_root=model_config_root,
                          feature_config_root=feature_config_root,
-                         model_config=self._feature_conf,
                          feature_config_path=pre_feature_configure_path,
                          final_file_path=target_feature_configure_path,
                          label_encoding_configure_path=label_encoding_path,
@@ -128,7 +129,7 @@ class CoreRoute(Component):
         entity["metrics"] = self.metrics
 
         if self._feature_selector_flag:
-
+            entity["feature_configure"] = self.feature_conf
             entity["auto_ml"] = self.auto_ml
 
             self.feature_selector.run(**entity)
@@ -139,12 +140,19 @@ class CoreRoute(Component):
             self.metrics.label_name = train_dataset.get_dataset().target_names[0]
             feature_conf = yaml_read(self._feature_config_path)
 
+            self.feature_conf.file_path = self._feature_config_path
+            self.feature_conf.parse(method="system")
+            self.feature_conf.feature_selector(feature_list=None)
+
+            entity["model"].update_feature_conf(feature_conf=self.feature_conf)
             self.auto_ml.run(**entity)
 
             yaml_write(yaml_dict=feature_conf, yaml_file=self._final_file_path)
 
         self._best_model = entity["model"]
-        self._best_metrics = entity["model"].val_metrics.result
+        # self._best_metrics is a MetricsResult object.
+        self._best_metrics = entity["model"].val_metrics
+
         entity["model"].model_save()
 
     def _predict_run(self, **entity):
@@ -157,24 +165,17 @@ class CoreRoute(Component):
         entity["model"] = self.model
         assert self._model_save_path is not None
         assert self._train_flag is False
+        entity["feature_configure"] = self.feature_conf
+        entity["feature_configure"].file_path = self._final_file_path
 
-        dataset = entity.get("dataset")
-
-        feature_list = yaml_read(os.path.join(self._feature_config_root, self._model_name + ".yaml")).get("features")
-        data = dataset.feature_choose(feature_list)
-
-        data_pair = Bunch(data=data, target=None, target_names=None)
-        dataset = PlaintextDataset(name="train_data", task_type=self._train_flag, data_pair=data_pair)
-
-        entity["dataset"] = dataset
+        entity["feature_configure"].parse(method="system")
 
         if self._feature_selector_flag:
             self.feature_selector.run(**entity)
             self._result = self.feature_selector.result
 
         else:
-
-            self._result = self.model.predict(dataset)
+            self._result = self.model.predict(dataset=entity.get("dataset"))
 
     @property
     def optimal_metrics(self):

@@ -8,8 +8,6 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import pandas as pd
-from icecream import ic
 from sklearn.metrics import roc_auc_score
 
 from entity.metrics.base_metric import BaseMetric
@@ -53,10 +51,10 @@ class AUC(BaseMetric):
         :return: MetricResult object
         """
         if np.sum(labels_map) == 0 or np.sum(labels_map) == labels_map.shape[0]:
-            self._metrics_result = MetricResult(name=self.name, result=float('nan'))
+            self._metrics_result = MetricResult(name=self.name, result=float('nan'), optimize_mode=self._optimize_mode)
         else:
             auc = roc_auc_score(y_true=labels_map, y_score=predict)
-            self._metrics_result = MetricResult(name=self.name, result=auc, meta={'#': predict.size})
+            self._metrics_result = MetricResult(name=self.name, result=auc, meta={'#': predict.size}, optimize_mode=self._optimize_mode)
 
         return self._metrics_result
 
