@@ -1,40 +1,76 @@
-{"lightgbm": {
-    "num_leaves": {"_type": "choice",
-                 "_value": [10, 20, 30, 40, 50, 60]
-                 },
-  "learning_rate": {"_type": "choice",
-                    "_value": [0.01, 0.05, 0.1, 0.2, 0.3]
-                    },
-  "bagging_fraction": {"_type": "uniform",
-                       "_value": [0.7, 1.0]
-                       },
-  "feature_fraction": {"_type": "uniform",
-                       "_value": [0.7, 1.0]
-                       },
-  "bagging_freq": {"_type": "choice",
-                   "_value": [1, 2, 4, 8, 10]
-                   },
-  "max_depth": {"_type": "choice",
-                "_value": [3, 5, 6, 7, 8, 9, 12]
-                },
-  "lambda_l2": {
-      "_type": "uniform",
-      "_value": [0, 0.9]
-}
-},
-  "lr": {
-
-    "alpha": {"_type": "choice",
-              "_value": [0.0001, 0.0005, 0.001, 0.002, 0.003]
-                    },
-    "learning_rate": {"_type": "choice",
-              "_value": ["constant", "optimal", "invscaling", "adaptive"]
-                    },
-    "eta0": {"_type": "choice",
-          "_value": [0.01, 0.05, 0.1, 0.2, 0.3]
-  },
-    "l1_ratio": {"_type": "choice",
-          "_value": [0, 0.15, 0.3, 0.5, 0.8, 1]
-  }
-  }
+{
+      "lightgbm": {
+            "num_leaves": {
+                  "_type": "choice",
+                  "_value": [10, 20, 30, 40, 50, 60]
+            },
+            "learning_rate": {
+                  "_type": "choice",
+                  "_value": [0.01, 0.05, 0.1, 0.2, 0.3]
+            },
+            "bagging_fraction": {
+                  "_type": "uniform",
+                  "_value": [0.7, 1.0]
+            },
+            "feature_fraction": {
+                  "_type": "uniform",
+                  "_value": [0.7, 1.0]
+            },
+            "bagging_freq": {
+                  "_type": "choice",
+                  "_value": [1, 2, 4, 8, 10]
+            },
+            "max_depth": {
+                  "_type": "choice",
+                  "_value": [3, 5, 6, 7, 8, 9, 12]
+            },
+            "lambda_l2": {
+                  "_type": "uniform",
+                  "_value": [0, 0.9]
+            }
+      },
+      "lr": {
+            "alpha": {
+                  "_type": "choice",
+                  "_value": [0.0001, 0.0005, 0.001, 0.002, 0.003]
+            },
+            "learning_rate": {
+                  "_type": "choice",
+                  "_value": ["constant", "optimal", "invscaling", "adaptive"]
+            },
+            "eta0": {
+                  "_type": "choice",
+                  "_value": [0.01, 0.05, 0.1, 0.2, 0.3]
+            },
+            "l1_ratio": {
+                  "_type": "choice",
+                  "_value": [0, 0.15, 0.3, 0.5, 0.8, 1]
+            }
+      },
+      "dnn":{
+            "batch_size": {
+                  "_type": "choice",
+                  "_value": [16, 32, 64, 128, 256]
+            },
+            "embed_size": {
+                  "_type": "choice",
+                  "_value": [16, 32, 64, 128, 256]
+            },
+            "hidden_sizes": {
+                  "_type": "choice",
+                  "_value": [[1024, 512, 256], [512, 256, 128], [256, 128, 64], [128, 64, 32]]
+            },
+            "learning_rate": {
+                  "_type": "uniform",
+                  "_value": [0.01, 0.0001]
+            },
+            "optimizer_type": {
+                  "_type": "choice",
+                  "_value": ["sgd", "adam", "lazy_adam"]
+            },
+            "train_epochs": {
+                  "_type": "choice",
+                  "_value": [5, 10, 15]
+            }
+      }
   }
