@@ -10,6 +10,7 @@ from typing import List
 
 from utils.bunch import Bunch
 from utils.exception import PipeLineLogicError
+from utils.Logger import logger
 from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 
@@ -145,14 +146,12 @@ class PreprocessRoute(Component):
         assert self._train_data_path is not None
         assert os.path.isfile(self._train_data_path)
         assert self._train_flag is True
-
         # 拼接数据
         dataset_params = Bunch(name="test", task_type=self._task_type, data_pair=None,
                                data_path=self._train_data_path,
                                target_name=self._target_names, memory_only=True)
-
+        logger.info("starting loading data...")
         train_dataset = self.create_entity(entity_name="plaindataset", **dataset_params)
-
         if self._val_data_path is not None:
             val_dataset_params = Bunch(name="test", task_type=self._task_type, data_pair=None,
                                        data_path=self._val_data_path,
@@ -162,16 +161,22 @@ class PreprocessRoute(Component):
 
         entity_dict["dataset"] = train_dataset
         # 类型推导
+        logger.info("starting type inference...")
         self.type_inference.run(**entity_dict)
+        
         # 数据清洗
+        logger.info("starting data clear...")
         self.data_clear.run(**entity_dict)
-        self._already_data_clear = self.data_clear.already_data_clear
 
-        if self._already_data_clear is False and train_dataset.need_data_clear is True and self._feature_generator_flag:
+        self._already_data_clear = self.data_clear.already_data_clear
+        if self._already_data_clear is False and train_dataset.need_data_clear is True and self._feature_generator_flag is True:
             raise PipeLineLogicError("Aberrant dataset can not generate additional features.")
 
+        logger.info("starting feature generation...")
         # 特征生成
         self.feature_generator.run(**entity_dict)
+
+        logger.info("starting unsupervised feature selector")
         # 无监督特征选择
         self.unsupervised_feature_selector.run(**entity_dict)
         # 数据拆分

@@ -10,6 +10,7 @@ import abc
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 from utils.common_component import yaml_write
 from utils.Logger import logger
+from utils.exception import NoResultReturnException
 
 
 # pipeline defined by user.
@@ -52,7 +53,6 @@ class BaseModelingTree(object):
         self.best_model = None
         self.best_metric = None
         self.best_result_root = None
-        self.best_model_name = None
 
         self.pipeline_config = None
 
@@ -74,17 +74,25 @@ class BaseModelingTree(object):
         entity_factory = gauss_factory.get_factory(choice="entity")
         return entity_factory.get_entity(entity_name=entity_name, **params)
 
-    # local_best_model, local_best_metric, local_best_work_root, local_best_model_name
+    # local_best_model, local_best_metric, local_best_work_root, pipeline configure
     def update_best(self, *params):
-        logger.info(params[1], params[2], params[3], params[4])
-        print(params[1], params[2], params[3], params[4])
-        if self.best_metric is None or self.best_metric.__cmp__(params[1]) < 0:
+        best_model = params[0]
+        best_metric = params[1]
+        best_result_root = params[2]
+        pipeline_config = params[3]
 
-            self.best_model = params[0]
-            self.best_metric = params[1]
-            self.best_result_root = params[2]
-            self.best_model_name = params[3]
-            self.pipeline_config = params[4]
+        if self.best_metric is None:
+            self.best_model = best_model
+            self.best_metric = best_metric
+            self.best_result_root = best_result_root
+            self.pipeline_config = pipeline_config
+
+        if self.best_metric.__cmp__(best_metric) < 0:
+
+            self.best_model = best_model
+            self.best_metric = best_metric
+            self.best_result_root = best_result_root
+            self.pipeline_config = pipeline_config
 
     def run(self, *args):
         self._run(*args)
@@ -95,8 +103,12 @@ class BaseModelingTree(object):
         pass
 
     def set_pipeline_config(self):
+
+        if self.best_model is None:
+            raise NoResultReturnException("Best model is None.")
+
         yaml_dict = {"best_root": self.best_result_root,
-                     "best_model_name": self.best_model_name,
+                     "best_model_name": self.best_model.name,
                      "work_root": self.work_root,
                      "task_type": self.task_type,
                      "metric_name": self.metric_name,

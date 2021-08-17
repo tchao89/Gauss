@@ -37,8 +37,8 @@ pipeline_dict.supervised_feature_selector = "supervised"
 pipeline_dict.auto_ml = "auto_ml"
 
 pipeline_dict.data_clear_flag = [True]
-pipeline_dict.feature_generator_flag = [True, False]
-pipeline_dict.unsupervised_feature_selector_flag = [True, False]
+pipeline_dict.feature_generator_flag = [True]
+pipeline_dict.unsupervised_feature_selector_flag = [True]
 pipeline_dict.supervised_feature_selector_flag = [True]
 pipeline_dict.model_zoo = ["lightgbm"]
 

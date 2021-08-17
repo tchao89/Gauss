@@ -4,6 +4,8 @@
 # Authors: citic-lab
 import os
 import json
+import time
+import multiprocessing
 
 from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
 from core.nni.algorithms.hpo.evolution_tuner import EvolutionTuner
@@ -30,7 +32,7 @@ class TabularAutoML(BaseAutoML):
         # optional: "maximize", "minimize", depends on metrics for auto ml.
         self._optimize_mode = params["optimize_mode"]
         # trial num for auto ml.
-        self.trial_num = 3
+        self.trial_num = 10
         self._auto_ml_path = params["auto_ml_path"]
         self._default_parameters = None
         self._search_space = None
@@ -41,6 +43,7 @@ class TabularAutoML(BaseAutoML):
         self._best_metrics = None
 
         self._result = None
+        self._multi_process_result = []
 
     def chose_tuner_set(self):
         """This method will fill self.opt_tuners, which contains all opt tuners you need in this experiment.
@@ -76,15 +79,7 @@ class TabularAutoML(BaseAutoML):
     def is_final_set(self, final_set: bool):
         self._is_final_set = final_set
 
-    def run(self, **entity):
-
-        if self._train_flag:
-            return self._train_run(**entity)
-        else:
-            return self._predict_run(**entity)
-
     def _train_run(self, **entity):
-
         assert "model" in entity and isinstance(entity["model"], ModelWrapper)
         assert "dataset" in entity and isinstance(entity["dataset"], BaseDataset)
         assert "val_dataset" in entity and isinstance(entity["val_dataset"], BaseDataset)
@@ -95,7 +90,7 @@ class TabularAutoML(BaseAutoML):
         self.set_default_params()
 
         self._model = entity["model"]
-
+        # 在此处创建模型数据对象, 继承entity对象, 放进entity字典
         for tuner_algorithms in self.opt_tuners:
 
             tuner = tuner_algorithms
@@ -129,7 +124,6 @@ class TabularAutoML(BaseAutoML):
                     tuner.receive_trial_result(trial, receive_params, metrics)
                 else:
                     raise ValueError("Default parameters is None.")
-
         self._best_metrics = self._model.val_metrics.result
 
     def _predict_run(self, **entity):

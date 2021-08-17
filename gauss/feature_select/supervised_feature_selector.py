@@ -6,6 +6,9 @@ import os
 import json
 from typing import List
 
+import numpy as np
+import pandas as pd
+
 from entity.dataset.base_dataset import BaseDataset
 from entity.model.model import ModelWrapper
 from entity.metrics.base_metric import MetricResult
@@ -86,6 +89,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         self._feature_selector_names = selector_names
 
     def choose_selector(self, selector_name: str, dataset: BaseDataset, params: dict):
+
         if selector_name == "gradient_feature_selector":
 
             return self._gradient_based_selector(dataset=dataset, params=params)
@@ -158,10 +162,13 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         for model_name in self._feature_selector_names:
             # 梯度特征选择
             if model_name == "gradient_feature_selector":
-                # 接受默认参数列表
-                self._new_parameters = self._default_parameters[model_name]
-                # 设定搜索空间
-                search_space = self._search_space[model_name]
+                if self.check_dataset(original_dataset.get_dataset().data):
+                    # 接受默认参数列表
+                    self._new_parameters = self._default_parameters[model_name]
+                    # 设定搜索空间
+                    search_space = self._search_space[model_name]
+                else:
+                    continue
 
             elif model_name == "GBDTSelector":
                 self._new_parameters = self._default_parameters[model_name]
@@ -309,7 +316,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                                            learning_rate=params["learning_rate"],
                                            n_features=params["n_features"],
                                            verbose=0)
-
         selector.fit(data, target.values.flatten())
         return selector.get_selected_features()
 
@@ -321,3 +327,13 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         default_params_path = os.path.join(self._selector_config_path, "default_parameters.json")
         with open(default_params_path, 'r') as json_file:
             self._default_parameters = json.load(json_file)
+
+    @classmethod
+    def check_dataset(cls, dataframe: pd.DataFrame):
+
+        indices_to_keep = dataframe.isin([np.nan, np.inf, -np.inf]).any()
+        features = indices_to_keep[indices_to_keep == True].index
+        if not list(features):
+            return True
+
+        return False

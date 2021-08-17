@@ -241,16 +241,15 @@ class PrepareData(Dataset):
             if self.dense_size_gb <= self.MAXMEMGB:
                 if self.storage_level == constants.StorageLevel.SPARSE:
                     self.X = self.X.toarray()
+
                 self.X = torch.as_tensor(
                     self.X, dtype=torch.get_default_dtype())
                 self.storage_level = constants.StorageLevel.DENSE
 
     def set_return_np(self, boolean):
-
         self.return_np = boolean
 
     def set_return_raw(self, boolean):
-
         self.return_raw = boolean
 
     def save_data_stats(self, path_data_stats):

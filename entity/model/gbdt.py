@@ -13,7 +13,6 @@ import os.path
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
-# from lightgbm.callback import final_metrics
 
 from entity.model.model import ModelWrapper
 from entity.dataset.base_dataset import BaseDataset
@@ -21,6 +20,7 @@ from entity.dataset.plain_dataset import PlaintextDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from utils.bunch import Bunch
 from utils.common_component import mkdir, yaml_write, feature_list_generator
+from utils.Logger import logger
 
 
 class GaussLightgbm(ModelWrapper):
@@ -31,6 +31,7 @@ class GaussLightgbm(ModelWrapper):
                                             feature_config_root=params["feature_config_root"],
                                             task_type=params["task_type"],
                                             train_flag=params["train_flag"])
+        self.need_data_clear = False
 
         self.model_file_name = self.name + ".txt"
         self.model_config_file_name = self.name + ".yaml"
@@ -45,7 +46,6 @@ class GaussLightgbm(ModelWrapper):
         pass
 
     def load_data(self, dataset: BaseDataset, val_dataset: BaseDataset = None):
-        # 处理cat数据
         """
 
         :param val_dataset:
@@ -151,17 +151,26 @@ class GaussLightgbm(ModelWrapper):
 
     def eval(self, metrics: BaseMetric, **entity):
         # 默认生成的为预测值的概率值，传入metrics之后再处理.
-        y_pred = self._model.predict(self.lgb_eval.get_data(), num_iteration=self._model.best_iteration)
+        val_y_pred = self._model.predict(self.lgb_eval.get_data(), num_iteration=self._model.best_iteration)
+        train_y_pred = self._model.predict(self.lgb_train.get_data())
 
-        assert isinstance(y_pred, np.ndarray)
+        assert isinstance(val_y_pred, np.ndarray)
+        assert isinstance(train_y_pred, np.ndarray)
         assert isinstance(self.lgb_eval.get_label(), np.ndarray)
+        assert isinstance(self.lgb_train.get_label(), np.ndarray)
 
-        metrics.evaluate(predict=y_pred, labels_map=self.lgb_eval.get_label())
-        metrics_result = metrics.metrics_result
-        assert isinstance(metrics_result, MetricResult)
+        metrics.evaluate(predict=val_y_pred, labels_map=self.lgb_eval.get_label())
+        val_metrics_result = metrics.metrics_result
 
-        self._metrics_result = metrics_result
-        return metrics_result
+        metrics.evaluate(predict=train_y_pred, labels_map=self.lgb_train.get_label())
+        train_metrics_result = metrics.metrics_result
+
+        assert isinstance(val_metrics_result, MetricResult)
+        assert isinstance(train_metrics_result, MetricResult)
+
+        self._val_metrics_result = val_metrics_result
+        self._train_metrics_result = train_metrics_result
+        logger.info("train_metric: " + str(self._train_metrics_result.result) + "   val_metrics: " + str(self._val_metrics_result.result))
 
     def get_train_loss(self):
         pass
@@ -169,12 +178,13 @@ class GaussLightgbm(ModelWrapper):
     def get_val_loss(self):
         pass
 
-    def get_train_metric(self):
-        pass
+    @property
+    def train_metric(self):
+        return self._train_metrics_result
 
     @property
     def val_metrics(self):
-        return self._metrics_result
+        return self._val_metrics_result
 
     def model_save(self, model_path=None):
 

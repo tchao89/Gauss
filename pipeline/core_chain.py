@@ -5,17 +5,15 @@
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
-from entity.dataset.plain_dataset import PlaintextDataset
 from utils.bunch import Bunch
 
 from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 from gauss_factory.entity_factory import MetricsFactory
 
-from utils.common_component import yaml_write, yaml_read, feature_list_generator
+from utils.common_component import yaml_write, yaml_read
 
 
 class CoreRoute(Component):
@@ -152,7 +150,6 @@ class CoreRoute(Component):
         self._best_model = entity["model"]
         # self._best_metrics is a MetricsResult object.
         self._best_metrics = entity["model"].val_metrics
-
         entity["model"].model_save()
 
     def _predict_run(self, **entity):
@@ -208,18 +205,3 @@ class CoreRoute(Component):
         gauss_factory = GaussFactoryProducer()
         entity_factory = gauss_factory.get_factory(choice="entity")
         return entity_factory.get_entity(entity_name=entity_name, **params)
-
-    def get_train_loss(self, **entity):
-        pass
-
-    def get_train_metric(self, **entity):
-        pass
-
-    def get_eval_loss(self, **entity):
-        pass
-    
-    def get_eval_metric(self):
-        pass
-
-    def get_eval_result(self,  **entity):
-        pass

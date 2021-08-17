@@ -12,16 +12,16 @@ from typing import List
 from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
 from pipeline.mapping import EnvironmentConfigure
-from pipeline.base import check_data
 from pipeline.base_modeling_tree import BaseModelingTree
 
 from utils.bunch import Bunch
+from utils.base import check_data
 from utils.exception import PipeLineLogicError
+from utils.Logger import logger
 
 
 # This class is used to train model.
 class AutoModelingTree(BaseModelingTree):
-
     def __init__(self, name: str, work_root: str, task_type: str, metric_name: str, train_data_path: str,
                  val_data_path: str = None, feature_configure_path: str = None, target_names: List[str] = None,
                  dataset_type: str = "plain", type_inference: str = "plain", data_clear: str = "plain",
@@ -88,7 +88,7 @@ class AutoModelingTree(BaseModelingTree):
         try:
             preprocess_chain.run()
         except PipeLineLogicError as e:
-            print(e)
+            logger.info(e)
             return None
 
         entity_dict = preprocess_chain.entity_dict
@@ -147,7 +147,7 @@ class AutoModelingTree(BaseModelingTree):
                 best_model_name = model
                 best_pipeline_config = pipeline_configure
 
-        return best_model, best_metric, work_root, best_model_name, pipeline_configure
+        return best_model, best_metric, work_root, pipeline_configure
 
     def _run(self):
         local_result = self.run_route(

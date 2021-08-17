@@ -20,6 +20,11 @@ class ModelWrapper(Entity):
                  train_flag: bool
                  ):
 
+        # bool value, customized model must set this value to decide if this model need cleared data.
+        self.need_data_clear = None
+
+        assert isinstance(self.need_data_clear, bool)
+
         self._model_path = model_path
         self._task_type = task_type
         self._train_flag = train_flag
@@ -31,7 +36,10 @@ class ModelWrapper(Entity):
         self._feature_config_root = feature_config_root
 
         self._model = None
-        self._metrics_result = None
+
+        self._val_metrics_result = None
+        self._train_metrics_result = None
+
         self._model_params = None
         self._feature_conf = None
 
@@ -56,15 +64,15 @@ class ModelWrapper(Entity):
             self._best_model_params = self._model_params
 
         if self._best_metrics_result is None:
-            self._best_metrics_result = self._metrics_result
+            self._best_metrics_result = self._val_metrics_result
 
         if self._best_feature_list is None:
             self._best_feature_list = self._feature_list
 
-        if self._metrics_result.result > self._best_metrics_result.result:
+        if self._best_metrics_result.__cmp__(self._val_metrics_result) < 0:
             self._best_model = self._model
             self._best_model_params = self._model_params
-            self._best_metrics_result = self._metrics_result
+            self._best_metrics_result = self._val_metrics_result
             self._best_feature_list = self._feature_list
 
         self.update_best()
@@ -86,7 +94,7 @@ class ModelWrapper(Entity):
         pass
 
     @abc.abstractmethod
-    def get_train_metric(self):
+    def train_metric(self):
         pass
 
     @abc.abstractmethod
@@ -99,7 +107,7 @@ class ModelWrapper(Entity):
 
     @property
     def val_metrics(self):
-        return self._metrics_result
+        return self._val_metrics_result
 
     @property
     def feature_list(self):

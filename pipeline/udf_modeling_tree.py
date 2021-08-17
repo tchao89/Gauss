@@ -7,11 +7,12 @@ from __future__ import annotations
 
 from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
-from pipeline.base import check_data
+from utils.base import check_data
 from pipeline.mapping import EnvironmentConfigure
 from pipeline.base_modeling_tree import BaseModelingTree
 
 from utils.exception import PipeLineLogicError
+from utils.Logger import logger
 
 
 # pipeline defined by user.
@@ -52,16 +53,16 @@ class UdfModelingTree(BaseModelingTree):
             model_zoo = ["xgboost", "lightgbm", "catboost", "lr_lightgbm", "dnn"]
 
         if supervised_feature_selector_flag is None:
-            supervised_feature_selector_flag = [True, False]
+            supervised_feature_selector_flag = [False]
 
         if unsupervised_feature_selector_flag is None:
-            unsupervised_feature_selector_flag = [True, False]
+            unsupervised_feature_selector_flag = [False]
 
         if feature_generator_flag is None:
-            feature_generator_flag = [True, False]
+            feature_generator_flag = [False]
 
         if data_clear_flag is None:
-            data_clear_flag = [True, False]
+            data_clear_flag = [False]
 
         self.data_clear_flag = data_clear_flag
         self.feature_generator_flag = feature_generator_flag
@@ -126,7 +127,7 @@ class UdfModelingTree(BaseModelingTree):
         try:
             preprocess_chain.run()
         except PipeLineLogicError as e:
-            print(e)
+            logger.info(e)
             return None
 
         entity_dict = preprocess_chain.entity_dict
@@ -140,7 +141,7 @@ class UdfModelingTree(BaseModelingTree):
 
         work_model_root = work_root + "/model/" + model_name + "/"
         model_save_root = work_model_root + "/model_save"
-        model_config_root = work_model_root + "/model_config"
+        model_config_root = work_model_root + "/model_parameters"
         feature_config_root = work_model_root + "/feature_config"
 
         core_chain = CoreRoute(name="core_route",
@@ -165,7 +166,7 @@ class UdfModelingTree(BaseModelingTree):
         local_metric = core_chain.optimal_metrics
         assert local_metric is not None
         local_model = core_chain.optimal_model
-        return local_model, local_metric, work_root, model_name, pipeline_configure
+        return local_model, local_metric, work_root, pipeline_configure
 
     def _run(self):
 
@@ -174,6 +175,7 @@ class UdfModelingTree(BaseModelingTree):
                 for unsupervised_feature_sel in self.unsupervised_feature_selector_flag:
                     for supervise_feature_sel in self.supervised_feature_selector_flag:
                         for model in self.model_zoo:
+
                             prefix = str(data_clear) + "_" + str(feature_generator) + "_" + str(
                                 unsupervised_feature_sel) + "_" + str(supervise_feature_sel)
                             local_result = self.run_route(folder_prefix_str=prefix,

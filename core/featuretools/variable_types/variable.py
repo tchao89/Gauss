@@ -58,8 +58,8 @@ class Variable(object):
 
     def __eq__(self, other, deep=False):
         shallow_eq = isinstance(other, self.__class__) and \
-            self.id == other.id and \
-            self.entity_id == other.entity_id
+                     self.id == other.id and \
+                     self.entity_id == other.entity_id
         if not deep:
             return shallow_eq
         else:
@@ -155,7 +155,7 @@ class Discrete(Variable):
         seen = set()
         seen_add = seen.add
         self._interesting_values = pd.Series([v for v in values if not
-                                              (v in seen or seen_add(v))],
+        (v in seen or seen_add(v))],
                                              dtype=self._interesting_values.dtype)
 
 
@@ -350,6 +350,12 @@ class PandasTypes(object):
     _pandas_timedeltas = ['Timedelta']
     _pandas_numerics = ['int16', 'int32', 'int64',
                         'float16', 'float32', 'float64']
+    unsupervised_pandas_numerics = ['int16', 'int32', 'int64',
+                                    'float16', 'float32', 'float64', 'bool']
+
+    @property
+    def pandas_numerics(self):
+        return self._pandas_numerics
 
 
 class LatLong(Variable):

@@ -36,5 +36,17 @@
     "l1_ratio": {"_type": "choice",
           "_value": [0, 0.15, 0.3, 0.5, 0.8, 1]
   }
+  },
+
+  "classification": {
+    "weight": 1
+  },
+
+  "regression": {
+
+  },
+
+  "general": {
+
   }
   }

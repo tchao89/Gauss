@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2020, Citic-Lab. All rights reserved.
 # Authors: citic-lab
+import re
 import os
 from typing import List, Any
 

@@ -15,6 +15,7 @@ from gauss.data_clear.base_data_clear import BaseDataClear
 from entity.dataset.base_dataset import BaseDataset
 
 from utils.common_component import yaml_read
+from utils.base import reduce_data
 
 
 # 需要传入三个参数， 数模型的数据/非数模型的数据， yaml文件， base dataset
@@ -53,9 +54,9 @@ class PlainDataClear(BaseDataClear):
             self._already_data_clear = True
             assert "dataset" in entity.keys()
             self._clean(dataset=entity["dataset"])
+
         else:
             self._already_data_clear = False
-
         self.final_configure_generation()
         self._data_clear_serialize()
 
@@ -67,6 +68,7 @@ class PlainDataClear(BaseDataClear):
         assert isinstance(data, pd.DataFrame)
 
         feature_names = dataset.get_dataset().feature_names
+        feature_conf = yaml_read(self._feature_configure_path)
         self._aberrant_modify(data=data)
 
         if self._enable is True:
@@ -74,11 +76,19 @@ class PlainDataClear(BaseDataClear):
                 dc_model_list = shelve_open['impute_models']
 
             for col in feature_names:
+                item_conf = feature_conf[col]
                 if dc_model_list.get(col):
-                    item_data = data[col].values.reshape(-1, 1)
+                    item_data = np.array(data[col]).reshape(-1, 1)
+
+                    if "int" in item_conf['dtype']:
+                        dc_model_list.get(col).fit(item_data.astype(np.int64))
+                    elif "float" in item_conf['dtype']:
+                        dc_model_list.get(col).fit(item_data.astype(np.float64))
+                    else:
+                        dc_model_list.get(col).fit(item_data)
+
                     item_data = dc_model_list.get(col).transform(item_data)
                     data[col] = item_data.reshape(1, -1).squeeze(axis=0)
-            self._type_consistency_modify(data=data)
 
     def _clean(self, dataset: BaseDataset):
         data = dataset.get_dataset().data
@@ -90,8 +100,7 @@ class PlainDataClear(BaseDataClear):
         feature_conf = yaml_read(self._feature_configure_path)
 
         for feature in feature_names:
-            item_data = data[feature].values
-
+            item_data = np.array(data[feature])
             # feature configuration, dict type
             item_conf = feature_conf[feature]
 
@@ -120,14 +129,19 @@ class PlainDataClear(BaseDataClear):
 
             item_data = item_data.reshape(-1, 1)
 
-            impute_model = impute_model.fit(item_data)
+            if "int" in item_conf['dtype']:
+                impute_model.fit(item_data.astype(np.int64))
+            elif "float" in item_conf['dtype']:
+                impute_model.fit(item_data.astype(np.float64))
+            else:
+                impute_model.fit(item_data)
+
             item_data = impute_model.transform(item_data)
             item_data = item_data.reshape(1, -1).squeeze(axis=0)
 
             self.impute_models[feature] = impute_model
-
             data[feature] = item_data
-        self._type_consistency_modify(data=data)
+        reduce_data(dataframe=data)
 
     def _aberrant_modify(self, data: pd.DataFrame):
         feature_conf = yaml_read(self._feature_configure_path)
@@ -179,9 +193,3 @@ class PlainDataClear(BaseDataClear):
     @property
     def already_data_clear(self):
         return self._already_data_clear
-
-    def _type_consistency_modify(self, data: pd.DataFrame):
-        feature_conf = yaml_read(self._feature_configure_path)
-        for col in data.columns:
-            dtype = feature_conf[col]["dtype"]
-            data[col] = data[col].astype(dtype=dtype)

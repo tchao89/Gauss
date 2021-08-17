@@ -1,5 +1,4 @@
 from core.featuretools import variable_types as vtypes
-from core.featuretools.feature_base import FeatureBase, FeatureBaseLite
 
 
 def remove_low_information_features(feature_matrix, features=None):
@@ -13,27 +12,14 @@ def remove_low_information_features(feature_matrix, features=None):
             (feature_matrix, features)
 
     """
+    features = []
 
-    keep = [c for c in feature_matrix
-            if (feature_matrix[c].nunique(dropna=False) > 1 and
-                feature_matrix[c].dropna().shape[0] > 0)]
-    feature_matrix = feature_matrix[keep]
-
-    if features is not None:
-        feature_names = []
-        if all(isinstance(feature, FeatureBase) for feature in features):
-            features = [f for f in features
-                        if f.get_name() in feature_matrix.columns]
-            return feature_matrix, features
-
-        elif all(isinstance(feature, str) for feature in features):
-            for item in features:
-                feature_item = FeatureBaseLite(name=item)
-                if item in feature_matrix.columns:
-                    feature_names.append(feature_item)
-            return feature_matrix, feature_names
-
-    return feature_matrix
+    columns = feature_matrix.columns
+    for feature in columns:
+        if feature_matrix[feature].nunique(dropna=False) > 1 and feature_matrix[feature].dropna().shape[0] > 0:
+            features.append(feature)
+    features = list(set(columns).difference(set(features)))
+    feature_matrix.drop(features, axis=1, inplace=True)
 
 
 def remove_highly_null_features(feature_matrix, features=None, pct_null_threshold=0.95):
@@ -54,8 +40,10 @@ def remove_highly_null_features(feature_matrix, features=None, pct_null_threshol
     """
     if pct_null_threshold < 0 or pct_null_threshold > 1:
         raise ValueError("pct_null_threshold must be a float between 0 and 1, inclusive.")
-
-    percent_null_by_col = (feature_matrix.isnull().mean()).to_dict()
+    columns = feature_matrix.columns
+    percent_null_by_col = {}
+    for feature in columns:
+        percent_null_by_col[feature] = feature_matrix[feature].isnull().mean()
 
     if pct_null_threshold == 0.0:
         keep = [f_name for f_name, pct_null in percent_null_by_col.items()
@@ -64,7 +52,8 @@ def remove_highly_null_features(feature_matrix, features=None, pct_null_threshol
         keep = [f_name for f_name, pct_null in percent_null_by_col.items()
                 if pct_null < pct_null_threshold]
 
-    return _apply_feature_selection(keep, feature_matrix, features)
+    features = list(set(columns).difference(set(keep)))
+    feature_matrix.drop(features, axis=1, inplace=True)
 
 
 def remove_single_value_features(feature_matrix, features=None, count_nan_as_value=False):
@@ -83,15 +72,20 @@ def remove_single_value_features(feature_matrix, features=None, count_nan_as_val
                 Matches dfs output.
                 If no feature list is provided as input, the feature list will not be returned.
     """
-    unique_counts_by_col = feature_matrix.nunique(dropna=not count_nan_as_value).to_dict()
+    columns = feature_matrix.columns
+    unique_counts_by_col = {}
+    for feature in columns:
+        unique_counts_by_col[feature] = feature_matrix[feature].nunique(dropna=not count_nan_as_value)
 
     keep = [f_name for f_name, unique_count
             in unique_counts_by_col.items() if unique_count > 1]
-    return _apply_feature_selection(keep, feature_matrix, features)
+    features = list(set(columns).difference(set(keep)))
+    feature_matrix.drop(features, axis=1, inplace=True)
 
 
 def remove_highly_correlated_features(feature_matrix, features=None, pct_corr_threshold=0.95,
                                       features_to_check=None, features_to_keep=None):
+
     """Removes columns in feature matrix that are highly correlated with another column.
 
         Note:
@@ -159,27 +153,5 @@ def remove_highly_correlated_features(feature_matrix, features=None, pct_corr_th
 
     keep = [f_name for f_name in feature_matrix.columns
             if (f_name in features_to_keep or f_name not in dropped)]
-    return _apply_feature_selection(keep, feature_matrix, features)
-
-
-def _apply_feature_selection(keep, feature_matrix, features=None):
-    new_matrix = feature_matrix[keep]
-    new_feature_names = set(new_matrix.columns)
-
-    if features is not None:
-        new_features = []
-        for f in features:
-            if f.number_output_features > 1:
-
-                slices = [f[i] for i in range(f.number_output_features)
-                          if f[i].get_name() in new_feature_names]
-                if len(slices) == f.number_output_features:
-                    new_features.append(f)
-                else:
-                    new_features.extend(slices)
-            else:
-                if f.get_name() in new_feature_names:
-                    new_features.append(f)
-
-        return new_matrix, new_features
-    return new_matrix
+    features = list(set(feature_matrix.columns).difference(set(keep)))
+    feature_matrix.drop(features, axis=1, inplace=True)

@@ -83,18 +83,6 @@ class TypeInference(BaseTypeInference):
 
             self.final_feature_configure.feature_dict[feature_name].dtype = 'string'
 
-    def _bool_column_selector(self, feature_name: str, dataset: pd.DataFrame):
-
-        if self.init_feature_configure is not None \
-                and self.init_feature_configure.feature_dict.get(feature_name) is not None \
-                and self.init_feature_configure.feature_dict.get(feature_name).ftype == 'bool' \
-                and self.init_feature_configure.feature_dict.get(feature_name).dtype == 'int64' or 'string':
-
-            column_unique = list(set(dataset[feature_name]))
-
-            if len(column_unique) == 2:
-                self.final_feature_configure.feature_dict[feature_name].ftype = 'bool'
-
     def _datetime_column_selector(self, feature_name: str, dataset: pd.DataFrame):
 
         def datetime_map(x):
@@ -136,7 +124,6 @@ class TypeInference(BaseTypeInference):
                 else:
                     self.final_feature_configure.feature_dict[column].ftype = 'numerical'
 
-            self._bool_column_selector(feature_name=column, dataset=data)
             self._datetime_column_selector(feature_name=column, dataset=data)
 
         return self.final_feature_configure
@@ -150,17 +137,15 @@ class TypeInference(BaseTypeInference):
         assert isinstance(target, pd.DataFrame) or isinstance(target, pd.Series)
 
         data_dtypes = data.dtypes
-
         for col_index, column in enumerate(data):
 
             feature_item_configure = FeatureItemConf()
             feature_item_configure.name = column
             feature_item_configure.index = col_index
-
-            if data_dtypes[col_index] == "int64":
+            if "int" in str(data_dtypes[col_index]):
                 feature_item_configure.dtype = "int64"
 
-            elif data_dtypes[col_index] == "float64":
+            elif "float" in str(data_dtypes[col_index]):
                 int_count = 0
 
                 for item in data[column]:
@@ -169,12 +154,12 @@ class TypeInference(BaseTypeInference):
 
                 if int_count + data[column].isna().sum() == data[column].shape[0]:
                     feature_item_configure.dtype = "int64"
-                    dataset.already_data_clear = True
+                    dataset.need_data_clear = True
 
                 else:
                     feature_item_configure.dtype = "float64"
 
-            elif data_dtypes[col_index] == 'object':
+            elif data_dtypes[col_index] == 'object' or 'category':
 
                 str_count = 0
                 int_count = 0
@@ -193,7 +178,7 @@ class TypeInference(BaseTypeInference):
                         str_coordinate.append(index)
 
                 if float_count/data.shape[0] > self.dtype_threshold:
-                    dataset.already_data_clear = True
+                    dataset.need_data_clear = True
 
                     feature_item_configure.dtype = 'float64'
                     detect_column = copy.deepcopy(data[column])
@@ -216,10 +201,10 @@ class TypeInference(BaseTypeInference):
         for label_index, label in enumerate(target):
 
             if self._task_name == 'regression':
-                assert target[label].dtypes == 'float64' and target[label].isna().sum() == 0
+                assert "float" in str(target[label].dtypes) and target[label].isna().sum() == 0
 
             if self._task_name == 'classification':
-                assert target[label].dtypes == 'int64'
+                assert "int" in str(target[label].dtypes)
 
         return self.final_feature_configure
 

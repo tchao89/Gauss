@@ -14,6 +14,7 @@ from sklearn.datasets import load_svmlight_file
 from utils.bunch import Bunch
 from entity.dataset.base_dataset import BaseDataset
 from utils.Logger import logger
+from utils.base import reduce_data
 
 
 class PlaintextDataset(BaseDataset):
@@ -30,7 +31,8 @@ class PlaintextDataset(BaseDataset):
             if params.get(item) is None:
                 params[item] = None
 
-        super(PlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_type"], params["target_name"], params["memory_only"])
+        super(PlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_type"],
+                                               params["target_name"], params["memory_only"])
         if params["data_path"] is not None:
             assert os.path.isfile(params["data_path"])
 
@@ -106,13 +108,6 @@ class PlaintextDataset(BaseDataset):
 
         if self.type_doc == "csv":
             try:
-                data, target, feature_names, target_name = self.load_csv()
-                _, data, target = self._convert_data_dataframe(data=data,
-                                                               target=target,
-                                                               feature_names=feature_names,
-                                                               target_names=target_name)
-            except ValueError:
-                logger.info(".csv file has object dtype, load_mixed_csv() method has started.")
                 data, target, feature_names, target_name = self.load_mixed_csv()
             except IOError:
                 logger.info("File path does not exist.")
@@ -149,7 +144,8 @@ class PlaintextDataset(BaseDataset):
         target = None
         target_name = None
 
-        data = pd.read_csv(self._data_path)
+        # data = pd.read_csv(self._data_path)
+        data = reduce_data(data_path=self._data_path)
 
         feature_names = data.columns
         self._row_size = data.shape[0]
@@ -160,7 +156,6 @@ class PlaintextDataset(BaseDataset):
             feature_names = data.columns
             target_name = self._target_name
             self._column_size = data.shape[1] + target.shape[1]
-
         return data, target, feature_names, target_name
 
     def load_csv(self):
