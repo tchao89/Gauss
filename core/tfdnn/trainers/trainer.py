@@ -7,10 +7,13 @@ from __future__ import division
 from __future__ import absolute_import
 
 import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import time
 import tensorflow as tf
 
-from core.tfdnn.utils.loggers import TrainLogger, 
+from icecream import ic
+
+from core.tfdnn.utils.loggers import TrainLogger
 from core.tfdnn.utils.loggers import ValidateLogger
 
 
@@ -27,7 +30,7 @@ class Trainer(object):
                  train_epochs=1,
                  evaluator=None,
                  save_checkpoints_dir=None,
-                 restore_checkpoint_path=None,
+                 restore_checkpoint_dir=None,
                  validate_at_start=False,
                  tensorboard_logdir=None):
         self._dataset = dataset
@@ -35,7 +38,7 @@ class Trainer(object):
         self._train_fn = train_fn
         self._train_epochs = train_epochs
         self._save_checkpoints_dir = save_checkpoints_dir
-        self._restore_checkpoint_path = restore_checkpoint_path
+        self._restore_checkpoint_dir = restore_checkpoint_dir
         self._validate_steps = validate_steps
         self._log_steps = log_steps
         self._learning_rate = learning_rate
@@ -58,12 +61,12 @@ class Trainer(object):
         return None
 
     def _create_session_and_init(self):
-        sess = tf.Session()
+        sess = tf.compat.v1.Session()
         tf.compat.v1.global_variables_initializer().run(session=sess)
         tf.compat.v1.tables_initializer().run(session=sess)
-        if self._restore_checkpoint_path:
+        if self._restore_checkpoint_dir:
             checkpoint_saver = tf.train.Saver(max_to_keep=None)
-            checkpoint_saver.restore(sess, self._restore_checkpoint_path)
+            checkpoint_saver.restore(sess, tf.train.latest_checkpoint(self._restore_checkpoint_dir))
         return sess
 
     def _build_train_graph(self):
@@ -76,13 +79,11 @@ class Trainer(object):
 
     def _create_optimizer(self):
         if self._optimizer_type == "sgd":
-            return tf.train.GradientDescentOptimizer(learning_rate=self._learning_rate)
+            return tf.compat.v1.train.GradientDescentOptimizer(learning_rate=self._learning_rate)
         elif self._optimizer_type == "adam":
             return tf.compat.v1.train.AdamOptimizer(learning_rate=self._learning_rate)
         elif self._optimizer_type == "lazy_adam":
             return tf.contrib.opt.LazyAdamOptimizer(learning_rate=self._learning_rate)
-        elif self._optimizer_type == "rmsprop":
-            return tf.train.RMSPropOptimizer(learning_rate=self._learning_rate)
         else:
             raise NotImplementedError(
                 "optimizer type %s is not supported." % self._optimizer_type
@@ -127,7 +128,7 @@ class Trainer(object):
 
     def _save_checkpoint(self, step, prefix="ckpt_epoch"):
         if self._save_checkpoints_dir:
-            checkpoint_saver = tf.train.Saver(max_to_keep=None)
+            checkpoint_saver = tf.compat.v1.train.Saver(max_to_keep=100)
             checkpoint_path = os.path.join(self._save_checkpoints_dir, prefix)
             checkpoint_saver.save(
                 sess=self._sess, 
