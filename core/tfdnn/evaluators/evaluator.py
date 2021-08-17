@@ -42,10 +42,10 @@ class Evaluator(object):
         sess = tf.Session()
         if self._restore_checkpoint_path:
             checkpoint_saver = tf.train.Saver(max_to_keep=None)
-            checkpoint_saver.restore(sess, self._restore_checkpoint_path)
+            checkpoint_saver.restore(sess, tf.train.latest_checkpoint(self._restore_checkpoint_path))
         else:
-            tf.global_variables_initializer().run(session=sess)
-        tf.tables_initializer().run(session=sess)
+            tf.compat.v1.global_variables_initializer().run(session=sess)
+        tf.compat.v1.tables_initializer().run(session=sess)
         return sess
 
     def _run_eval_loop(self):
