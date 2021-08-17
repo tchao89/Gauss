@@ -8,7 +8,9 @@ from entity.dataset.plain_dataset import PlaintextDataset
 from entity.feature_configuration.feature_config import FeatureConf
 from entity.model.gbdt import GaussLightgbm
 from entity.model.linear_models import GaussLinearModels
+from entity.model.dnn_model import GaussNN
 from entity.metrics.udf_metric import AUC
+from entity.metrics.udf_metric import NNAUC
 
 # This class will be used in pipeline
 class EntityFactory(AbstractGauss):
@@ -29,6 +31,8 @@ class EntityFactory(AbstractGauss):
             return AUC(**params)
         elif entity_name.lower() == "lr":
             return GaussLinearModels(**params)
+        elif entity_name.lower() == "dnn":
+            return GaussNN(**params)
         return None
 
     def get_component(self, component_name: str):
@@ -40,8 +44,11 @@ class MetricsFactory(AbstractGauss):
         if entity_name.lower() == "auc":
             # parameters: name: str, label_name: str
             return AUC(**params)
-        return None
-
+        elif entity_name.lower() == "nnauc":
+            return NNAUC(**params)
+        else:
+            raise NotImplementedError
+            
     def get_component(self, component_name: str):
         pass
 
