@@ -109,7 +109,7 @@ class NNAUC(BaseMetric):
             self._metrics_result = MetricResult(name=self.name, result=float('nan'))
         else:
             auc = roc_auc_score(y_true=label, y_score=predict)
-            self._metrics_result = MetricResult(name=self.name, result=auc, meta={'#': predict.size})
+            self._metrics_result = MetricResult(name=self.name, result=auc, optimize_mode=self._optimize_mode, meta={'#': predict.size})
 
         return self._metrics_result
 
