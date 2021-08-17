@@ -15,8 +15,8 @@ class TrainLogger(object):
         self._log_steps = log_steps
         self._tensorboard_writer = None
         if tensorboard_logdir:
-            self._tensorboard_writer = tf.summary.FileWriter(tensorboard_logdir,
-                                                             tf.get_default_graph())
+            self._tensorboard_writer = tf.compat.v1.summary.FileWriter(tensorboard_logdir,
+                                                             tf.compat.v1.get_default_graph())
         self._cleanup()
 
     def log_info(self, loss, time, size, epoch, step):
@@ -40,9 +40,9 @@ class TrainLogger(object):
 
     def _log_to_tensorboard(self, loss, fps, step):
         if self._tensorboard_writer:
-            summary = tf.Summary(
-                value=[tf.Summary.Value(tag="train_loss", simple_value=loss),
-                       tf.Summary.Value(tag="train_fps", simple_value=fps)]
+            summary = tf.compat.v1.Summary(
+                value=[tf.compat.v1.Summary.Value(tag="train_loss", simple_value=loss),
+                       tf.compat.v1.Summary.Value(tag="train_fps", simple_value=fps)]
             )
             self._tensorboard_writer.add_summary(summary, step)
             self._tensorboard_writer.flush()
@@ -59,7 +59,7 @@ class ValidateLogger(object):
     def __init__(self, tensorboard_logdir=None):
         self._tensorboard_writer = None
         if tensorboard_logdir:
-            self._tensorboard_writer = tf.summary.FileWriter(tensorboard_logdir)
+            self._tensorboard_writer = tf.compat.v1.summary.FileWriter(tensorboard_logdir)
 
     def log_info(self, metric_results, epoch, step):
         self._log_to_console(metric_results, epoch, step)
@@ -74,8 +74,8 @@ class ValidateLogger(object):
 
     def _log_to_tensorboard(self, metric_results, step):
         if self._tensorboard_writer:
-            summary = tf.Summary(
-                value=[tf.Summary.Value(tag=("valid_%s" % metric_name),
+            summary = tf.compat.v1.Summary(
+                value=[tf.compat.v1.Summary.Value(tag=("valid_%s" % metric_name),
                                         simple_value=metric_result.result)
                        for metric_name, metric_result in metric_results.items()]
             )
