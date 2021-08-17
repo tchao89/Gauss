@@ -25,13 +25,13 @@ class DatasetStatisticsGen(BaseStatisticsGen):
         self._num_batches = num_batches
 
     def run(self) -> Statistics:
-        sess = tf.Session()
+        sess = tf.compat.v1.Session()
         self._dataset.init(sess)
         statistics = Statistics()
         n = 0
         while True:
             try:
-                batch = sess.run(self._dataset.next_batch)
+                batch = sess.run(self._dataset.next_batch) 
             except tf.errors.OutOfRangeError:
                 break
             for name, values in batch.items():
