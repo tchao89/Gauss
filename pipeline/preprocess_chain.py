@@ -121,6 +121,19 @@ class PreprocessRoute(Component):
         self.unsupervised_feature_selector = self.create_component(component_name="unsupervisedfeatureselector",
                                                                    **u_params)
 
+    def __repr__(self):
+        content = """PreprocessRoute object with processing configs:
+        <data_clean: status: {data_clean_flag}>
+        <feature_generation: status: {feature_generation_flag}>
+        <feature_selection: type: {feature_selector_type}, status: {feature_selector_flag}>
+        """.format(
+            data_clean_flag=self._data_clear_flag,
+            feature_generation_flag=self._feature_generator_flag,
+            feature_selector_type=self._feature_selector_name,
+            feature_selector_flag=self._feature_selector_flag
+        )
+        return content
+
     @classmethod
     def create_component(cls, component_name: str, **params):
         gauss_factory = GaussFactoryProducer()
