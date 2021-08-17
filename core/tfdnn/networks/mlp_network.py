@@ -17,7 +17,7 @@ class MlpNetwork(BaseNetwork):
     def __init__(self,
                  categorical_features,
                  numerical_features,
-                 loss,
+                 loss=None,
                  hidden_sizes=[1024, 512, 512],
                  scope_name="mlp_network"):
         self._categorical_features = categorical_features
