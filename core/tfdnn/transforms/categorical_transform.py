@@ -19,12 +19,14 @@ class CategoricalTransform(BaseTransform):
                  embed_size=128,
                  embed_shards=1,
                  default_num_oov_buckets=1,
+                 map_num_oov_buckets={},
                  map_top_k_to_select:dict={},
                  map_shared_embedding:dict={},
                  scope_name="categorical_transform"):
         self._statistics = statistics
         self._feature_names = feature_names
         self._default_num_oov_buckets = default_num_oov_buckets
+        self._map_num_oov_buckets = map_num_oov_buckets 
         self._map_top_k_to_select = map_top_k_to_select
         self._map_shared_embedding = map_shared_embedding
         self._embed_size = embed_size
@@ -63,6 +65,11 @@ class CategoricalTransform(BaseTransform):
             if fea_name in self._map_shared_embedding:
                 assert self._map_shared_embedding[fea_name] in self._feature_names
             else:
+                num_oov_buckets = (
+                    self._map_num_oov_buckets[fea_name]
+                    if fea_name in self._map_num_oov_buckets
+                    else self._default_num_oov_buckets
+                )
                 top_k = (
                     self._map_top_k_to_select[fea_name]
                     if fea_name in self._map_top_k_to_select
@@ -76,7 +83,7 @@ class CategoricalTransform(BaseTransform):
                         "WARNING: feature [%s] not found in statistics, use empty."
                         % fea_name
                     )
-                hash_sizes[fea_name] = len(vocab)
+                hash_sizes[fea_name] = len(vocab) + num_oov_buckets
         return hash_sizes
 
     def _create_embedding_tables(self, hash_sizes):
