@@ -9,7 +9,7 @@ from pipeline.inference import Inference
 
 
 # test programming
-pipeline_dict = yaml_read(yaml_file="/home/liangqian/PycharmProjects/Gauss/experiments/jIR01k/pipeline_config.yaml")
+pipeline_dict = yaml_read(yaml_file="/home/liangqian/PycharmProjects/Gauss/experiments/aVHr3G/pipeline_config.yaml")
 work_root = pipeline_dict["work_root"]
 
 pipeline_dict.update(yaml_read(yaml_file=work_root + "/pipeline_config.yaml"))

@@ -7,6 +7,7 @@ from gauss_factory.abstarct_guass import AbstractGauss
 from entity.dataset.plain_dataset import PlaintextDataset
 from entity.feature_configuration.feature_config import FeatureConf
 from entity.model.gbdt import GaussLightgbm
+from entity.model.multiprocess_gbdt import MultiprocessGaussLightgbm
 from entity.model.linear_models import GaussLinearModels
 from entity.metrics.udf_metric import AUC
 
@@ -24,6 +25,8 @@ class EntityFactory(AbstractGauss):
         elif entity_name.lower() == "lightgbm":
             # parameters: name: str, model_path: str, task_type: str, train_flag: str
             return GaussLightgbm(**params)
+        elif entity_name.lower() == "multiprocess_lightgbm":
+            return MultiprocessGaussLightgbm(**params)
         elif entity_name.lower() == "auc":
             # parameters: name: str, label_name: str
             return AUC(**params)
@@ -52,6 +55,8 @@ class ModelFactory(AbstractGauss):
         if entity_name.lower() == "lightgbm":
             # parameters: name: str, label_name: str
             return GaussLightgbm(**params)
+        if entity_name.lower() == "multiprocess_lightgbm":
+            return MultiprocessGaussLightgbm
         elif entity_name.lower() == "lr":
             return GaussLinearModels(**params)
         return None

@@ -59,9 +59,9 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         self._optimize_mode = None
 
         # selector names
-        self._feature_selector_names = ["gradient_feature_selector", "GBDTSelector"]
+        self._feature_selector_names = ["GBDTSelector"]
         # max trail num for selector tuner
-        self.selector_trial_num = 4
+        self.selector_trial_num = 1
         # default parameters concludes tree selector parameters and gradient parameters.
         # format: {"gradient_feature_selector": {"order": 4, "n_epochs": 100},
         # "GBDTSelector": {"lgb_params": {}, "eval_ratio", 0.3, "importance_type": "gain", "early_stopping_rounds": 100}}
@@ -85,7 +85,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
     @feature_selector_names.setter
     def feature_selector_names(self, selector_names: List[str]):
         for item in selector_names:
-            assert item in ["gradient_feature_selector", "GBDTSelector"]
+            assert item in ["GBDTSelector", "gradient_feature_selector"]
         self._feature_selector_names = selector_names
 
     def choose_selector(self, selector_name: str, dataset: BaseDataset, params: dict):
@@ -212,6 +212,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 feature_configure.parse(method="system")
                 feature_configure.feature_selector(feature_list=feature_list)
 
+                model.initialize_features()
                 model.update_feature_conf(feature_conf=feature_configure)
 
                 # 返回训练好的最佳模型
@@ -286,19 +287,26 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         params["topk"] = len_features(params["topk"])
 
         selector = GBDTSelector()
-        selector.fit(data.values, target.values.flatten(),
-                     lgb_params=params["lgb_params"],
-                     eval_ratio=params["eval_ratio"],
-                     early_stopping_rounds=params["early_stopping_rounds"],
-                     importance_type=params["importance_type"],
-                     num_boost_round=params["num_boost_round"])
-
+        if isinstance(data, pd.DataFrame) and isinstance(target, pd.DataFrame):
+            selector.fit(data.values, target.values.flatten(),
+                         lgb_params=params["lgb_params"],
+                         eval_ratio=params["eval_ratio"],
+                         early_stopping_rounds=params["early_stopping_rounds"],
+                         importance_type=params["importance_type"],
+                         num_boost_round=params["num_boost_round"])
+        else:
+            selector.fit(data, target.flatten(),
+                         lgb_params=params["lgb_params"],
+                         eval_ratio=params["eval_ratio"],
+                         early_stopping_rounds=params["early_stopping_rounds"],
+                         importance_type=params["importance_type"],
+                         num_boost_round=params["num_boost_round"])
         return selector.get_selected_features(topk=params["topk"])
 
     @classmethod
     def _gradient_based_selector(cls, dataset: BaseDataset, params: dict):
         # 注意定义n_features
-        data = dataset.get_dataset().data
+        data = dataset.get_dataset().data.astype(np.float32)
         target = dataset.get_dataset().target
 
         columns = data.shape[1]

@@ -26,11 +26,11 @@ class AutoModelingTree(BaseModelingTree):
                  val_data_path: str = None, feature_configure_path: str = None, target_names: List[str] = None,
                  dataset_type: str = "plain", type_inference: str = "plain", data_clear: str = "plain",
                  feature_generator: str = "featuretools", unsupervised_feature_selector: str = "unsupervised",
-                 supervised_feature_selector: str = "supervised", auto_ml: str = "plain"):
+                 supervised_feature_selector: str = "supervised", auto_ml: str = "plain", opt_model_names: List[str] = None):
 
         super().__init__(name, work_root, task_type, metric_name, train_data_path, val_data_path, target_names,
                          feature_configure_path, dataset_type, type_inference, data_clear, feature_generator,
-                         unsupervised_feature_selector, supervised_feature_selector, auto_ml)
+                         unsupervised_feature_selector, supervised_feature_selector, auto_ml, opt_model_names)
 
         self.already_data_clear = None
         self.best_model = None
@@ -125,6 +125,7 @@ class AutoModelingTree(BaseModelingTree):
                                    feature_selector_name="supervised_selector",
                                    feature_selector_flag=supervised_feature_selector_flag,
                                    auto_ml_type="auto_ml",
+                                   opt_model_names=self._opt_model_names,
                                    auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
                                    selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config")
 

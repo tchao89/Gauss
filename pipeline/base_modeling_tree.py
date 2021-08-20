@@ -9,7 +9,6 @@ import abc
 
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 from utils.common_component import yaml_write
-from utils.Logger import logger
 from utils.exception import NoResultReturnException
 
 
@@ -30,7 +29,8 @@ class BaseModelingTree(object):
                  feature_generator: str = "featuretools",
                  unsupervised_feature_selector: str = "unsupervised",
                  supervised_feature_selector: str = "supervised",
-                 auto_ml: str = "plain"
+                 auto_ml: str = "plain",
+                 opt_model_names=None
                  ):
         self.name = name
         # experiment root path
@@ -53,7 +53,8 @@ class BaseModelingTree(object):
         self.best_model = None
         self.best_metric = None
         self.best_result_root = None
-
+        assert opt_model_names is not None
+        self._opt_model_names = opt_model_names
         self.pipeline_config = None
 
     @abc.abstractmethod
@@ -88,7 +89,6 @@ class BaseModelingTree(object):
             self.pipeline_config = pipeline_config
 
         if self.best_metric.__cmp__(best_metric) < 0:
-
             self.best_model = best_model
             self.best_metric = best_metric
             self.best_result_root = best_result_root

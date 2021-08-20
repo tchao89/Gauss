@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List
 
 from utils.bunch import Bunch
 
@@ -32,8 +32,11 @@ class CoreRoute(Component):
                  task_type: str,
                  feature_selector_name: str,
                  feature_selector_flag: bool,
+                 supervised_selector_name: str = None,
                  auto_ml_type: str = "XXX",
                  auto_ml_path: str = "",
+                 auto_ml_name: str = None,
+                 opt_model_names: List[str] = None,
                  selector_config_path: str = ""
                  ):
 
@@ -52,12 +55,18 @@ class CoreRoute(Component):
         self._model_name = model_name
         # 模型保存根目录
         self._model_save_path = model_save_root
+
+        self.auto_ml_name = auto_ml_name
+        self.supervised_selector_name = supervised_selector_name
+
         self._model_config_root = model_config_root
         self._feature_config_root = feature_config_root
         self._task_type = task_type
         self._metrics_name = metrics_name
         self._auto_ml_path = auto_ml_path
         self._feature_selector_flag = feature_selector_flag
+
+        self._opt_model_names = opt_model_names
 
         self._feature_config_path = pre_feature_configure_path
 
@@ -92,10 +101,13 @@ class CoreRoute(Component):
 
         self.model = self.create_entity(entity_name=self._model_name, **model_params)
 
+        if self.auto_ml_name is not None:
+            self._opt_model_names = [self.auto_ml_name]
+
         tuner_params = Bunch(name=self._auto_ml_type,
                              train_flag=self._train_flag,
                              enable=self.enable,
-                             opt_model_names=["tpe", "random_search", "anneal", "evolution"],
+                             opt_model_names=self._opt_model_names,
                              optimize_mode=self._optimize_mode,
                              auto_ml_path=self._auto_ml_path)
 

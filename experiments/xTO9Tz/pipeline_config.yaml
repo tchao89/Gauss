@@ -1,0 +1,21 @@
+auto_ml: auto_ml
+best_metric: 0.8965634385626284
+best_model_name: multiprocess_lightgbm
+best_root: /home/liangqian/PycharmProjects/Gauss/experiments/xTO9Tz/
+data_clear: plaindataclear
+data_clear_flag:
+- true
+dataset_name: plaindataset
+feature_generator: featuretools
+feature_generator_flag:
+- true
+metric_name: auc
+supervised_feature_selector: supervised
+supervised_feature_selector_flag:
+- true
+task_type: classification
+type_inference: typeinference
+unsupervised_feature_selector: unsupervised
+unsupervised_feature_selector_flag:
+- true
+work_root: /home/liangqian/PycharmProjects/Gauss/experiments/xTO9Tz

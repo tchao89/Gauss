@@ -32,7 +32,7 @@ class TabularAutoML(BaseAutoML):
         # optional: "maximize", "minimize", depends on metrics for auto ml.
         self._optimize_mode = params["optimize_mode"]
         # trial num for auto ml.
-        self.trial_num = 10
+        self.trial_num = 1
         self._auto_ml_path = params["auto_ml_path"]
         self._default_parameters = None
         self._search_space = None
@@ -107,6 +107,8 @@ class TabularAutoML(BaseAutoML):
 
                     params.update(receive_params)
 
+                    self._model.initialize()
+
                     self._model.update_params(**params)
 
                     self._model.train(**entity)
@@ -115,15 +117,14 @@ class TabularAutoML(BaseAutoML):
 
                     self._model.update_best_model()
 
-                    if self._is_final_set is True:
-                        self._model.set_best_model()
-
                     metrics = self._model.val_metrics.result
-                    # get model which has been trained.
 
                     tuner.receive_trial_result(trial, receive_params, metrics)
                 else:
                     raise ValueError("Default parameters is None.")
+
+        if self._is_final_set is True:
+            self._model.set_best_model()
         self._best_metrics = self._model.val_metrics.result
 
     def _predict_run(self, **entity):

@@ -5,6 +5,9 @@
 
 from __future__ import annotations
 
+from multiprocessing import Pool
+from typing import List
+
 from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
 from utils.base import check_data
@@ -23,7 +26,7 @@ class UdfModelingTree(BaseModelingTree):
                  data_clear_flag=None, feature_generator: str = "featuretools", feature_generator_flag=None,
                  unsupervised_feature_selector: str = "unsupervised", unsupervised_feature_selector_flag=None,
                  supervised_feature_selector: str = "supervised", supervised_feature_selector_flag=None, model_zoo=None,
-                 auto_ml: str = "plain"):
+                 auto_ml: str = "plain", opt_model_names: List[str] = None):
         """
         :param name:
         :param work_root:
@@ -48,7 +51,7 @@ class UdfModelingTree(BaseModelingTree):
 
         super().__init__(name, work_root, task_type, metric_name, train_data_path, val_data_path, target_names,
                          feature_configure_path, dataset_type, type_inference, data_clear, feature_generator,
-                         unsupervised_feature_selector, supervised_feature_selector, auto_ml)
+                         unsupervised_feature_selector, supervised_feature_selector, auto_ml, opt_model_names)
         if model_zoo is None:
             model_zoo = ["xgboost", "lightgbm", "catboost", "lr_lightgbm", "dnn"]
 
@@ -160,6 +163,7 @@ class UdfModelingTree(BaseModelingTree):
                                feature_selector_flag=supervised_feature_selector_flag,
                                auto_ml_type="auto_ml",
                                auto_ml_path=auto_ml_path,
+                               opt_model_names=self._opt_model_names,
                                selector_config_path=selector_config_path)
 
         core_chain.run(**entity_dict)

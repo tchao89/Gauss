@@ -23,7 +23,7 @@ class ModelWrapper(Entity):
         # bool value, customized model must set this value to decide if this model need cleared data.
         self.need_data_clear = None
 
-        assert isinstance(self.need_data_clear, bool)
+        # assert isinstance(self.need_data_clear, bool)
 
         self._model_path = model_path
         self._task_type = task_type
@@ -46,7 +46,6 @@ class ModelWrapper(Entity):
         self._feature_list = None
 
         self._best_model = None
-
         self._best_metrics_result = None
         self._best_model_params = None
         self._best_feature_list = None
@@ -54,6 +53,35 @@ class ModelWrapper(Entity):
         super(ModelWrapper, self).__init__(
             name=name,
         )
+
+    def initialize_features(self):
+        if self._feature_list is not None:
+            del self._feature_list
+
+    def initialize(self):
+        if self._model_config is not None:
+            del self._model_config
+
+        if self._model is not None:
+            del self._model
+
+        if self._val_metrics_result is not None:
+            del self._val_metrics_result
+
+        if self._train_metrics_result is not None:
+            del self._train_metrics_result
+
+        if self._model_params is not None:
+            del self._model_params
+
+        if self._feature_conf is not None:
+            del self._feature_conf
+
+        self._initialize_model()
+
+    @abc.abstractmethod
+    def _initialize_model(self):
+        pass
 
     def update_best_model(self):
 
@@ -145,6 +173,9 @@ class ModelWrapper(Entity):
         self._model = self._best_model
         self._model_params = self._best_model_params
         self._feature_list = self._best_feature_list
+        del self._best_model
+        del self._best_model_params
+        del self._best_feature_list
         self.set_best()
 
     def update_feature_conf(self, feature_conf):
