@@ -71,7 +71,10 @@ class AUC(BaseMetric):
 class NNAUC(BaseMetric):
 
     def __init__(self, **params):
-        super().__init__(name=params["name"], optimize_mode="maximize")
+        super().__init__(
+            name=params["name"], 
+            optimize_mode="maximize"
+            )
         self._label_name = params.get("label_name")
         self._metrics_result = None
 
@@ -90,18 +93,12 @@ class NNAUC(BaseMetric):
                     result=self._metrics_result
                 ) 
         
-    @property
-    def label_name(self):
-        return self._label_name
-
-    @label_name.setter
-    def label_name(self, label_name: str):
-        self._label_name = label_name
 
     def evaluate(self, predict, labels_map):
         """
         :param predict: np.ndarray object, (n_sample)
-        :param labels_map: Dict[List]
+        :param labels_map: Dict[List], true value.
+
         :return: MetricResult object
         """
         label = labels_map[self._label_name[0]]
@@ -109,9 +106,22 @@ class NNAUC(BaseMetric):
             self._metrics_result = MetricResult(name=self.name, result=float('nan'))
         else:
             auc = roc_auc_score(y_true=label, y_score=predict)
-            self._metrics_result = MetricResult(name=self.name, result=auc, optimize_mode=self._optimize_mode, meta={'#': predict.size})
-
+            self._metrics_result = MetricResult(
+                name=self.name, 
+                result=auc, 
+                optimize_mode=self._optimize_mode, 
+                meta={'#': predict.size}
+                )
         return self._metrics_result
+    
+    
+    @property
+    def label_name(self):
+        return self._label_name
+
+    @label_name.setter
+    def label_name(self, label_name: str):
+        self._label_name = [label_name]
 
     @property
     def required_label_names(self):
