@@ -11,6 +11,10 @@ from entity.entity import Entity
 
 
 class BaseDataset(Entity):
+    """Base class for all dataset classes.
+
+    All sub-class must overwrite `feature_choose()` function.
+    """
     def __init__(self,
                  name: str,
                  data_path: str,
@@ -18,7 +22,9 @@ class BaseDataset(Entity):
                  target_name=None,
                  memory_only=True):
 
-        super(BaseDataset, self).__init__(name=name)
+        super(BaseDataset, self).__init__(
+            name=name
+            )
 
         assert isinstance(target_name, List) or target_name is None
 
@@ -27,15 +33,14 @@ class BaseDataset(Entity):
         self._memory_only = memory_only
         self._column_size = 0
         self._row_size = 0
-        self._default_print_size = 5
         self._task_type = task_type
 
-    @abc.abstractmethod
-    def load_data(self):
+    def get_dataset(self):
+        """return loaded data."""
         pass
 
-    @abc.abstractmethod
-    def get_dataset(self):
+    def load_data(self):
+        """load data from file provided."""
         pass
 
     @property
@@ -57,15 +62,16 @@ class BaseDataset(Entity):
     @property
     def task_type(self):
         return self._task_type
-
+    
     @abc.abstractmethod
+    def feature_choose(self, feature_list):
+        """elimate features which are not selected."""
+        pass
+
     def split(self):
         pass
 
-    @abc.abstractmethod
     def union(self, dataset: BaseDataset):
         pass
 
-    @abc.abstractmethod
-    def feature_choose(self, feature_list):
-        pass
+
