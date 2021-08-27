@@ -1,0 +1,13 @@
+auto_ml: auto_ml
+data_clear: plaindataclear
+feature_generator: featuretools
+opt_model_names:
+- tpe
+- random_search
+- anneal
+- evolution
+supervised_feature_selector: supervised
+supervised_selector_names:
+- GBDTSelector
+type_inference: plaintypeinference
+unsupervised_feature_selector: unsupervised

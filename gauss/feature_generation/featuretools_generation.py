@@ -2,8 +2,10 @@
 #
 # Copyright (c) 2020, Citic-Lab. All rights reserved.
 # Authors: citic-lab
+import gc
 import shelve
 import operator
+import time
 
 import pandas as pd
 import numpy as np
@@ -16,7 +18,7 @@ from entity.dataset.base_dataset import BaseDataset
 from gauss.feature_generation.base_feature_generation import BaseFeatureGenerator
 from utils.Logger import logger
 from utils.common_component import yaml_read, yaml_write
-from utils.base import reduce_data
+from utils.base import reduce_data, get_current_memory_gb
 
 
 class FeatureToolsGenerator(BaseFeatureGenerator):
@@ -45,14 +47,28 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         assert "dataset" in entity.keys()
         dataset = entity["dataset"]
 
+        logger.info("Loading Data clearing feature configuration, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
         self._set_feature_configure()
         assert self.feature_configure is not None
+
+        logger.info("Starting label encoding, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
         self._label_encoding(dataset=dataset)
+
+        logger.info("Label encoding serialize, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
         self._label_encoding_serialize()
 
-        if self._enable:
+        logger.info("Feature generation component flag: " + str(self._enable) + ", with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
+
+        if self._enable is True:
             self._ft_generator(dataset=dataset)
 
+        logger.info(
+            "Feature generation's feature configuration is generating, " + "with current memory usage: %.2f GiB",
+            get_current_memory_gb()["memory_usage"])
         self.final_configure_generation(dataset=dataset)
 
     def _predict_run(self, **entity):
@@ -95,7 +111,9 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         self.feature_configure = yaml_read(self._feature_configure_path)
 
     def _ft_generator(self, dataset: BaseDataset):
-        data = dataset.get_dataset().data
+        data = dataset.get_dataset().pop("data")
+
+        assert "data" not in dataset.get_dataset().keys()
         assert data is not None
 
         feature_names = dataset.get_dataset().feature_names
@@ -110,6 +128,8 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
                 assert self.feature_configure[col]['ftype'] == 'datetime'
                 self.variable_types[col] = ft.variable_types.Datetime
 
+        logger.info("Featuretools EntitySet object constructs, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
         es = ft.EntitySet(id=self.name).entity_from_dataframe(entity_id=self.name, dataframe=data,
                                                               variable_types=self.variable_types,
                                                               make_index=True, index=self.index_name)
@@ -122,15 +142,31 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         try:
             trans_primitives.remove("week")
         except ValueError:
-            logger.info("week transform does not exist in trans_primitives")
+            logger.info("week transform does not exist in trans_primitives.")
         finally:
+
             # Create new features using specified primitives
+            logger.info("DFS method prepares to start, " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
             features, feature_names = ft.dfs(entityset=es, target_entity=self.name,
                                              trans_primitives=trans_primitives)
 
-            dataset.get_dataset().data = self.clean_dataset(features)
-            reduce_data(dataframe=dataset.get_dataset().data)
-            # raw generated features.
+            logger.info("Remove original dataset, " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
+
+            logger.info("Clean dataset method prepares to start, " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
+            generated_data = self.clean_dataset(features)
+
+            logger.info("Clear data and save memory, " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
+            del features, data, es
+            gc.collect()
+
+            logger.info("Update bunch object and add generated feature names, " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
+
+            dataset.get_dataset().data = generated_data
             dataset.get_dataset().generated_feature_names = feature_names
             self.generated_feature_names = list(dataset.get_dataset().data.columns)
 
@@ -147,14 +183,19 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
 
                 data[feature] = item_label_encoding_model.transform(data[feature])
 
+        logger.info("Label encoding finished, starting to reduce dataframe and save memory, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
+        reduce_data(dataframe=dataset.get_dataset().data)
+
     def _label_encoding_serialize(self):
         # 序列化label encoding模型字典
         with shelve.open(self._label_encoding_configure_path) as shelve_open:
             shelve_open['label_encoding'] = self.label_encoding
 
     def clean_dataset(self, df):
-        assert isinstance(df, pd.DataFrame), "df needs to be a pd.DataFrame"
+        assert isinstance(df, pd.DataFrame)
         cols = []
+
         for col in df.columns:
             if df[col].dtype == "object" \
                     or self.index_name in col \
@@ -166,7 +207,7 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
 
     def final_configure_generation(self, dataset: BaseDataset):
 
-        if self._enable:
+        if self._enable is True:
             generated_feature_names = dataset.get_dataset().generated_feature_names
             assert operator.eq(list(self.generated_feature_names), list(dataset.get_dataset().data.columns))
 

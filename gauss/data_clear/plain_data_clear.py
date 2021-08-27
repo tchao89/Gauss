@@ -15,7 +15,8 @@ from gauss.data_clear.base_data_clear import BaseDataClear
 from entity.dataset.base_dataset import BaseDataset
 
 from utils.common_component import yaml_read
-from utils.base import reduce_data
+from utils.base import reduce_data, get_current_memory_gb
+from utils.Logger import logger
 
 
 # 需要传入三个参数， 数模型的数据/非数模型的数据， yaml文件， base dataset
@@ -31,7 +32,8 @@ class PlainDataClear(BaseDataClear):
         But you can just use one of them, PlainDataClear object will use strict coding check programming.
         """
 
-        super(PlainDataClear, self).__init__(name=params["name"], train_flag=params["train_flag"], enable=params["enable"])
+        super(PlainDataClear, self).__init__(name=params["name"], train_flag=params["train_flag"],
+                                             enable=params["enable"])
 
         self._model_name = params["model_name"]
         self._feature_configure_path = params["feature_configure_path"]
@@ -50,15 +52,32 @@ class PlainDataClear(BaseDataClear):
         self._already_data_clear = None
 
     def _train_run(self, **entity):
-        if self._enable:
+        logger.info("Data clear component flag: " + str(self._enable))
+        if self._enable is True:
             self._already_data_clear = True
             assert "dataset" in entity.keys()
+            logger.info("Running clean() method and clearing, " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
             self._clean(dataset=entity["dataset"])
 
         else:
             self._already_data_clear = False
+
+        logger.info("Data clearing feature configuration is generating, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
         self.final_configure_generation()
+
+        logger.info("Data clearing impute models serializing, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
         self._data_clear_serialize()
+
+        logger.info("Clear object and save memory , " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
+        if self.impute_models is not None:
+            del self.impute_models
+
+        logger.info("Data clear has finished, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
 
     def _predict_run(self, **entity):
         assert "dataset" in entity.keys()

@@ -15,7 +15,7 @@ from pipeline.mapping import EnvironmentConfigure
 from pipeline.base_modeling_tree import BaseModelingTree
 
 from utils.bunch import Bunch
-from utils.base import check_data
+from utils.check_dataset import check_data
 from utils.exception import PipeLineLogicError
 from utils.Logger import logger
 
@@ -126,8 +126,8 @@ class AutoModelingTree(BaseModelingTree):
                                    feature_selector_flag=supervised_feature_selector_flag,
                                    auto_ml_type="auto_ml",
                                    opt_model_names=self._opt_model_names,
-                                   auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
-                                   selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config")
+                                   auto_ml_path="/configure_files/automl_params",
+                                   selector_config_path="/configure_files/selector_params")
 
             core_chain.run(**entity_dict)
             local_metric = core_chain.optimal_metrics

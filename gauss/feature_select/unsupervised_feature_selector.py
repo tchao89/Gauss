@@ -9,6 +9,7 @@ from core.featuretools import variable_types
 
 from utils.common_component import yaml_write, yaml_read, feature_list_generator
 from utils.Logger import logger
+from utils.base import get_current_memory_gb
 
 
 class UnsupervisedFeatureSelector(BaseFeatureSelector):
@@ -45,13 +46,19 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         assert isinstance(dataset, BaseDataset)
         data = dataset.get_dataset().data
 
+        logger.info("Unsupervised feature selector component flag: " + str(self._enable))
         self._feature_conf = yaml_read(self._feature_configure_path)
 
-        # remove datetime features.
+        logger.info("Remove datetime features, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
         for col in data.columns:
             if self._feature_conf[col]["ftype"] not in ["category", "numerical", "bool"]:
                 self._feature_conf[col]["used"] = False
                 data.drop([col], axis=1, inplace=True)
+
+        logger.info("Starting unsupervised feature selecting, method: featuretools feature selection, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
+
         if self._enable is True:
             self._ft_method(features=data)
 
@@ -87,15 +94,25 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         :param features:
         :return:
         """
-        logger.info("remove_low_information_features")
+
+        logger.info("Starting to remove low information features, " + "with current memory usage: %.2f GiB, total features: %d",
+                    get_current_memory_gb()["memory_usage"], len(features.columns))
         self.remove_low_information_features(features)
-        logger.info("remove_highly_null_features")
+
+        logger.info("Starting to remove highly null features, " + "with current memory usage: %.2f GiB, total features: %d",
+                    get_current_memory_gb()["memory_usage"], len(features.columns))
         self.remove_highly_null_features(features)
-        logger.info("remove_single_value_features")
+
+        logger.info("Starting to remove single value features, " + "with current memory usage: %.2f GiB, total features: %d",
+                    get_current_memory_gb()["memory_usage"], len(features.columns))
         self.remove_single_value_features(features)
+
         # remove remove_highly_correlated_features() method.
-        # logger.info("remove_highly_correlated_features")
+        # logger.info("Starting to remove_highly_correlated_features, " + "with current memory usage: %.2f GiB",
+        #                     get_current_memory_gb()["memory_usage"])
         # self.remove_highly_correlated_features(features)
+        logger.info("Unsupervised feature selecting has finished, " + "with current memory usage: %.2f GiB, total features: %d",
+                    get_current_memory_gb()["memory_usage"], len(features.columns))
 
     def final_configure_generation(self, dataset: BaseDataset):
         if self._enable:

@@ -1,6 +1,6 @@
 from entity.plain_dataset import PlaintextDataset
 from entity.feature_config import FeatureConf
-from gauss.type_inference.type_inference import TypeInference
+from gauss.type_inference.plain_type_inference import TypeInference
 from gauss.feature_generation.featuretools_generation import FeatureToolsGenerator
 from gauss.feature_select.unsupervised_feature_selector import UnsupervisedFeatureSelector
 

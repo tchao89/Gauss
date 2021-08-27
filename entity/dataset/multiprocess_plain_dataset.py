@@ -15,9 +15,10 @@ from utils.bunch import Bunch
 from entity.dataset.base_dataset import BaseDataset
 from utils.Logger import logger
 from utils.base import reduce_data
+from utils.base import get_current_memory_gb
 
 
-class PlaintextDataset(BaseDataset):
+class MultiprocessPlaintextDataset(BaseDataset):
 
     def __init__(self, **params):
         """
@@ -31,8 +32,8 @@ class PlaintextDataset(BaseDataset):
             if params.get(item) is None:
                 params[item] = None
 
-        super(PlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_type"],
-                                               params["target_name"], params["memory_only"])
+        super(MultiprocessPlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_type"],
+                                                           params["target_name"], params["memory_only"])
         if params["data_path"] is not None:
             assert os.path.isfile(params["data_path"])
 
@@ -58,6 +59,8 @@ class PlaintextDataset(BaseDataset):
         self._val_start = None
         # This value is a bool value, and true means plaindataset has missing values and need to clear.
         self._need_data_clear = False
+        logger.info("Constructing MultiprocessPlainDataset object finished, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
 
     def __repr__(self):
         assert self._bunch is not None
@@ -108,7 +111,9 @@ class PlaintextDataset(BaseDataset):
 
         if self.type_doc == "csv":
             try:
-                data, target, feature_names, target_name = self.load_mixed_csv()
+                logger.info("Starting load csv, " + "with current memory usage: %.2f GiB",
+                            get_current_memory_gb()["memory_usage"])
+                data, target, feature_names, target_name = self.load_csv()
             except IOError:
                 logger.info("File path does not exist.")
             finally:
@@ -140,12 +145,13 @@ class PlaintextDataset(BaseDataset):
             raise TypeError("File type can not be accepted.")
         return self._bunch
 
-    def load_mixed_csv(self):
+    def load_csv(self):
         target = None
         target_name = None
 
-        # data = pd.read_csv(self._data_path)
         data = reduce_data(data_path=self._data_path)
+        logger.info("Loading csv finished, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
 
         feature_names = data.columns
         self._row_size = data.shape[0]
@@ -158,7 +164,7 @@ class PlaintextDataset(BaseDataset):
             self._column_size = data.shape[1] + target.shape[1]
         return data, target, feature_names, target_name
 
-    def load_csv(self):
+    def load_csv_iter(self):
         """Loads data from csv_file_name.
 
         Returns
@@ -264,11 +270,14 @@ class PlaintextDataset(BaseDataset):
 
     def feature_choose(self, feature_list):
         assert isinstance(self._bunch.data, np.ndarray)
+        if self._bunch.data.shape[1] == len(feature_list):
+            return self._bunch.data
+
         data = self._bunch.data[:, feature_list]
         return data
 
     # dataset is a PlainDataset object
-    def union(self, val_dataset: PlaintextDataset):
+    def union(self, val_dataset: MultiprocessPlaintextDataset):
         """ This method is used for concatenating train dataset and validation dataset.
         :return: Plaindataset
         """
@@ -317,9 +326,9 @@ class PlaintextDataset(BaseDataset):
         val_data = val_data.reset_index(drop=True)
         val_target = val_target.reset_index(drop=True)
 
-        return PlaintextDataset(name="train_data",
-                                task_type="train",
-                                data_pair=Bunch(data=val_data, target=val_target))
+        return MultiprocessPlaintextDataset(name="train_data",
+                                            task_type="train",
+                                            data_pair=Bunch(data=val_data, target=val_target))
 
     @property
     def need_data_clear(self):

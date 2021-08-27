@@ -3,7 +3,7 @@ import sys
 import time
 import logging
 from logging import LogRecord
-# from logging.handlers import WatchedFileHandler
+from logging.handlers import WatchedFileHandler
 from typing import Optional
 from utils.logger_conf import LOGGER_NAME, LOGGER_BASIC_CONFIG
 
@@ -27,17 +27,17 @@ class Logger:
         default_logger = logging.getLogger(LOGGER_NAME)
         default_logger.setLevel(self.basic_config["level"])
 
-        # file_handler = WatchedFileHandler(self.basic_config["filename"], self.basic_config["filemode"], encoding="utf-8")
-        # file_handler.setLevel(self.basic_config["level"])
+        file_handler = WatchedFileHandler(self.basic_config["filename"], self.basic_config["filemode"], encoding="utf-8")
+        file_handler.setLevel(self.basic_config["level"])
 
         steam_handler = logging.StreamHandler(sys.stderr)
         steam_handler.setLevel(self.basic_config["level"])
 
         formatter = Formatter(self.basic_config["format"], self.basic_config["datefmt"])
-        # file_handler.setFormatter(formatter)
+        file_handler.setFormatter(formatter)
         steam_handler.setFormatter(formatter)
 
-        # default_logger.addHandler(file_handler)
+        default_logger.addHandler(file_handler)
         default_logger.addHandler(steam_handler)
 
         return default_logger

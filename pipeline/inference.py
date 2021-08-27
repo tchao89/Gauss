@@ -104,8 +104,8 @@ class Inference(object):
                                feature_selector_name=self.supervised_feature_selector_name,
                                feature_selector_flag=self.supervised_feature_selector_flag,
                                auto_ml_type="auto_ml",
-                               auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
-                               selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config"
+                               auto_ml_path="/configure_files/automl_params",
+                               selector_config_path="/configure_files/selector_params"
                                )
 
         core_chain.run(**entity_dict)

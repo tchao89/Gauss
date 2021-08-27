@@ -20,11 +20,6 @@ class ModelWrapper(Entity):
                  train_flag: bool
                  ):
 
-        # bool value, customized model must set this value to decide if this model need cleared data.
-        self.need_data_clear = None
-
-        # assert isinstance(self.need_data_clear, bool)
-
         self._model_path = model_path
         self._task_type = task_type
         self._train_flag = train_flag
@@ -53,31 +48,6 @@ class ModelWrapper(Entity):
         super(ModelWrapper, self).__init__(
             name=name,
         )
-
-    def initialize_features(self):
-        if self._feature_list is not None:
-            del self._feature_list
-
-    def initialize(self):
-        if self._model_config is not None:
-            del self._model_config
-
-        if self._model is not None:
-            del self._model
-
-        if self._val_metrics_result is not None:
-            del self._val_metrics_result
-
-        if self._train_metrics_result is not None:
-            del self._train_metrics_result
-
-        if self._model_params is not None:
-            del self._model_params
-
-        if self._feature_conf is not None:
-            del self._feature_conf
-
-        self._initialize_model()
 
     @abc.abstractmethod
     def _initialize_model(self):

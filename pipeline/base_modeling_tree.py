@@ -30,7 +30,9 @@ class BaseModelingTree(object):
                  unsupervised_feature_selector: str = "unsupervised",
                  supervised_feature_selector: str = "supervised",
                  auto_ml: str = "plain",
-                 opt_model_names=None
+                 opt_model_names=None,
+                 auto_ml_path: str = None,
+                 selector_config_path: str = None
                  ):
         self.name = name
         # experiment root path
@@ -56,6 +58,9 @@ class BaseModelingTree(object):
         assert opt_model_names is not None
         self._opt_model_names = opt_model_names
         self.pipeline_config = None
+
+        self.auto_ml_path = auto_ml_path
+        self.selector_config_path = selector_config_path
 
     @abc.abstractmethod
     def run_route(self, *params):
@@ -112,14 +117,9 @@ class BaseModelingTree(object):
                      "work_root": self.work_root,
                      "task_type": self.task_type,
                      "metric_name": self.metric_name,
-                     "dataset_name": self.dataset_type,
-                     "type_inference": self.type_inference,
-                     "data_clear": self.data_clear,
-                     "feature_generator": self.feature_generator,
-                     "unsupervised_feature_selector": self.unsupervised_feature_selector,
-                     "supervised_feature_selector": self.supervised_feature_selector,
                      "auto_ml": self.auto_ml,
                      "best_metric": float(self.best_metric.result)}
 
-        yaml_dict.update(self.pipeline_config)
+        if self.pipeline_config is not None:
+            yaml_dict.update(self.pipeline_config)
         yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/pipeline_config.yaml")

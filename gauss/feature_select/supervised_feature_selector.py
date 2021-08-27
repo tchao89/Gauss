@@ -157,7 +157,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         model_tuner = entity["auto_ml"]
         model_tuner.is_final_set = False
 
-        selector_tuner = HyperoptTuner(algorithm_name="random_search", optimize_mode=self._optimize_mode)
+        selector_tuner = HyperoptTuner(algorithm_name="tpe", optimize_mode=self._optimize_mode)
 
         for model_name in self._feature_selector_names:
             # 梯度特征选择
@@ -212,7 +212,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 feature_configure.parse(method="system")
                 feature_configure.feature_selector(feature_list=feature_list)
 
-                model.initialize_features()
                 model.update_feature_conf(feature_conf=feature_configure)
 
                 # 返回训练好的最佳模型

@@ -1,0 +1,13 @@
+data_clear_flag: true
+feature_generator_flag: true
+metric_name: auc
+multiprocess_lightgbm:
+  auto_ml_name: tpe
+  metrics_result: 0.9112784924396299
+  model_name: multiprocess_lightgbm
+  successful_flag: true
+  work_model_root: /home/liangqian/PycharmProjects/Gauss/experiments/oHDzGN/model/multiprocess_lightgbm_tpe
+supervised_feature_selector_flag: true
+task_type: classification
+unsupervised_feature_selector_flag: true
+work_root: /home/liangqian/PycharmProjects/Gauss/experiments/oHDzGN

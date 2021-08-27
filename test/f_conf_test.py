@@ -1,5 +1,5 @@
 from entity.feature_config import FeatureConf
-from gauss.type_inference.type_inference import TypeInference
+from gauss.type_inference.plain_type_inference import TypeInference
 from entity.plain_dataset import PlaintextDataset
 
 

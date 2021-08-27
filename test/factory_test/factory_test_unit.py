@@ -65,8 +65,8 @@ s_params = Bunch(name="test", train_flag=True, enable=True, metrics_name="AUC", 
                  feature_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/final_configure.yaml",
                  final_file_path="/home/liangqian/PycharmProjects/Gauss/test/factory_test/final_feature_configure.yaml",
                  label_encoding_configure_path="/home/liangqian/PycharmProjects/Gauss/configure_files/final_configure.db",
-                 selector_config_path='/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config',
-                 model_name="lightgbm", auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
+                 selector_config_path='/configure_files/selector_params',
+                 model_name="lightgbm", auto_ml_path="/configure_files/automl_params",
                  model_save_path="/home/liangqian/PycharmProjects/Gauss/configure_files/")
 s_selector = component_factory.get_component(component_name="supervisedfeatureselector", **s_params)
 s_selector.run(**dataset)

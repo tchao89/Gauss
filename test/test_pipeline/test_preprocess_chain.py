@@ -44,8 +44,8 @@ core_chain = CoreRoute(name="core_chain",
                        feature_selector_name="supervised_selector",
                        feature_selector_flag=True,
                        auto_ml_type="auto_ml",
-                       auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
-                       selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config")
+                       auto_ml_path="/configure_files/automl_params",
+                       selector_config_path="/configure_files/selector_params")
 
 core_chain.run(**entity_dict)
 chain = PreprocessRoute(name="chain",
@@ -79,8 +79,8 @@ core_chain = CoreRoute(name="core_chain",
                        feature_selector_name="supervised_selector",
                        feature_selector_flag=True,
                        auto_ml_type="auto_ml",
-                       auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
-                       selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config")
+                       auto_ml_path="/configure_files/automl_params",
+                       selector_config_path="/configure_files/selector_params")
 
 core_chain.run(**entity_dict)
 print("finished")

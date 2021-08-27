@@ -88,7 +88,7 @@ class BaseMetric(Entity, ABC):
     @abc.abstractmethod
     def evaluate(self,
                  predict: np.ndarray,
-                 labels_map: Dict[str, np.ndarray]) -> MetricResult:
+                 labels_map: np.ndarray) -> MetricResult:
         """Evaluate the metric.
 
         :param self:

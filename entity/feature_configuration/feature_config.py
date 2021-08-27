@@ -97,11 +97,7 @@ class FeatureConf(Entity):
         self._feature_dict = Bunch()
 
     def __repr__(self):
-        if self._file_path is not None:
-            self.parse()
-            return str(self._feature_dict)
-        else:
-            return None
+        pass
 
     def parse(self, method=None):
         assert method in ["user", "system"]

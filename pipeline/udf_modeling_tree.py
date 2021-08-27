@@ -10,7 +10,7 @@ from typing import List
 
 from pipeline.core_chain import CoreRoute
 from pipeline.preprocess_chain import PreprocessRoute
-from utils.base import check_data
+from utils.check_dataset import check_data
 from pipeline.mapping import EnvironmentConfigure
 from pipeline.base_modeling_tree import BaseModelingTree
 
@@ -188,8 +188,8 @@ class UdfModelingTree(BaseModelingTree):
                                                           unsupervised_feature_selector_flag=unsupervised_feature_sel,
                                                           supervised_feature_selector_flag=supervise_feature_sel,
                                                           model_name=model,
-                                                          auto_ml_path="/home/liangqian/PycharmProjects/Gauss/configure_files/automl_config",
-                                                          selector_config_path="/home/liangqian/PycharmProjects/Gauss/configure_files/selector_config")
+                                                          auto_ml_path="/configure_files/automl_params",
+                                                          selector_config_path="/configure_files/selector_params")
 
                             if local_result is not None:
                                 self.update_best(*local_result)

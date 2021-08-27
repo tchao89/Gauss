@@ -1,11 +1,22 @@
+import gc
+import time
+import os
+import psutil
 from multiprocessing import shared_memory, Pool
-# from sklearn.linear_model import LogisticRegression
 import lightgbm as lgb
 import xgboost as xgb
 import pandas as pd
 import numpy as np
-import abc
 
+
+# def get_current_memory_gb() -> dict:
+#
+#     pid = os.getpid()
+#     p = psutil.Process(pid)
+#     info = p.memory_full_info()
+#     memory_usage = info.uss / 1024. / 1024. / 1024. + info.swap / 1024. / 1024. / 1024. + info.pss / 1024. / 1024. / 1024.
+#
+#     return {"memory_usage": memory_usage, "pid": pid}
 
 # def lr_f(i):
 #     label = shared_data[:, -1]
@@ -31,65 +42,55 @@ def xgb_f(i):
     print("processing: ", i)
     return _model
 
-class abs_function:
-    def __init__(self, i):
-        self.i = i
 
-    @abc.abstractmethod
-    def f(self):
-        pass
+def f(params):
+    shared_data_memory = shared_memory.SharedMemory(name=params[0])
+    shared_data = np.ndarray(params[1], dtype=params[2], buffer=shared_data_memory.buf)
+    print("time sleeping...")
+    print(get_current_memory_gb())
+    time.sleep(100)
+    assert 1 == 0
+    label = shared_data[:, -1]
+    data = shared_data[:, :-1]
+    # data = dataset[0]
+    # label = dataset[1]
 
-class Function(abs_function):
-    def __init__(self, i):
-        super().__init__(i)
-        self.model = None
+    train_data = [data, label.flatten()]
+    lgb_train = lgb.Dataset(data=train_data[0], label=train_data[1], free_raw_data=False, silent=True)
+    params = {
+        "objective": "binary",
 
-    def f(self):
-        label = shared_data[:, -1]
-        data = shared_data[:, :-1]
+        "num_class": 1,
 
-        train_data = [data, label.flatten()]
-        lgb_train = lgb.Dataset(data=train_data[0], label=train_data[1], free_raw_data=False, silent=True)
-        params = {
-            "objective": "binary",
+        "metric": ["auc", "l2"],
 
-            "num_class": 1,
+        "num_leaves": 32,
 
-            "metric": ["auc", "l2"],
+        "learning_rate": 0.01,
 
-            "num_leaves": 32,
+        "feature_fraction": 0.8,
 
-            "learning_rate": 0.01,
+        "bagging_fraction": 0.8,
 
-            "feature_fraction": 0.8,
+        "bagging_freq": 5,
 
-            "bagging_fraction": 0.8,
+        "verbose": -1,
 
-            "bagging_freq": 5,
+        "max_depth": 9,
 
-            "verbose": -1,
+        "nthread": -1,
 
-            "max_depth": 9,
+        "lambda_l2": 0.8
+    }
+    _model = lgb.train(params,
+                       lgb_train,
+                       num_boost_round=20,
+                       verbose_eval=False)
 
-            "nthread": -1,
-
-            "lambda_l2": 0.8
-        }
-        _model = lgb.train(params,
-                           lgb_train,
-                           num_boost_round=20,
-                           verbose_eval=False)
-
-        shared_memory_data.close()
-        shared_memory_columns.close()
-        print("processing: ", self.i)
-        self.model = _model
-        return _model
-
-def func(i):
-    obj = Function(i)
-    obj.f()
-    return obj
+    shared_memory_data.close()
+    shared_memory_columns.close()
+    print("processing: ", params)
+    return _model
 
 
 if __name__ == '__main__':
@@ -97,9 +98,12 @@ if __name__ == '__main__':
     shared_memory_columns = None
     try:
         jobs = []
-        data = pd.read_csv("/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical_train_realdata.csv")
+        data = pd.read_csv("/home/liangqian/PycharmProjects/Gauss/test_/full_new.csv")
         values = data.values
         columns = np.array(data.columns)
+        # label = data['deposit'].values
+        # data.drop(['deposit'], axis=1, inplace=True)
+        # data = data.values
 
         shared_memory_data = shared_memory.SharedMemory(create=True, size=values.nbytes)
         shared_memory_columns = shared_memory.SharedMemory(create=True, size=columns.nbytes)
@@ -110,18 +114,30 @@ if __name__ == '__main__':
         shared_data = np.ndarray(values.shape, dtype=values.dtype, buffer=buffer)
         shared_columns = np.ndarray(columns.shape, dtype=columns.dtype, buffer=buffer_columns)
 
+        data_name = shared_memory_data.name
+        data_shape = values.shape
+        data_dtype = values.dtype
+
         shared_data[:] = data[:]
         shared_columns[:] = columns[:]
-        data = shared_data[:, :-1]
+        # data = shared_data[:, :-1]
+
+        del data, values
+        gc.collect()
+
         # label = shared_data[:, -1].reshape(-1, 1)
         # d_test = xgb.DMatrix(data=data, silent=True)
         with Pool(processes=4) as pool:
-            res = pool.map(func, [0, 1, 2, 3])
+            res = pool.map(f, [(data_name, data_shape, data_dtype),
+                               (data_name, data_shape, data_dtype),
+                               (data_name, data_shape, data_dtype),
+                               (data_name, data_shape, data_dtype)])
 
-        for obj in res:
-            # print(type(model))
-            print(obj.model.predict(data))
+        # for obj in res:
+        #     # print(type(model))
+        #     print(obj.predict(data))
     finally:
+        print("finished")
         shared_memory_data.unlink()
         shared_memory_columns.unlink()
 

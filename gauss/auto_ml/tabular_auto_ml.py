@@ -4,8 +4,6 @@
 # Authors: citic-lab
 import os
 import json
-import time
-import multiprocessing
 
 from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
 from core.nni.algorithms.hpo.evolution_tuner import EvolutionTuner
@@ -13,6 +11,9 @@ from gauss.auto_ml.base_auto_ml import BaseAutoML
 from entity.dataset.base_dataset import BaseDataset
 from entity.model.model import ModelWrapper
 from entity.metrics.base_metric import BaseMetric
+
+from utils.Logger import logger
+from utils.base import get_current_memory_gb
 
 
 class TabularAutoML(BaseAutoML):
@@ -23,7 +24,8 @@ class TabularAutoML(BaseAutoML):
         :param enable:
         :param opt_model_names: opt_model is a list object, and can includes tpe, random_search, anneal and evolution.
         """
-        super(TabularAutoML, self).__init__(params["name"], params["train_flag"], params["enable"], params["opt_model_names"])
+        super(TabularAutoML, self).__init__(params["name"], params["train_flag"], params["enable"],
+                                            params["opt_model_names"])
 
         assert "optimize_mode" in params
         assert params["optimize_mode"] in ["minimize", "maximize"]
@@ -32,7 +34,7 @@ class TabularAutoML(BaseAutoML):
         # optional: "maximize", "minimize", depends on metrics for auto ml.
         self._optimize_mode = params["optimize_mode"]
         # trial num for auto ml.
-        self.trial_num = 1
+        self.trial_num = 2
         self._auto_ml_path = params["auto_ml_path"]
         self._default_parameters = None
         self._search_space = None
@@ -90,14 +92,20 @@ class TabularAutoML(BaseAutoML):
         self.set_default_params()
 
         self._model = entity["model"]
+
         # 在此处创建模型数据对象, 继承entity对象, 放进entity字典
         for tuner_algorithms in self.opt_tuners:
-
             tuner = tuner_algorithms
+
+            logger.info("Starting update search space, " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
             tuner.update_search_space(self._search_space.get(entity["model"].name))
 
             for trial in range(self.trial_num):
 
+                logger.info(
+                    "tuner algorithms: " + tuner_algorithms.algorithm_name + ", Auto machine learning trial number: %d",
+                    trial)
                 if self._default_parameters is not None:
 
                     params = self._default_parameters.get(self._model.name)
@@ -105,20 +113,27 @@ class TabularAutoML(BaseAutoML):
 
                     receive_params = tuner.generate_parameters(trial)
 
+                    logger.info("Generate hyper parameters, " + "with current memory usage: %.2f GiB",
+                                get_current_memory_gb()["memory_usage"])
                     params.update(receive_params)
 
-                    self._model.initialize()
-
+                    logger.info("Send parameters to model object, " + "with current memory usage: %.2f GiB",
+                                get_current_memory_gb()["memory_usage"])
                     self._model.update_params(**params)
 
+                    logger.info("Model training, " + "with current memory usage: %.2f GiB",
+                                get_current_memory_gb()["memory_usage"])
                     self._model.train(**entity)
 
+                    logger.info("Evaluate model, " + "with current memory usage: %.2f GiB",
+                                get_current_memory_gb()["memory_usage"])
                     self._model.eval(**entity)
 
+                    logger.info("Update best model, " + "with current memory usage: %.2f GiB",
+                                get_current_memory_gb()["memory_usage"])
                     self._model.update_best_model()
 
                     metrics = self._model.val_metrics.result
-
                     tuner.receive_trial_result(trial, receive_params, metrics)
                 else:
                     raise ValueError("Default parameters is None.")

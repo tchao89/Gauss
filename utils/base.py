@@ -2,18 +2,11 @@
 #
 # Copyright (c) 2020, Citic-Lab. All rights reserved.
 # Authors: citic-lab
+import os
+
+import psutil
 import pandas as pd
 import numpy as np
-
-
-def check_data(already_data_clear, model_name):
-    assert isinstance(already_data_clear, bool)
-    assert isinstance(model_name, str)
-
-    if already_data_clear is not True:
-        if model_name not in ["lightgbm", "xgboost", "catboost"]:
-            return False
-    return True
 
 
 def reduce_data(data_path: str = None, dataframe: pd.DataFrame = None):
@@ -54,5 +47,12 @@ def reduce_data(data_path: str = None, dataframe: pd.DataFrame = None):
         return df
 
 
-def safe_run_component():
-    pass
+def get_current_memory_gb() -> dict:
+
+    pid = os.getpid()
+    p = psutil.Process(pid)
+    info = p.memory_full_info()
+    #  + info.swap / 1024. / 1024. / 1024. + info.pss / 1024. / 1024. / 1024.
+    memory_usage = info.uss / 1024. / 1024. / 1024.
+
+    return {"memory_usage": memory_usage, "pid": pid}

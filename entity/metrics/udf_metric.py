@@ -32,7 +32,7 @@ class AUC(BaseMetric):
     def label_name(self, label_name: str):
         self._label_name = label_name
 
-    def evaluate(self, predict, labels_map):
+    def evaluate(self, predict: np.ndarray, labels_map: np.ndarray):
         """
         :param predict: np.ndarray object, (n_sample)
         :param labels_map: np.ndarray object, (n_samples)
