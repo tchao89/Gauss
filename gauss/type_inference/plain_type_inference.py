@@ -134,10 +134,8 @@ class PlainTypeInference(BaseTypeInference):
     def dtype_inference(self, dataset: BaseDataset):
 
         data = dataset.get_dataset().data
-        target = dataset.get_dataset().target
 
         assert isinstance(data, pd.DataFrame) or isinstance(data, pd.Series)
-        assert isinstance(target, pd.DataFrame) or isinstance(target, pd.Series)
 
         data_dtypes = data.dtypes
         for col_index, column in enumerate(data):
