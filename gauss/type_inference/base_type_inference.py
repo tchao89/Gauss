@@ -36,7 +36,7 @@ class BaseTypeInference(Component):
         pass
 
     @abc.abstractmethod
-    def target_check(self, target: pd.DataFrame):
+    def target_check(self, target: BaseDataset):
         pass
 
     @property
