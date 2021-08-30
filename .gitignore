@@ -4,5 +4,5 @@
 **/__pycache__
 **/*.log
 **/*.pyc
-test_datase/*
-testt/*
+test_dataset/*
+test/*
