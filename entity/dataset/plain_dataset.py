@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import os
 import csv
-
 import pandas as pd
 import numpy as np
+
 from sklearn.datasets import load_svmlight_file
 
 from utils.bunch import Bunch
@@ -18,140 +18,137 @@ from utils.base import reduce_data
 
 
 class PlaintextDataset(BaseDataset):
+    """loading raw data to PlaintextDataset object.
+
+    Further operation could be applied directly to current datasett after the construction function
+    used.
+    Dataset can split by call `split()` function when need a validation set, and `union()` will merge 
+    train set and validation set in vertical.
+    Features of current dataset can be elimated by `feature_choose()` function, both index and 
+    feature name are accepted.
+    """
 
     def __init__(self, **params):
         """
-        :param name: module name.
-        :param data_path: input file path, csv, txt and libsvm are approved.
-        :param task_type: This value is optional, it can be "classification" or "regression".
-        :param target_name: label name in dataframe.
-        :param memory_only: it can just work in memory.
+        Two kinds of raw data supported: 
+            1. The first is read file whose format is an option in `.csv`, `.txt`,and 
+        `.libsvm`, data after processing will wrapped into a `Bunch` object which contains
+        `data` and `target`, meanwhile `feature_names` and `target_name` also can be a 
+        contenet when exist.
+            2. Pass a `data_pair` wrapped by Bunch to the construct function, `data` and 
+        `target` must provided at least. 
+    
+        ======    
+        :param name: A string to represent module's name.
+        :param data_path:  A string or `dict`; if string, it can be directly used by load data 
+            function, otherwise `train_dataset` and `val_dataset` must be the key of the dict.
+        :param data_pair: default is None, must be filled if data_path not applied.
+        :param task_type: A string which is an option between `classification` or `regression`.
+        :param target_name: A `list` containing label names in string format.
+        :param memory_only: a boolean value, true for memory, false for others, default True.
         """
-        for item in ["name", "task_type", "data_pair", "data_path", "target_name", "memory_only"]:
+        for item in [
+            "name", 
+            "task_type", 
+            "data_pair", 
+            "data_path", 
+            "target_name", 
+            "memory_only"
+            ]:
             if params.get(item) is None:
                 params[item] = None
 
-        super(PlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_type"],
-                                               params["target_name"], params["memory_only"])
-        if params["data_path"] is not None:
-            assert os.path.isfile(params["data_path"])
+        if not params["data_path"] and not params["data_pair"]:
+            raise AttributeError("data_path or data_pair must provided.")
 
+        super(PlaintextDataset, self).__init__(
+            name=params["name"], 
+            data_path=params["data_path"], 
+            task_type=params["task_type"], 
+            target_name=params["target_name"], 
+            memory_only=params["memory_only"]
+        )
+        
         self._data_pair = params["data_pair"]
-        self.type_doc = None
+
+        self._suffix = None
+        self._val_start = None
         self._bunch = None
+        self._need_data_clear = False
 
-        assert params["data_path"] is not None or params["data_pair"] is not None
-        if params["data_path"] is not None and isinstance(params["data_path"], str):
+        if isinstance(self._data_path, str):
             self._bunch = self.load_data()
-
-        # if params["data_path] is a dict, it's format must be {"train_dataset": "./t_data.csv", "val_dataset": "./v_data.csv"}
-        elif params["data_path"] is not None and isinstance(params["data_path"], dict):
-            self._bunch = Bunch(train_dataset=self.load_data(data_path=params["data_path"]["train_dataset"]),
-                                val_dataset=self.load_data(data_path=params["data_path"]["val_dataset"]))
-
+        elif isinstance(self._data_path, dict):
+            if not (self._data_path.get("train_dataset") and self._data_path.get("val_dataset")):
+                raise ValueError(
+                    "data_path must include `train_dataset` and `val_dataset` when pass a dictionary."
+                )
+            self._bunch = Bunch(
+                train_dataset=self.load_data(data_path=self._data_path["train_dataset"]),
+                val_dataset=self.load_data(data_path=self._data_path["val_dataset"])
+            )
         else:
             self._bunch = self._data_pair
 
-        # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
-        # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
-        # by the length of validation dataset.
-        self._val_start = None
-        # This value is a bool value, and true means plaindataset has missing values and need to clear.
-        self._need_data_clear = False
 
     def __repr__(self):
-        assert self._bunch is not None
-        assert self.type_doc is not None
-        assert self.get_column_size() > 0 and self.get_row_size() > 0
+        data = self._bunch.data
+        target = self._bunch.target
+        df = pd.concat((data, target), axis=1)
+        return str(df.head()) + str(df.info())
 
-        self.shape = [self.get_row_size(), self.get_column_size()]
-
-        if self.type_doc in ["csv"]:
-            combined_df, _, _ = self._convert_data_dataframe(data=self._bunch.data,
-                                                             target=self._bunch.target,
-                                                             feature_names=self._bunch.feature_names,
-                                                             target_names=self._bunch.target_names)
-
-            if self.shape[0] > self._default_print_size:
-                return str(combined_df.head(self._default_print_size))
-
-            else:
-                return str(self._bunch.keys())
-
-        elif self.type_doc is not None:
-            combined_df, _, _ = self._convert_data_dataframe(data=self._bunch.data,
-                                                             target=self._bunch.target)
-            if self.shape[0] > self._default_print_size:
-                return str(combined_df.head(self._default_print_size))
-            else:
-                return str(combined_df)
-
-        else:
-            return str(self._bunch.data.columns)
-
-    def get_dataset(self):
-        return self._bunch
 
     def load_data(self, data_path=None):
         if data_path is not None:
             self._data_path = data_path
+            
+        if not os.path.isfile(self._data_path):
+            raise TypeError("<{path}> is not a valid file.".format(
+                path = self._data_path
+            ))
 
-        assert "." in self._data_path
-        self.type_doc = self._data_path.split(".")[-1]
-
-        assert self.type_doc in ["csv", "libsvm", "txt"]
+        self._suffix = os.path.splitext(self._data_path)[-1] 
+        if self._suffix not in [".csv", ".libsvm", ".txt"]:
+            raise TypeError(
+                "Unsupported file, excepted option in `.csv`, `.libsvm`, `.txt`, <{suffix}> received."\
+                .format(suffix=self._suffix)
+            )
 
         data = None
         target = None
         feature_names = None
         target_name = None
 
-        if self.type_doc == "csv":
+        if self._suffix == ".csv":
             try:
-                data, target, feature_names, target_name = self.load_mixed_csv()
+                data, target, feature_names, target_name = self._load_mixed_csv()
+
             except IOError:
-                logger.info("File path does not exist.")
-            finally:
-                logger.info(".csv file has been converted to Bunch object.")
-
-            self._bunch = Bunch(data=data,
-                                target=target,
-                                target_names=target_name,
-                                feature_names=feature_names)
-
-        elif self.type_doc == 'libsvm':
-            data, target = self.load_libsvm()
-            _, data, target = self._convert_data_dataframe(data=data,
-                                                           target=target)
-            self._bunch = Bunch(
-                data=data,
-                target=target
-            )
-
-        elif self.type_doc == 'txt':
-            data, target = self.load_txt()
-            _, data, target = self._convert_data_dataframe(data=data,
-                                                           target=target)
-            self._bunch = Bunch(
-                data=data,
-                target=target
-            )
-        else:
-            raise TypeError("File type can not be accepted.")
+                logger.info("File not exist.")
+        else: 
+            if self._suffix == '.libsvm':
+                data, target = self._load_libsvm()
+            elif self._suffix == '.txt':
+                data, target = self._load_txt()
+            data, target = self._convert_to_dataframe(data=data, target=target)
+        
+        self._bunch = Bunch(data=data, target=target)
+        if feature_names.all():
+            self._bunch.feature_names = feature_names
+            self._bunch.target_names = target_name
         return self._bunch
 
-    def load_mixed_csv(self):
+    def _load_mixed_csv(self):
         target = None
         target_name = None
 
-        # data = pd.read_csv(self._data_path)
         data = reduce_data(data_path=self._data_path)
 
         feature_names = data.columns
         self._row_size = data.shape[0]
 
         if self._target_name is not None:
-            target = data[self._target_name]
+            target = data.loc[:, self._target_name]
             data = data.drop(self._target_name, axis=1)
             feature_names = data.columns
             target_name = self._target_name
@@ -199,50 +196,48 @@ class PlaintextDataset(BaseDataset):
                 data[index] = np.asarray(row, dtype=np.float64)
                 target[index] = np.asarray(label, dtype=int)
 
-        return data, target, feature_names, self._target_name
+        return data, target, feature_names, target_name
 
-    def load_libsvm(self):
+    def _load_libsvm(self):
         data, target = load_svmlight_file(self._data_path)
         data = data.toarray()
         self._column_size = len(data[0]) + 1
         self._row_size = len(data)
         return data, target
 
-    def load_txt(self):
-        target_index = 0
+    def _load_txt(self):
         data = []
         target = []
+        target_index = 0
 
         with open(self._data_path, 'r') as file:
             lines = file.readlines()
-
-            for index, line_content in enumerate(lines):
-                data_index = []
-                line_content = line_content.split(' ')
-
-                for column, item in enumerate(line_content):
-                    if column != target_index:
-                        data_index.append(item)
-                    else:
-                        target.append(item)
-
-                data_index = list(map(np.float64, data_index))
-                data.append(data_index)
-
+            for line in lines:
+                line_contents = line.split(' ')
+                target.append(line_contents.pop(target_index))
+                data.append(list(map(np.float64, line_contents)))
             data = np.asarray(data, dtype=np.float64)
-            target = list(map(int, target))
-            target = np.asarray(target, dtype=int)
-
+            target = np.asarray(target, dtype=np.int64)
             self._column_size = len(data[0]) + 1
             self._row_size = len(data)
+        return data, target
 
-            return data, target
-
+    def _convert_to_dataframe(self, data, target,
+                                feature_names=None, 
+                                target_names=None):
+        data_df = pd.DataFrame(data, columns=feature_names)
+        target_df = pd.DataFrame(target, columns=target_names)
+        return data_df, target_df
+    
     def wc_count(self):
         import subprocess
         out = subprocess.getoutput("wc -l %s" % self._data_path)
         return int(out.split()[0])
 
+
+    def get_dataset(self):
+        return self._bunch
+    
     def get_column_size(self):
         return self._column_size
 
@@ -252,15 +247,6 @@ class PlaintextDataset(BaseDataset):
     def get_target_name(self):
         return self._target_name
 
-    @classmethod
-    def _convert_data_dataframe(cls, data, target,
-                                feature_names=None, target_names=None):
-
-        data_df = pd.DataFrame(data, columns=feature_names)
-        target_df = pd.DataFrame(target, columns=target_names)
-        combined_df = pd.concat([data_df, target_df], axis=1)
-
-        return combined_df, data_df, target_df
 
     def feature_choose(self, feature_list):
         try:
@@ -270,64 +256,78 @@ class PlaintextDataset(BaseDataset):
             data = self._bunch.data.loc[:, feature_list]
         return data
 
-    # dataset is a PlainDataset object
     def union(self, val_dataset: PlaintextDataset):
-        """ This method is used for concatenating train dataset and validation dataset.
-        :return: Plaindataset
+        """ Merge train set and validation set in vertical, this procedure will operated on train set.
+
+        example:
+            trainset = PlaintextDataset(...)
+            valset = trainset.split()
+            trainset.union(valset) 
         """
-        self._val_start = self._bunch.target.shape[0]
+        bunch = self._bunch
 
-        assert self._bunch.data.shape[1] == val_dataset.get_dataset().data.shape[1]
-        self._bunch.data = pd.concat([self._bunch.data, val_dataset.get_dataset().data], axis=0)
+        self._val_start = bunch.target.shape[0]
 
-        assert self._bunch.target.shape[1] == val_dataset.get_dataset().target.shape[1]
-        self._bunch.target = pd.concat([self._bunch.target, val_dataset.get_dataset().target], axis=0)
+        assert bunch.data.shape[1] == val_dataset.get_dataset().data.shape[1]
+        bunch.data = pd.concat([bunch.data, val_dataset.get_dataset().data], axis=0)
 
-        self._bunch.data = self._bunch.data.reset_index(drop=True)
-        self._bunch.target = self._bunch.target.reset_index(drop=True)
+        assert bunch.target.shape[1] == val_dataset.get_dataset().target.shape[1]
+        bunch.target = pd.concat([bunch.target, val_dataset.get_dataset().target], axis=0)
 
-        if self._bunch.get("feature_names") is not None and val_dataset.get_dataset().get("feature_names") is not None:
-            for item in self._bunch.feature_names:
+        bunch.data = bunch.data.reset_index(drop=True)
+        bunch.target = bunch.target.reset_index(drop=True)
+
+        if bunch.get("feature_names") is not None and val_dataset.get_dataset().get("feature_names") is not None:
+            for item in bunch.feature_names:
                 assert item in val_dataset.get_dataset().feature_names
-
-        if self._bunch.get("target_names") is not None and val_dataset.get_dataset().get("target_names") is not None:
-            for item in self._bunch.target_names:
+        if bunch.get("target_names") is not None and val_dataset.get_dataset().get("target_names") is not None:
+            for item in bunch.target_names:
                 assert item in val_dataset.get_dataset().target_names
 
     def split(self, val_start: float = 0.8):
-        """
+        """split a validation set from train set.
 
-        :param val_start: split proportion
-        :return: plaindataset object
+        :param val_start: ration of sample count as validation set.
+
+        :return: plaindataset object containing validation set.
         """
         assert self._bunch is not None
+        bunch = self._bunch
 
-        for key in self._bunch.keys():
+        for key in bunch.keys():
             assert key in ["data", "target", "feature_names", "target_names", "generated_feature_names"]
 
         if self._val_start is None:
-            self._val_start = int(val_start * self._bunch.data.shape[0])
+            self._val_start = int(val_start * bunch.data.shape[0])
 
-        val_data = self._bunch.data.iloc[self._val_start:, :]
-        self._bunch.data = self._bunch.data.iloc[:self._val_start, :]
+        val_data = bunch.data.iloc[self._val_start:, :]
+        bunch.data = bunch.data.iloc[:self._val_start, :]
 
-        val_target = self._bunch.target.iloc[self._val_start:]
-        self._bunch.target = self._bunch.target.iloc[:self._val_start]
+        val_target = bunch.target.iloc[self._val_start:]
+        bunch.target = bunch.target.iloc[:self._val_start]
 
-        self._bunch.data.reset_index(drop=True, inplace=True)
-        self._bunch.target.reset_index(drop=True, inplace=True)
+        bunch.data.reset_index(drop=True, inplace=True)
+        bunch.target.reset_index(drop=True, inplace=True)
 
         val_data = val_data.reset_index(drop=True)
         val_target = val_target.reset_index(drop=True)
 
-        return PlaintextDataset(name="train_data",
-                                task_type="train",
-                                data_pair=Bunch(data=val_data, target=val_target))
+        data_pair = Bunch(data=val_data, target=val_target)
+        if "feature_names" in bunch.keys():
+            data_pair.target_names = bunch.target_names
+            data_pair.feature_names = bunch.feature_names
+
+        return PlaintextDataset(
+            name="train_and_val_set",
+            task_type=self._task_type,
+            data_pair=data_pair
+            )
+
 
     @property
     def need_data_clear(self):
         return self._need_data_clear
 
     @need_data_clear.setter
-    def need_data_clear(self, data_clear: bool):
-        self._need_data_clear = data_clear
+    def need_data_clear(self, data_clear_flag: bool):
+        self._need_data_clear = data_clear_flag
