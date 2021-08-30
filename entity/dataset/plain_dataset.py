@@ -320,7 +320,7 @@ class PlaintextDataset(BaseDataset):
         return PlaintextDataset(
             name="train_and_val_set",
             task_type=self._task_type,
-            data_pair=Bunch(data=val_data, target=val_target)
+            data_pair=data_pair
             )
 
 
