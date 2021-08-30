@@ -134,7 +134,7 @@ class PlaintextDataset(BaseDataset):
         self._bunch = Bunch(data=data, target=target)
         if feature_names.all():
             self._bunch.feature_names = feature_names
-            self._bunch.target_name = target_name
+            self._bunch.target_names = target_name
         return self._bunch
 
     def _load_mixed_csv(self):
@@ -167,9 +167,9 @@ class PlaintextDataset(BaseDataset):
             A 1D array holding target variables for all the samples in `data.
             For example target[0] is the target variable for data[0].
 
-        target_name : Numpy array
+        target_names : Numpy array
             A 1D array containing the names of the classifications. For example
-            target_name[0] is the name of the target[0] class.
+            target_names[0] is the name of the target[0] class.
         """
         with open(self._data_path, 'r') as csv_file:
 
@@ -223,9 +223,9 @@ class PlaintextDataset(BaseDataset):
 
     def _convert_to_dataframe(self, data, target,
                                 feature_names=None, 
-                                target_name=None):
+                                target_names=None):
         data_df = pd.DataFrame(data, columns=feature_names)
-        target_df = pd.DataFrame(target, columns=target_name)
+        target_df = pd.DataFrame(target, columns=target_names)
         return data_df, target_df
     
     def wc_count(self):
@@ -279,9 +279,9 @@ class PlaintextDataset(BaseDataset):
         if bunch.get("feature_names") is not None and val_dataset.get_dataset().get("feature_names") is not None:
             for item in bunch.feature_names:
                 assert item in val_dataset.get_dataset().feature_names
-        if bunch.get("target_name") is not None and val_dataset.get_dataset().get("target_name") is not None:
-            for item in bunch.target_name:
-                assert item in val_dataset.get_dataset().target_name
+        if bunch.get("target_names") is not None and val_dataset.get_dataset().get("target_names") is not None:
+            for item in bunch.target_names:
+                assert item in val_dataset.get_dataset().target_names
 
     def split(self, val_start: float = 0.8):
         """split a validation set from train set.
@@ -294,7 +294,7 @@ class PlaintextDataset(BaseDataset):
         bunch = self._bunch
 
         for key in bunch.keys():
-            assert key in ["data", "target", "feature_names", "target_name", "generated_feature_names"]
+            assert key in ["data", "target", "feature_names", "target_names", "generated_feature_names"]
 
         if self._val_start is None:
             self._val_start = int(val_start * bunch.data.shape[0])
@@ -313,13 +313,13 @@ class PlaintextDataset(BaseDataset):
 
         data_pair = Bunch(data=val_data, target=val_target)
         if "feature_names" in bunch.keys():
-            data_pair.target_name = bunch.target_name
+            data_pair.target_names = bunch.target_names
             data_pair.feature_names = bunch.feature_names
 
         return PlaintextDataset(
             name="train_and_val_set",
             task_type=self._task_type,
-            data_pair=data_pair
+            data_pair=Bunch(data=val_data, target=val_target)
             )
 
 

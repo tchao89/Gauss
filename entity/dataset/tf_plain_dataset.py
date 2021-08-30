@@ -200,19 +200,3 @@ class TFPlainDataset(BaseDataset):
         dataset = dataset.to_dict("list")
         dataset = {k: np.array(v).reshape(-1, 1) for k, v in dataset.items()}
         return dataset
-
-
-    def load_data(self):
-        warnings.warn("function load_data will not be used in Gauss_nn module.")
-
-    def get_dataset(self):
-        warnings.warn("function get_dataset will not be used in Gauss_nn module.")
-
-    def split(self):
-        warnings.warn("function split will not be used in Gauss_nn module.")
-
-    def union(self, dataset: BaseDataset):
-        warnings.warn("function union will not be used in Gauss_nn module.")
-
-    def feature_choose(self, feature_list):
-        warnings.warn("function feature_choose will not be used in Gauss_nn module.")
