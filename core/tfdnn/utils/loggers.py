@@ -81,3 +81,15 @@ class ValidateLogger(object):
             )
             self._tensorboard_writer.add_summary(summary, step)
             self._tensorboard_writer.flush()
+
+class EarlyStopLogger(object):
+    def __inti__(self,):
+        super(EarlyStopLogger, self).__inti__()
+
+    def log_info(self, epoch, loss):
+        self._log_to_console(epoch, loss)
+
+    def _log_to_console(self, epoch, loss):
+        print("[Early Stop] Stopped Epoch: {epoch}\tFinal Loss: {loss}".format(
+            epoch=epoch, loss=loss
+        ))

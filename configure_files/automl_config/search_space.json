@@ -70,7 +70,7 @@
             },
             "train_epochs": {
                   "_type": "choice",
-                  "_value": [5, 10, 15]
+                  "_value": [20, 50, 100]
             }
       }
   }

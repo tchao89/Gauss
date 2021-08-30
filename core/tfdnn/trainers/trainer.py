@@ -7,12 +7,10 @@ from __future__ import division
 from __future__ import absolute_import
 
 import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import time
 import tensorflow as tf
 
-from icecream import ic
-
+from core.tfdnn.utils.earlystop import Earlystop
 from core.tfdnn.utils.loggers import TrainLogger
 from core.tfdnn.utils.loggers import ValidateLogger
 
@@ -27,7 +25,9 @@ class Trainer(object):
                  log_steps,
                  learning_rate,
                  optimizer_type="lazy_adam",
-                 train_epochs=1,
+                 train_epochs=100,
+                 patience=0,
+                 delta=0,
                  evaluator=None,
                  save_checkpoints_dir=None,
                  restore_checkpoint_dir=None,
@@ -46,6 +46,7 @@ class Trainer(object):
         self._validate_at_start = validate_at_start
         self._evaluator = evaluator
 
+        self._earlystop = Earlystop(patience, delta)
         self._valid_logger = ValidateLogger(tensorboard_logdir)
         self._train_logger = TrainLogger(self._log_steps, tensorboard_logdir)
 
@@ -95,16 +96,25 @@ class Trainer(object):
 
         step = 0
         for epoch in range(self._train_epochs):
+            avg_loss = 0
+            counter = 0
             self._dataset.init(self._sess)
             while True:
-                success = self._train_step(epoch, step)
+                success, step_loss = self._train_step(epoch, step)
+                avg_loss += step_loss
+                counter += 1
                 if not success:
+                    avg_loss /= counter
                     break
                 step += 1
                 if step % self._validate_steps == 0:
-                    self._run_validate_loop(epoch=epoch, step=step)
+                    eval_result = self._run_validate_loop(epoch=epoch, step=step)
+            # self._evaluate_epoch()
+            self._earlystop(epoch, avg_loss)
+            if self._earlystop.flag:
+                break
             self._save_checkpoint(epoch + 1)
-
+            
     def _run_validate_loop(self, epoch, step):
         if self._evaluator:
             eval_results = self._evaluator.run(sess=self._sess)
@@ -122,9 +132,9 @@ class Trainer(object):
                                             size=self._dataset.batch_size,
                                             epoch=epoch,
                                             step=step + 1)
-            return True
+            return True, loss
         except tf.errors.OutOfRangeError:
-            return False
+            return False, 0
 
     def _save_checkpoint(self, step, prefix="ckpt_epoch"):
         if self._save_checkpoints_dir:
