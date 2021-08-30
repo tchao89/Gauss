@@ -1,5 +1,8 @@
+.idea
 .history
 .vscode
 **/__pycache__
 **/*.log
 **/*.pyc
+test_datase/*
+testt/*
