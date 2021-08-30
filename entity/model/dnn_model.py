@@ -4,7 +4,9 @@
 # Authors: citic-lab
 # 
 import os
+import gc
 import copy
+import shutil
 
 from entity.model.model import ModelWrapper
 from core.tfdnn.trainers.trainer import Trainer
@@ -17,13 +19,16 @@ from core.tfdnn.transforms.numerical_transform import NumericalTransform
 from core.tfdnn.transforms.categorical_transform import CategoricalTransform
 from core.tfdnn.statistics_gens.dataset_statistics_gen import DatasetStatisticsGen
 from core.tfdnn.statistics_gens.external_statistics_gen import ExternalStatisticsGen
-from utils.utils import tf_global_config
 from utils.common_component import mkdir
 from utils.common_component import feature_list_generator
 from gauss_factory.loss_factory import LossFunctionFactory
 
 
 class GaussNN(ModelWrapper):
+    """Multi layer perceptron neural network wrapper.
+
+    Model wrapper wrapped a neural network model which can be used in training 
+    or predicting. When training a model, """
 
     def __init__(self, **params):
         """"""
@@ -62,9 +67,7 @@ class GaussNN(ModelWrapper):
         self._trainer = None
 
         self._create_folders()
-        # tf_global_config(intra_threads=8, inter_threads=8)
         
-
     def __repr__(self):
         pass
     
@@ -75,27 +78,58 @@ class GaussNN(ModelWrapper):
     
     
     def update_feature_conf(self, feature_conf):
-        """select features and classify features to cate or num."""
+        """Select features used in current model before 'build()'.
+
+        Select features using in current model and classify them 
+        to categorical or numerical. 'feature_conf' is the description
+        object of whole features, property 'used' in them will decided whether
+        to keep the feature, and 'dtype' can give a hint for classification
+        """
+
         self._feature_conf = feature_conf
         self._feature_list = feature_list_generator(feature_conf=self._feature_conf)
         self._categorical_features, self._numerical_features = self._cate_num_split(configs=self._feature_conf)
 
-
+    def _cate_num_split(self, feature_conf):
+        configs = feature_conf.feature_dict
+        categorical_features, numerical_features = [], []
+        for fea, info in configs.items():
+            if info["ftype"] != "numerical":
+                categorical_features.append(fea)
+            else:
+                numerical_features.append(fea)
+        return categorical_features, numerical_features
+        
     def train_init(self, **entity):
-        import tensorflow as tf
-        assert(entity.get("dataset") and entity.get("val_dataset") and entity.get("metrics"))
-                
-        tf.compat.v1.reset_default_graph()
+        """Initialize modules using for training a model and build 
+        'Calculate Graph' from tensorflow.
+
+        Actually, neural network model includes several seperated modules,
+        'DatasetStatisticsGen', 'CategoricalTransform', 'NumericalTransform', 
+        'LossFunction', 'MlpNetwork', 'Evaluator', and 'Trainer', all above 
+        collaborate and support whole training procedure. Also, using tensorflow 
+        1.x backned, calculate graph and placeholders are create and feed 
+        before training. 
+
+        Args:
+            dataset: PlaintextDataset, dataset for training.
+
+            val_dataset: PlaintextDataset, dataset for validate current model.
+
+            metrics: Metrics, judgement scores for evaluate a model.
+        """
+        self._reset_tf_graph()
+
+        assert(entity.get("dataset") and entity.get("val_dataset") and entity.get("metrics"))   
+        
         # Phase 1. Load and transform Dataset -----------------------
         train_dataset = self.preprocess(entity["dataset"])
         val_dataset = self.preprocess(entity["val_dataset"])
 
         train_dataset.update_features(self._feature_list, self._categorical_features)
         val_dataset.update_features(self._feature_list, self._categorical_features)
-
         train_dataset.build()
         val_dataset.build()
-
         train_dataset.update_dataset_parameters(self._model_params["batch_size"]) 
         val_dataset.update_dataset_parameters(self._model_params["batch_size"])
 
@@ -106,7 +140,6 @@ class GaussNN(ModelWrapper):
             numerical_features=self._numerical_features
         )
         self._statistics = statistics_gen.run()
-
         # Phase 3. Create Transform and Network, and Run -----------------------
         self._transform1 = CategoricalTransform(
             statistics=self._statistics,
@@ -124,7 +157,7 @@ class GaussNN(ModelWrapper):
             hidden_sizes=self._model_params["hidden_sizes"],
             loss=Loss(label_name=train_dataset.target_name)
         )
-        # Phase 4. Create Evaluator and Trainer
+        # Phase 4. Create Evaluator and Trainer ----------------------------
         self._metrics = entity["metrics"] 
         metrics_wrapper = { 
             self._metrics.name: self._metrics
@@ -150,7 +183,13 @@ class GaussNN(ModelWrapper):
         )
         
     def inference_init(self, **entity):
-        """load saved model for predict and eval."""
+        """Initialize calculation graph and load 'tf.Variables' to graph for
+        prediction mission.
+        
+        Activate only in predict mission. Data statistic information from current 
+        best performance existed model will be loaded. And Checkpoint of same model
+        will be load to 'tf.Graph'
+        """
         assert(entity.get("val_dataset"))
 
         dataset = self.preprocess(entity["val_dataset"])
@@ -176,19 +215,7 @@ class GaussNN(ModelWrapper):
             numerical_features=self._numerical_features,
             hidden_sizes=self._model_params["hidden_sizes"],
         )
-        if self._train_flag:
-            self._metrics = entity["metrics"]
-            metrics_wrapper = { 
-            self._metrics.name: self._metrics
-            }
-            self._evaluator = Evaluator(
-                dataset=dataset,
-                transform_functions=[self._transform1.transform_fn, self._transform2.transform_fn],
-                eval_fn=self._network.eval_fn,
-                metrics=metrics_wrapper,
-                restore_checkpoint_dir=self._restore_checkpoint_dir,
-            )
-        else:
+        if not self._train_flag:
             self._evaluator = Predictor(
                 dataset=dataset,
                 transform_functions=[self._transform1.transform_fn, self._transform2.transform_fn],
@@ -217,7 +244,7 @@ class GaussNN(ModelWrapper):
     def update_best_model(self):
         assert self._trainer is not None
 
-        if self._best_model_params is None or \
+        if self._best_metrics_result is None or \
             (self._metrics.metrics_result.result > self._best_metrics_result):
 
             self._update_checkpoint()
@@ -234,15 +261,6 @@ class GaussNN(ModelWrapper):
         self._categorical_features = copy.deepcopy(self._best_categorical_features)
         self._numerical_features = copy.deepcopy(self._best_numerical_features)
 
-    def get_train_metric(self):
-        pass
-
-    def get_train_loss(self):
-        pass
-
-    def get_val_loss(self):
-        pass     
-
     def preprocess(self, dataset):
         """
         This method is used to implement Normalization, Standardization, Ont hot encoding which need
@@ -257,70 +275,29 @@ class GaussNN(ModelWrapper):
         )
         return dataset
 
-    def _train_preprocess(self):
-        pass
-
-    def _predict_process(self):
-        pass
-
-    def set_best(self):
-        pass
-
-    def update_best(self):
-        pass
-
-    def _saver_init(self):
-        if not self._trainer:
-            saver = ModelSaver(
-                transform_functions=[
-                    self._select_transform,
-                    self._transform1.transform_fn,
-                    self._transform2.transform_fn
-                ],
-                serve_fn=self._network.serve_fn,
-                restore_checkpoint_path=os.path.join(self._save_checkpoints_dir,
-                                                    "ckpt_epoch-1"),
-                save_model_dir=self._save_model_dir
-            )
-            return saver
-        else:
-            raise TypeError("trainer has not been initialized.")
-    
-    def model_save(self):
-        self._statistics.save_to_file(self._feature_statistics_filepath)
-        saver = self._saver_init()
-        saver.run()
-    
-    # def _select_transform(self, example):
-    #     features = tf.io.parse_example(example, self._feature_map)
-    #     for k, v in features.items():
-    #         features[k] = tf.identity(v)
-    #     return features
-
     def _create_folders(self):
-        if not os.path.isdir(self._save_statistics_filepath):
-            mkdir(self.__save_statistics_filepath)
-        if not os.path.isdir(self._save_checkpoints_dir):
-            mkdir(self._save_checkpoints_dir)
-        if not os.path.isdir(self._restore_checkpoint_dir):
-            mkdir(self._restore_checkpoint_dir)
-        if not os.path.isdir(self._save_tensorboard_logdir):
-            mkdir(self._save_tensorboard_logdir)
-        if not os.path.isdir(self._save_model_dir):
-            mkdir(self._save_model_dir)
+        path_attrs = [
+            self._save_statistics_filepath, self._save_checkpoints_dir, 
+            self._restore_checkpoint_dir, self._save_tensorboard_logdir,
+            self._save_model_dir
+        ]
+        for path in path_attrs:
+            if not os.path.isdir(path):
+                mkdir(path)
 
-    def _cate_num_split(self, configs):
-        configs = configs.feature_dict
-        categorical_features, numerical_features = [], []
-        for fea, info in configs.items():
-            if info["ftype"] != "numerical":
-                categorical_features.append(fea)
-            else:
-                numerical_features.append(fea)
-        return categorical_features, numerical_features
+    def _reset_trail(self):
+        attrs = [
+            "_model_params", "_feature_conf", "_feature_list", "_categorical_features"
+            "_numerical_features", "_statistics_gen", "_statistics", "_transform1", 
+            "_transform2", "_network", "_evaluator", "_trainer"
+        ]
+        for attr in attrs:
+            delattr(self, attr)
+            gc.collect()
+            setattr(self, attr, None)
 
     def _update_checkpoint(self):
-        import shutil
+        # TODO: implement latest ckpt to replace tf
         import tensorflow as tf
 
         if os.path.isdir(self._restore_checkpoint_dir):
@@ -341,18 +318,33 @@ class GaussNN(ModelWrapper):
             filepath=self._save_statistics_filepath+"statistics.pkl"
         )
 
-    # def _parse_feature_config(self):
-        # cate_features, num_features = deque(), deque()
-        # feature_config = yaml_read(self._feature_config_root)
+    def initialize(self):
+        self._reset_trail()
 
-        # for fea_name, info in feature_config.items():
-        #     if info["used"]:
+    def _reset_tf_graph(self):
+        import tensorflow as tf
+        tf.reset_default_graph()
 
-        #         if info["ftype"] != "numerical":
-        #             cate_features.append(fea_name)
-        #         else:
-        #             num_features.append(fea_name)
-        # selected_feature = cate_features + num_features  
-        # self._categorical_features = cate_features
-        # self._numerical_features = num_features
-        # return selected_feature
+    def model_save(self):
+        pass
+
+    def get_train_metric(self):
+        pass
+
+    def get_train_loss(self):
+        pass
+
+    def get_val_loss(self):
+        pass     
+
+    def _train_preprocess(self):
+        pass
+
+    def _predict_process(self):
+        pass
+
+    def set_best(self):
+        pass
+
+    def update_best(self):
+        pass
