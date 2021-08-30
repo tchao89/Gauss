@@ -5,17 +5,16 @@
 
 from __future__ import annotations
 
-import os
-from typing import Any
-
-from entity.dataset.plain_dataset import PlaintextDataset
-from utils.bunch import Bunch
+from typing import Any, List
 
 from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 from gauss_factory.entity_factory import MetricsFactory
 
-from utils.common_component import yaml_write, yaml_read, feature_list_generator
+from utils.common_component import yaml_write, yaml_read
+from utils.Logger import logger
+from utils.base import get_current_memory_gb
+from utils.bunch import Bunch
 
 
 class CoreRoute(Component):
@@ -29,13 +28,15 @@ class CoreRoute(Component):
                  target_feature_configure_path: Any(str, None),
                  pre_feature_configure_path: Any(str, None),
                  label_encoding_path: str,
-                 model_type: str,
                  metrics_name: str,
                  task_type: str,
                  feature_selector_name: str,
                  feature_selector_flag: bool,
+                 supervised_selector_name: str = None,
                  auto_ml_type: str = "XXX",
                  auto_ml_path: str = "",
+                 auto_ml_name: str = None,
+                 opt_model_names: List[str] = None,
                  selector_config_path: str = ""
                  ):
 
@@ -54,6 +55,10 @@ class CoreRoute(Component):
         self._model_name = model_name
         # 模型保存根目录
         self._model_save_path = model_save_root
+
+        self.auto_ml_name = auto_ml_name
+        self.supervised_selector_name = supervised_selector_name
+
         self._model_config_root = model_config_root
         self._feature_config_root = feature_config_root
         self._task_type = task_type
@@ -61,11 +66,11 @@ class CoreRoute(Component):
         self._auto_ml_path = auto_ml_path
         self._feature_selector_flag = feature_selector_flag
 
+        self._opt_model_names = opt_model_names
+
         self._feature_config_path = pre_feature_configure_path
 
         self._final_file_path = target_feature_configure_path
-
-        self._model_type = model_type
 
         if self._train_flag:
             self._best_metrics = None
@@ -94,10 +99,13 @@ class CoreRoute(Component):
 
         self.model = self.create_entity(entity_name=self._model_name, **model_params)
 
+        if self.auto_ml_name is not None:
+            self._opt_model_names = [self.auto_ml_name]
+
         tuner_params = Bunch(name=self._auto_ml_type,
                              train_flag=self._train_flag,
                              enable=self.enable,
-                             opt_model_names=["tpe", "random_search", "anneal", "evolution"],
+                             opt_model_names=self._opt_model_names,
                              optimize_mode=self._optimize_mode,
                              auto_ml_path=self._auto_ml_path)
 
@@ -122,13 +130,15 @@ class CoreRoute(Component):
         self.feature_selector = self.create_component(component_name="supervisedfeatureselector", **s_params)
 
     def _train_run(self, **entity):
+
         assert "dataset" in entity
         assert "val_dataset" in entity
 
         entity["model"] = self.model
         entity["metrics"] = self.metrics
 
-        if self._feature_selector_flag:
+        logger.info("Supervised feature selector component flag: " + str(self._feature_selector_flag))
+        if self._feature_selector_flag is True:
             entity["feature_configure"] = self.feature_conf
             entity["auto_ml"] = self.auto_ml
 
@@ -136,15 +146,16 @@ class CoreRoute(Component):
 
         else:
             train_dataset = entity["dataset"]
-
             self.metrics.label_name = train_dataset.get_dataset().target_names[0]
-            feature_conf = yaml_read(self._feature_config_path)
 
+            feature_conf = yaml_read(self._feature_config_path)
             self.feature_conf.file_path = self._feature_config_path
             self.feature_conf.parse(method="system")
             self.feature_conf.feature_selector(feature_list=None)
-
             entity["model"].update_feature_conf(feature_conf=self.feature_conf)
+
+            logger.info("Auto machine learning component has started, " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
             self.auto_ml.run(**entity)
 
             yaml_write(yaml_dict=feature_conf, yaml_file=self._final_file_path)
@@ -152,7 +163,6 @@ class CoreRoute(Component):
         self._best_model = entity["model"]
         # self._best_metrics is a MetricsResult object.
         self._best_metrics = entity["model"].val_metrics
-
         entity["model"].model_save()
 
     def _predict_run(self, **entity):
@@ -208,18 +218,3 @@ class CoreRoute(Component):
         gauss_factory = GaussFactoryProducer()
         entity_factory = gauss_factory.get_factory(choice="entity")
         return entity_factory.get_entity(entity_name=entity_name, **params)
-
-    def get_train_loss(self, **entity):
-        pass
-
-    def get_train_metric(self, **entity):
-        pass
-
-    def get_eval_loss(self, **entity):
-        pass
-    
-    def get_eval_metric(self):
-        pass
-
-    def get_eval_result(self,  **entity):
-        pass

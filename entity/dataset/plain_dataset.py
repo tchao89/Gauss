@@ -122,6 +122,7 @@ class PlaintextDataset(BaseDataset):
         if self._suffix == ".csv":
             try:
                 data, target, feature_names, target_name = self._load_mixed_csv()
+
             except IOError:
                 logger.info("File not exist.")
         else: 
@@ -140,7 +141,7 @@ class PlaintextDataset(BaseDataset):
     def _load_mixed_csv(self):
         target = None
         target_name = None
-        
+
         data = reduce_data(data_path=self._data_path)
 
         feature_names = data.columns

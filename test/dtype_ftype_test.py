@@ -1,5 +1,5 @@
 import pandas as pd
-from gauss.type_inference.type_inference import TypeInference
+from gauss.type_inference.plain_type_inference import TypeInference
 from entity.plain_dataset import PlaintextDataset
 import numpy as np
 import copy

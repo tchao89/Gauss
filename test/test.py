@@ -1,62 +1,144 @@
-import ctypes
-
-lib = ctypes.cdll.LoadLibrary("/home/liangqian/PycharmProjects/Gauss/test_dataset/TestLib.so")
-
-print("Test int io...")
-func = lib.receiveInt
-func.argtypes = [ctypes.c_int]
-func.restype = ctypes.c_int
-print(func(100))
-print()
-
-print("Test double io...")
-func = lib.receiveDouble
-func.argtypes = [ctypes.c_double]
-func.restype = ctypes.c_double
-print(func(3.14))
-print()
-
-print("Test char io...")
-func = lib.receiveChar
-func.argtypes = [ctypes.c_char]
-func.restype = ctypes.c_char
-print(func(ctypes.c_char(b'a')))
-print()
-
-print("Test string io...")
-func = lib.receiveString
-func.argtypes = [ctypes.c_char_p]
-func.restype = ctypes.c_char_p
-print(func(b"(This is a test string.)"))
-print()
-
-print("Test struct io...")
+import gc
+import time
+import os
+import psutil
+from multiprocessing import shared_memory, Pool
+import lightgbm as lgb
+import xgboost as xgb
+import pandas as pd
+import numpy as np
 
 
-class Struct(ctypes.Structure):
-    _fields_ = [('name', ctypes.c_char_p),
-                ('age', ctypes.c_int),
-                ('score', ctypes.c_float * 3)]
+# def get_current_memory_gb() -> dict:
+#
+#     pid = os.getpid()
+#     p = psutil.Process(pid)
+#     info = p.memory_full_info()
+#     memory_usage = info.uss / 1024. / 1024. / 1024. + info.swap / 1024. / 1024. / 1024. + info.pss / 1024. / 1024. / 1024.
+#
+#     return {"memory_usage": memory_usage, "pid": pid}
+
+# def lr_f(i):
+#     label = shared_data[:, -1]
+#     data = shared_data[:, :-1]
+#     _model = LogisticRegression(max_iter=1000)
+#     _model.fit(X=data, y=label)
+#     print("processing: ", i)
+#     return _model
+#
+def xgb_f(i):
+    label = shared_data[:, -1]
+    data = shared_data[:, :-1]
+    print(0)
+    d_train = xgb.DMatrix(data=data, label=label.flatten(), silent=True, nthread=1)
+    params = {'max_depth': 9, 'eta': 0.1, 'objective': 'binary:logistic'}
+    print(d_train.get_label())
+    print("1")
+    _model = xgb.train(params,
+                       d_train,
+                       num_boost_round=200,
+                       verbose_eval=False)
+
+    print("processing: ", i)
+    return _model
 
 
-lib.argtypes = [Struct]
-lib.receiveStruct.restype = Struct
-array = [85, 93, 95]
-st = lib.receiveStruct(Struct(b'XiaoMing', 16, (ctypes.c_float * 3)(*array)))
-print(str(st.name) + ' ' + str(st.age) + ' ' + str(st.score[0]) + ' in python')
-print()
+def f(params):
+    shared_data_memory = shared_memory.SharedMemory(name=params[0])
+    shared_data = np.ndarray(params[1], dtype=params[2], buffer=shared_data_memory.buf)
+    print("time sleeping...")
+    print(get_current_memory_gb())
+    time.sleep(100)
+    assert 1 == 0
+    label = shared_data[:, -1]
+    data = shared_data[:, :-1]
+    # data = dataset[0]
+    # label = dataset[1]
 
-print('Test struct pointer io...')
-lib.receiveStructPtr.restype = ctypes.POINTER(Struct)
-lib.receiveStructPtr.argtypes = [ctypes.POINTER(Struct)]
-p = lib.receiveStructPtr(Struct(b"XiaoHuang", 19, (ctypes.c_float * 3)(*array)))
-print(str(p.contents.name) + ' ' + str(p.contents.age) + ' ' + str(p.contents.score[0]) + ' in python')
-print()
+    train_data = [data, label.flatten()]
+    lgb_train = lgb.Dataset(data=train_data[0], label=train_data[1], free_raw_data=False, silent=True)
+    params = {
+        "objective": "binary",
 
-print('Test struct array io...')
-lib.receiveStructArray.restype = ctypes.POINTER(Struct)
-lib.receiveStructArray.argtypes = [ctypes.ARRAY(Struct, 2), ctypes.c_int]
-array = [Struct(b'student1', 19, (ctypes.c_float * 3)(91, 92, 93)),
-         Struct(b'student2', 18, (ctypes.c_float * 3)(88, 95, 92))]
-p = lib.receiveStructArray(ctypes.ARRAY(Struct, 2)(*array), 2)
-print(str(p.contents.name) + ' ' + str(p.contents.age) + ' ' + str(p.contents.score[2]) + ' in python')
+        "num_class": 1,
+
+        "metric": ["auc", "l2"],
+
+        "num_leaves": 32,
+
+        "learning_rate": 0.01,
+
+        "feature_fraction": 0.8,
+
+        "bagging_fraction": 0.8,
+
+        "bagging_freq": 5,
+
+        "verbose": -1,
+
+        "max_depth": 9,
+
+        "nthread": -1,
+
+        "lambda_l2": 0.8
+    }
+    _model = lgb.train(params,
+                       lgb_train,
+                       num_boost_round=20,
+                       verbose_eval=False)
+
+    shared_memory_data.close()
+    shared_memory_columns.close()
+    print("processing: ", params)
+    return _model
+
+
+if __name__ == '__main__':
+    shared_memory_data = None
+    shared_memory_columns = None
+    try:
+        jobs = []
+        data = pd.read_csv("/home/liangqian/PycharmProjects/Gauss/test_/full_new.csv")
+        values = data.values
+        columns = np.array(data.columns)
+        # label = data['deposit'].values
+        # data.drop(['deposit'], axis=1, inplace=True)
+        # data = data.values
+
+        shared_memory_data = shared_memory.SharedMemory(create=True, size=values.nbytes)
+        shared_memory_columns = shared_memory.SharedMemory(create=True, size=columns.nbytes)
+
+        buffer = shared_memory_data.buf
+        buffer_columns = shared_memory_columns.buf
+
+        shared_data = np.ndarray(values.shape, dtype=values.dtype, buffer=buffer)
+        shared_columns = np.ndarray(columns.shape, dtype=columns.dtype, buffer=buffer_columns)
+
+        data_name = shared_memory_data.name
+        data_shape = values.shape
+        data_dtype = values.dtype
+
+        shared_data[:] = data[:]
+        shared_columns[:] = columns[:]
+        # data = shared_data[:, :-1]
+
+        del data, values
+        gc.collect()
+
+        # label = shared_data[:, -1].reshape(-1, 1)
+        # d_test = xgb.DMatrix(data=data, silent=True)
+        with Pool(processes=4) as pool:
+            res = pool.map(f, [(data_name, data_shape, data_dtype),
+                               (data_name, data_shape, data_dtype),
+                               (data_name, data_shape, data_dtype),
+                               (data_name, data_shape, data_dtype)])
+
+        # for obj in res:
+        #     # print(type(model))
+        #     print(obj.predict(data))
+    finally:
+        print("finished")
+        shared_memory_data.unlink()
+        shared_memory_columns.unlink()
+
+    print("training finished...")

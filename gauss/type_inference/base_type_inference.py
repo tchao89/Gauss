@@ -2,7 +2,12 @@
 #
 # Copyright (c) 2020, Citic Inc. All rights reserved.
 # Authors: Lab
+import abc
+
+import pandas as pd
+
 from gauss.component import Component
+from entity.dataset.base_dataset import BaseDataset
 
 
 class BaseTypeInference(Component):
@@ -21,6 +26,18 @@ class BaseTypeInference(Component):
             name=name,
             train_flag=train_flag
         )
+
+    @abc.abstractmethod
+    def dtype_inference(self, dataset: BaseDataset):
+        pass
+
+    @abc.abstractmethod
+    def ftype_inference(self, dataset: BaseDataset):
+        pass
+
+    @abc.abstractmethod
+    def target_check(self, target: BaseDataset):
+        pass
 
     @property
     def source_file_path(self):

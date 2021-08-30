@@ -76,6 +76,7 @@ class EvolutionTuner(Tuner):
             initial population size. The larger population size,
         the better evolution performance.
         """
+        self.algorithm_name = "evolution"
         self.optimize_mode = OptimizeMode(optimize_mode)
         self.population_size = population_size
         self.searchspace_json = None
