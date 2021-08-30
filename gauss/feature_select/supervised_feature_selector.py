@@ -6,19 +6,23 @@ import os
 import json
 from typing import List
 
+import numpy
 import numpy as np
 import pandas as pd
 
 from entity.dataset.base_dataset import BaseDataset
 from entity.model.model import ModelWrapper
 from entity.metrics.base_metric import MetricResult
+
 from gauss.feature_select.base_feature_selector import BaseFeatureSelector
 
 from core.nni.algorithms.feature_engineering.gradient_selector import FeatureGradientSelector
 from core.nni.algorithms.feature_engineering.gbdt_selector import GBDTSelector
 from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
 
+from utils.base import get_current_memory_gb
 from utils.common_component import yaml_read, yaml_write
+from utils.Logger import logger
 
 
 class SupervisedFeatureSelector(BaseFeatureSelector):
@@ -128,6 +132,9 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         :param entity: input dataset, metrics
         :return: None
         """
+        logger.info("Starting training supervised selectors, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
+
         assert "dataset" in entity.keys()
         assert "val_dataset" in entity.keys()
         assert "model" in entity.keys()
@@ -141,6 +148,9 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         feature_configure = entity["feature_configure"]
 
+        logger.info(
+            "Loading hyperparameters and search space for supervised selector, " + "with current memory usage: %.2f GiB",
+            get_current_memory_gb()["memory_usage"])
         self.set_default_params()
         self.set_search_space()
 
@@ -161,6 +171,8 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         for model_name in self._feature_selector_names:
             # 梯度特征选择
+            logger.info("Choose supervised selector: " + model_name + ", " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
             if model_name == "gradient_feature_selector":
                 if self.check_dataset(original_dataset.get_dataset().data):
                     # 接受默认参数列表
@@ -185,10 +197,16 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 search_space = self.read_search_space(json_dict=search_space)
 
             # 更新特征选择模块的搜索空间
+            logger.info("Update search space for supervised selector, " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
             selector_tuner.update_search_space(search_space=search_space)
 
+            logger.info("Starting training supervised selector models, " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
             for trial in range(self.selector_trial_num):
 
+                logger.info("supervised selector models training, round: %d, " + "with current memory usage: %.2f GiB",
+                            trial, get_current_memory_gb()["memory_usage"])
                 params = self._new_parameters
                 receive_params = selector_tuner.generate_parameters(trial)
                 # feature selector hyper-parameters
@@ -204,16 +222,26 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                     params["lgb_params"] = lgb_params_dict
 
                 feature_list = self.choose_selector(selector_name=model_name, dataset=original_dataset, params=params)
+                logger.info(
+                    "trial: %d, supervised selector training, and starting training model, " + "with current memory usage: %.2f GiB",
+                    trial, get_current_memory_gb()["memory_usage"])
 
                 metrics.label_name = original_dataset.get_dataset().target_names[0]
 
+                logger.info(
+                    "Parse feature configure and generate feature configure object, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
                 feature_configure.file_path = self._feature_configure_path
 
                 feature_configure.parse(method="system")
                 feature_configure.feature_selector(feature_list=feature_list)
 
+                logger.info("Update hyperparameters of model, " + "with current memory usage: %.2f GiB",
+                            get_current_memory_gb()["memory_usage"])
                 model.update_feature_conf(feature_conf=feature_configure)
 
+                logger.info("Auto model training starts, " + "with current memory usage: %.2f GiB",
+                            get_current_memory_gb()["memory_usage"])
                 # 返回训练好的最佳模型
                 model_tuner.run(model=model, dataset=original_dataset, val_dataset=original_val_dataset,
                                 metrics=metrics)
@@ -221,6 +249,9 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 assert isinstance(model.val_metrics, MetricResult)
                 new_metrics = model.val_metrics.result
 
+                logger.info(
+                    "Receive supervised selectors training trial result, " + "with current memory usage: %.2f GiB",
+                    get_current_memory_gb()["memory_usage"])
                 selector_tuner.receive_trial_result(trial, receive_params, new_metrics)
 
         if model_tuner.is_final_set is False:
@@ -228,7 +259,11 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         # save features
         self._final_feature_names = model.feature_list
-        self.final_configure_generation()
+        if isinstance(original_dataset.get_dataset().data, pd.DataFrame):
+            self.final_configure_generation()
+        else:
+            assert isinstance(original_dataset.get_dataset().data, numpy.ndarray)
+            self.multiprocess_final_configure_generation()
 
     @classmethod
     def update_feature_conf(cls, feature_conf, feature_list):
@@ -239,26 +274,27 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         return feature_conf
 
     def _predict_run(self, **entity):
-        assert self.train_flag is False
-
-        dataset = entity["dataset"]
-        model = entity["model"]
-        feature_config = entity["feature_configure"]
-
-        assert self._model_save_path
-        assert self._final_file_path
-
-        self._result = model.predict(dataset=dataset, feature_conf=feature_config)
+        pass
 
     @property
     def result(self):
         return self._result
 
     def final_configure_generation(self):
-
         feature_conf = yaml_read(yaml_file=self._feature_configure_path)
+        logger.info("final_feature_names: " + str(self._final_feature_names))
         for item in feature_conf.keys():
             if item not in self._final_feature_names:
+                feature_conf[item]["used"] = False
+
+        yaml_write(yaml_file=self._final_file_path, yaml_dict=feature_conf)
+
+    def multiprocess_final_configure_generation(self):
+        feature_conf = yaml_read(yaml_file=self._feature_configure_path)
+        logger.info("final_feature_names: " + str(self._final_feature_names))
+
+        for item in feature_conf.keys():
+            if feature_conf[item]["index"] not in self._final_feature_names:
                 feature_conf[item]["used"] = False
 
         yaml_write(yaml_file=self._final_file_path, yaml_dict=feature_conf)

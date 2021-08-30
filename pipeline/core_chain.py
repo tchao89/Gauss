@@ -63,7 +63,6 @@ class CoreRoute(Component):
         self._feature_config_root = feature_config_root
         self._task_type = task_type
         self._metrics_name = metrics_name
-        self._auto_ml_path = auto_ml_path
         self._feature_selector_flag = feature_selector_flag
 
         self._opt_model_names = opt_model_names
@@ -71,13 +70,6 @@ class CoreRoute(Component):
         self._feature_config_path = pre_feature_configure_path
 
         self._final_file_path = target_feature_configure_path
-
-        if self._train_flag:
-            self._best_metrics = None
-            self._best_model = None
-        else:
-            self._result = None
-            self._feature_conf = None
 
         # create feature configure
         feature_conf_params = Bunch(name="featureconfigure", file_path=None)
@@ -99,35 +91,44 @@ class CoreRoute(Component):
 
         self.model = self.create_entity(entity_name=self._model_name, **model_params)
 
-        if self.auto_ml_name is not None:
-            self._opt_model_names = [self.auto_ml_name]
+        if self._train_flag:
+            self._best_metrics = None
+            self._best_model = None
+            self._auto_ml_path = auto_ml_path
+            self.selector_config_path = selector_config_path
 
-        tuner_params = Bunch(name=self._auto_ml_type,
+            if self.auto_ml_name is not None:
+                self._opt_model_names = [self.auto_ml_name]
+
+            tuner_params = Bunch(name=self._auto_ml_type,
+                                 train_flag=self._train_flag,
+                                 enable=self.enable,
+                                 opt_model_names=self._opt_model_names,
+                                 optimize_mode=self._optimize_mode,
+                                 auto_ml_path=self._auto_ml_path)
+
+            self.auto_ml = self.create_component(component_name="tabularautoml", **tuner_params)
+
+            # auto_ml_path and selector_config_path are fixed configuration files.
+            s_params = Bunch(name=self._feature_selector_name,
                              train_flag=self._train_flag,
                              enable=self.enable,
-                             opt_model_names=self._opt_model_names,
-                             optimize_mode=self._optimize_mode,
-                             auto_ml_path=self._auto_ml_path)
+                             metrics_name=self._metrics_name,
+                             task_name=task_type,
+                             model_config_root=model_config_root,
+                             feature_config_root=feature_config_root,
+                             feature_config_path=pre_feature_configure_path,
+                             final_file_path=target_feature_configure_path,
+                             label_encoding_configure_path=label_encoding_path,
+                             selector_config_path=self.selector_config_path,
+                             model_name=self._model_name,
+                             auto_ml_path=auto_ml_path,
+                             model_save_path=self._model_save_path)
 
-        self.auto_ml = self.create_component(component_name="tabularautoml", **tuner_params)
-
-        # auto_ml_path and selector_config_path are fixed configuration files.
-        s_params = Bunch(name=self._feature_selector_name,
-                         train_flag=self._train_flag,
-                         enable=self.enable,
-                         metrics_name=self._metrics_name,
-                         task_name=task_type,
-                         model_config_root=model_config_root,
-                         feature_config_root=feature_config_root,
-                         feature_config_path=pre_feature_configure_path,
-                         final_file_path=target_feature_configure_path,
-                         label_encoding_configure_path=label_encoding_path,
-                         selector_config_path=selector_config_path,
-                         model_name=self._model_name,
-                         auto_ml_path=auto_ml_path,
-                         model_save_path=self._model_save_path)
-
-        self.feature_selector = self.create_component(component_name="supervisedfeatureselector", **s_params)
+            self.feature_selector = self.create_component(component_name="supervisedfeatureselector", **s_params)
+        else:
+            self._result = None
+            self._feature_conf = None
 
     def _train_run(self, **entity):
 
@@ -171,18 +172,22 @@ class CoreRoute(Component):
         :return: This method will return predict result for test dataset.
         """
         assert "dataset" in entity
-
-        entity["model"] = self.model
         assert self._model_save_path is not None
         assert self._train_flag is False
-        entity["feature_configure"] = self.feature_conf
-        entity["feature_configure"].file_path = self._final_file_path
-
-        entity["feature_configure"].parse(method="system")
 
         if self._feature_selector_flag:
-            self.feature_selector.run(**entity)
-            self._result = self.feature_selector.result
+            assert self.train_flag is False
+            entity["feature_configure"] = self.feature_conf
+            entity["feature_configure"].file_path = self._final_file_path
+            entity["feature_configure"].parse(method="system")
+
+            dataset = entity["dataset"]
+            feature_config = entity["feature_configure"]
+
+            assert self._model_save_path
+            assert self._final_file_path
+
+            self._result = self.model.predict(dataset=dataset, feature_conf=feature_config)
 
         else:
             self._result = self.model.predict(dataset=entity.get("dataset"))

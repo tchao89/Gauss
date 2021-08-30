@@ -2,7 +2,6 @@
 #
 # Copyright (c) 2021, Citic-Lab. All rights reserved.
 # Authors: Lab
-
 from __future__ import annotations
 
 import gc
@@ -116,11 +115,19 @@ class MultiprocessUdfModelingTree(BaseModelingTree):
         work_root = self.work_root
         self.pipeline_config = {"work_root": self.work_root,
                                 "data_clear_flag": data_clear_flag,
+                                "data_clear": self.data_clear,
                                 "feature_generator_flag": feature_generator_flag,
+                                "feature_generator": self.feature_generator,
                                 "unsupervised_feature_selector_flag": unsupervised_feature_selector_flag,
+                                "unsupervised_feature_selector": self.unsupervised_feature_selector,
                                 "supervised_feature_selector_flag": supervised_feature_selector_flag,
+                                "supervised_feature_selector":self.supervised_feature_selector,
                                 "metric_name": self.metric_name,
-                                "task_type": self.task_type
+                                "task_type": self.task_type,
+                                "target_names": self.target_names,
+                                "dataset_type": self.dataset_type,
+                                "type_inference": self.type_inference,
+
                                 }
 
         work_feature_root = work_root + "/feature"
@@ -132,8 +139,7 @@ class MultiprocessUdfModelingTree(BaseModelingTree):
                         "unsupervised_feature": work_feature_root + "/" + EnvironmentConfigure.feature_dict().unsupervised_feature,
                         "supervised_feature": work_feature_root + "/" + EnvironmentConfigure.feature_dict().supervised_feature,
                         "label_encoding_path": work_feature_root + "/" + EnvironmentConfigure.feature_dict().label_encoding_path,
-                        "impute_path": work_feature_root + "/" + EnvironmentConfigure.feature_dict().impute_path,
-                        "final_feature_config": work_feature_root + "/" + EnvironmentConfigure.feature_dict().final_feature_config}
+                        "impute_path": work_feature_root + "/" + EnvironmentConfigure.feature_dict().impute_path}
 
         preprocess_chain = self._preprocessing_run_route(feature_dict,
                                                          data_clear_flag,
@@ -245,34 +251,36 @@ class MultiprocessUdfModelingTree(BaseModelingTree):
             logger.info("%d job(s) will be used for this task, with current memory usage: %.2f GiB",
                         self.jobs, get_current_memory_gb()["memory_usage"])
 
-            logger.info("Recycle shared memory from main process, " + "with current memory usage: %.2f GiB",
-                        get_current_memory_gb()["memory_usage"])
-            shared_memory_data.close()
-            shared_memory_target.close()
-            shared_memory_target_names.close()
-            shared_memory_val_data.close()
-            shared_memory_val_target.close()
-            shared_memory_val_target_names.close()
-
             logger.info("Create multi-preprocess and train dataset, " + "with current memory usage: %.2f GiB",
                         get_current_memory_gb()["memory_usage"])
             with Pool(self.jobs) as pool:
                 # make sure all subprocess finished.
                 async_result = pool.map_async(func=self._single_run_route, iterable=pipeline_params,
                                               callback=multiprocess_callback)
-                # Maximum training time: 8h
-                async_result.wait(timeout=28800)
+                # Maximum training time: 10h
+                async_result.wait(timeout=36000)
                 # if not successful, value error will return.
-                if async_result.successful():
-                    logger.info("All subprocess has finished.")
+                try:
+                    if async_result.ready():
+                        if async_result.successful():
+                            logger.info("All subprocess has finished.")
+                    else:
+                        logger.info("Not all subprocess is ready()")
+                except ValueError:
+                    logger.info("Not all subprocess has finished successfully.")
 
                 logger.info("All subprocess have been shut down." + "with current memory usage: %.2f GiB",
                             get_current_memory_gb()["memory_usage"])
+
             async_result = async_result.get(timeout=10)
+
+            logger.info("Find best model and update pipeline configure, " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
             self.find_best_async_result(async_result)
         finally:
 
-            logger.info("Remove and delete shared memory.")
+            logger.info("Remove and delete shared memory, " + "with current memory usage: %.2f GiB",
+                        get_current_memory_gb()["memory_usage"])
             shared_memory_data.unlink()
             shared_memory_target.unlink()
             shared_memory_target_names.unlink()
@@ -421,6 +429,8 @@ class MultiprocessUdfModelingTree(BaseModelingTree):
         model_config_root = work_model_root + "/model_parameters"
         feature_config_root = work_model_root + "/feature_config"
 
+        feature_dict["final_feature_config"] = feature_config_root + "/" + EnvironmentConfigure.feature_dict().final_feature_config
+
         local_metric = None
 
         try:
@@ -455,12 +465,6 @@ class MultiprocessUdfModelingTree(BaseModelingTree):
 
             logger.info("Close shared memory, " + "with current memory usage: %.2f GiB",
                         get_current_memory_gb()["memory_usage"])
-            shared_data_memory.close()
-            shared_target_memory.close()
-            shared_target_names_memory.close()
-            shared_val_data_memory.close()
-            shared_val_target_memory.close()
-            shared_val_target_names_memory.close()
 
             logger.info(
                 "Subprocess has finished, and waiting for other subprocess finished, " + "with current memory usage: %.2f GiB",
@@ -475,8 +479,10 @@ class MultiprocessUdfModelingTree(BaseModelingTree):
                         "successful_flag": successful_flag,
                         "work_model_root": work_model_root,
                         "model_name": model_name,
-                        "metrics_result": local_metric}
+                        "metrics_result": local_metric,
+                        "final_file_path": feature_dict["final_feature_config"]}
             else:
+                logger.info("Subprocess does not finished successfully.")
                 return {"auto_ml_name": auto_ml_name,
                         "successful_flag": successful_flag,
                         "work_model_root": work_model_root,

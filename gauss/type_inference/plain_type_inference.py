@@ -134,7 +134,6 @@ class PlainTypeInference(BaseTypeInference):
     def dtype_inference(self, dataset: BaseDataset):
 
         data = dataset.get_dataset().data
-
         assert isinstance(data, pd.DataFrame) or isinstance(data, pd.Series)
 
         data_dtypes = data.dtypes
