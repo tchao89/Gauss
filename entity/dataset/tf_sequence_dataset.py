@@ -113,8 +113,8 @@ class SequenceDataset(BaseDataset):
         """Split feature columns and label columns to separete contents.
 
         And set the dataset type to `multi` or `unique` by the number of labels.
-            `multi` means m to m, each sample has a label value. 
-            `unique` means m to 1, a time period including m steps data has a single label.
+            1. `multi` means m to m, each sample has a label value. 
+            2. `unique` means m to 1, a time period including m steps data has a single label.
         Meanwhile, m to m dataset also include a specific situation, couple lables may missed
         in a period, that will clarified by the attribute `miss_label`.
         """
@@ -160,12 +160,9 @@ class SequenceDataset(BaseDataset):
         valset_steps = bunch.steps.iloc[self._val_start:, :]
         bunch.steps = bunch.steps.iloc[:self._val_start, :]
 
-        bunch.data.reset_index(drop=True, inplace=True)
-        bunch.target.reset_index(drop=True, inplace=True)
-        bunch.steps.reset_index(drop=True, inplace=True)
-        valset.reset_index(drop=True, inplace=True)
-        valset_target.reset_index(drop=True, inplace=True)
-        valset_steps.reset_index(drop=True, inplace=True)
+        train = [bunch.data, bunch.target, bunch.steps]
+        val = [valset, valset_target, valset_steps]
+        self._reset_index(train+val)
 
         data_pair = Bunch(data=valset, target=valset_target, steps=valset_steps)
         return SequenceDataset(
@@ -189,3 +186,7 @@ class SequenceDataset(BaseDataset):
 
     def feature_choose(self, feature_list):
         pass
+
+    def _reset_index(self, args):
+        for arg in args:
+            arg.reset_index(drop=True, inplace=True)
