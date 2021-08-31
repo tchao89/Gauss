@@ -18,14 +18,33 @@ from utils.base import reduce_data
 
 
 class PlaintextDataset(BaseDataset):
+    """loading raw data to PlaintextDataset object.
+    Further operation could be applied directly to current dataSet after the construction function
+    used.
+    Dataset can split by call `split()` function when need a validation set, and `union()` will merge
+    train set and validation set in vertical.
+    Features of current dataset can be eliminated by `feature_choose()` function, both index and
+    feature name are accepted.
+    """
 
     def __init__(self, **params):
         """
-        :param name: module name.
-        :param data_path: input file path, csv, txt and libsvm are approved.
-        :param task_type: This value is optional, it can be "classification" or "regression".
-        :param target_name: label name in dataframe.
-        :param memory_only: it can just work in memory.
+        Two kinds of raw data supported:
+            1. The first is read file whose format is an option in `.csv`, `.txt`,and
+        `.libsvm`, data after processing will wrapped into a `Bunch` object which contains
+        `data` and `target`, meanwhile `feature_names` and `target_name` also can be a
+        content when exist.
+            2. Pass a `data_pair` wrapped by Bunch to the construct function, `data` and
+        `target` must provided at least.
+
+        ======
+        :param name: A string to represent module's name.
+        :param data_path:  A string or `dict`; if string, it can be directly used by load data
+            function, otherwise `train_dataset` and `val_dataset` must be the key of the dict.
+        :param data_pair: default is None, must be filled if data_path not applied.
+        :param task_type: A string which is an option between `classification` or `regression`.
+        :param target_name: A `list` containing label names in string format.
+        :param memory_only: a boolean value, true for memory, false for others, default True.
         """
         for item in ["name", "task_type", "data_pair", "data_path", "target_name", "memory_only"]:
             if params.get(item) is None:
@@ -33,25 +52,13 @@ class PlaintextDataset(BaseDataset):
 
         super(PlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_type"],
                                                params["target_name"], params["memory_only"])
-        if params["data_path"] is not None:
-            assert os.path.isfile(params["data_path"])
+
+        if not params["data_path"] and not params["data_pair"]:
+            raise AttributeError("data_path or data_pair must provided.")
 
         self._data_pair = params["data_pair"]
         self.type_doc = None
         self._bunch = None
-
-        assert params["data_path"] is not None or params["data_pair"] is not None
-        if params["data_path"] is not None and isinstance(params["data_path"], str):
-            self._bunch = self.load_data()
-
-        # if params["data_path] is a dict, it's format must be {"train_dataset": "./t_data.csv", "val_dataset": "./v_data.csv"}
-        elif params["data_path"] is not None and isinstance(params["data_path"], dict):
-            self._bunch = Bunch(train_dataset=self.load_data(data_path=params["data_path"]["train_dataset"]),
-                                val_dataset=self.load_data(data_path=params["data_path"]["val_dataset"]))
-
-        else:
-            self._bunch = self._data_pair
-
         # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
         # by the length of validation dataset.
@@ -59,35 +66,28 @@ class PlaintextDataset(BaseDataset):
         # This value is a bool value, and true means plaindataset has missing values and need to clear.
         self._need_data_clear = False
 
-    def __repr__(self):
-        assert self._bunch is not None
-        assert self.type_doc is not None
-        assert self.get_column_size() > 0 and self.get_row_size() > 0
+        assert params["data_path"] is not None or params["data_pair"] is not None
+        if params["data_path"] is not None and isinstance(params["data_path"], str):
+            self._bunch = self.load_data()
 
-        self.shape = [self.get_row_size(), self.get_column_size()]
-
-        if self.type_doc in ["csv"]:
-            combined_df, _, _ = self._convert_data_dataframe(data=self._bunch.data,
-                                                             target=self._bunch.target,
-                                                             feature_names=self._bunch.feature_names,
-                                                             target_names=self._bunch.target_names)
-
-            if self.shape[0] > self._default_print_size:
-                return str(combined_df.head(self._default_print_size))
-
-            else:
-                return str(self._bunch.keys())
-
-        elif self.type_doc is not None:
-            combined_df, _, _ = self._convert_data_dataframe(data=self._bunch.data,
-                                                             target=self._bunch.target)
-            if self.shape[0] > self._default_print_size:
-                return str(combined_df.head(self._default_print_size))
-            else:
-                return str(combined_df)
+        # if params["data_path] is a dict, it's format must be
+        # {"train_dataset": "./t_data.csv", "val_dataset": "./v_data.csv"}
+        elif isinstance(params["data_path"], dict):
+            if not (self._data_path.get("train_dataset") and self._data_path.get("val_dataset")):
+                raise ValueError(
+                    "data_path must include `train_dataset` and `val_dataset` when pass a dictionary."
+                )
+            self._bunch = Bunch(train_dataset=self.load_data(data_path=params["data_path"]["train_dataset"]),
+                                val_dataset=self.load_data(data_path=params["data_path"]["val_dataset"]))
 
         else:
-            return str(self._bunch.data.columns)
+            self._bunch = self._data_pair
+
+    def __repr__(self):
+        data = self._bunch.data
+        target = self._bunch.target
+        df = pd.concat((data, target), axis=1)
+        return str(df.head()) + str(df.info())
 
     def get_dataset(self):
         return self._bunch
@@ -96,10 +96,18 @@ class PlaintextDataset(BaseDataset):
         if data_path is not None:
             self._data_path = data_path
 
-        assert "." in self._data_path
-        self.type_doc = self._data_path.split(".")[-1]
+        if not os.path.isfile(self._data_path):
+            raise TypeError("<{path}> is not a valid file.".format(
+                path=self._data_path
+            ))
 
-        assert self.type_doc in ["csv", "libsvm", "txt"]
+        self.type_doc = self._data_path.split(".")[-1]
+        print(self.type_doc)
+
+        if self.type_doc not in ["csv", "libsvm", "txt"]:
+            raise TypeError(
+                "Unsupported file, excepted option in `csv`, `libsvm`, `txt`, <{type_doc}> received.".format(type_doc=self.type_doc)
+            )
 
         data = None
         target = None
@@ -144,7 +152,6 @@ class PlaintextDataset(BaseDataset):
         target = None
         target_name = None
 
-        # data = pd.read_csv(self._data_path)
         data = reduce_data(data_path=self._data_path)
 
         feature_names = data.columns
@@ -272,7 +279,13 @@ class PlaintextDataset(BaseDataset):
 
     # dataset is a PlainDataset object
     def union(self, val_dataset: PlaintextDataset):
-        """ This method is used for concatenating train dataset and validation dataset.
+        """ This method is used for concatenating train dataset and validation dataset.Merge train set and
+        validation set in vertical, this procedure will operated on train set.
+        example:
+            trainSet = PlaintextDataset(...)
+            validationSet = trainSet.split()
+            trainSet.union(validationSet)
+
         :return: Plaindataset
         """
         self._val_start = self._bunch.target.shape[0]
@@ -295,10 +308,9 @@ class PlaintextDataset(BaseDataset):
                 assert item in val_dataset.get_dataset().target_names
 
     def split(self, val_start: float = 0.8):
-        """
-
-        :param val_start: split proportion
-        :return: plaindataset object
+        """split a validation set from train set.
+        :param val_start: ration of sample count as validation set.
+        :return: plaindataset object containing validation set.
         """
         assert self._bunch is not None
 
@@ -320,9 +332,15 @@ class PlaintextDataset(BaseDataset):
         val_data = val_data.reset_index(drop=True)
         val_target = val_target.reset_index(drop=True)
 
+        data_pair = Bunch(data=val_data, target=val_target)
+
+        if "feature_names" in self._bunch.keys():
+            data_pair.target_names = self._bunch.target_names
+            data_pair.feature_names = self._bunch.feature_names
+
         return PlaintextDataset(name="train_data",
                                 task_type="train",
-                                data_pair=Bunch(data=val_data, target=val_target))
+                                data_pair=data_pair)
 
     @property
     def need_data_clear(self):

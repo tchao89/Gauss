@@ -5,28 +5,29 @@
 
 from __future__ import annotations
 
-from multiprocessing import Pool
 from typing import List
 
-from pipeline.core_chain import CoreRoute
-from pipeline.preprocess_chain import PreprocessRoute
+from local_pipeline.core_chain import CoreRoute
+from local_pipeline.preprocess_chain import PreprocessRoute
 from utils.check_dataset import check_data
-from pipeline.mapping import EnvironmentConfigure
-from pipeline.base_modeling_tree import BaseModelingTree
+from local_pipeline.mapping import EnvironmentConfigure
+from local_pipeline.base_modeling_graph import BaseModelingGraph
+from utils.common_component import yaml_write
 
-from utils.exception import PipeLineLogicError
+from utils.exception import PipeLineLogicError, NoResultReturnException
 from utils.Logger import logger
 
 
-# pipeline defined by user.
-class UdfModelingTree(BaseModelingTree):
+# local_pipeline defined by user.
+class UdfModelingGraph(BaseModelingGraph):
     def __init__(self, name: str, work_root: str, task_type: str, metric_name: str, train_data_path: str,
                  val_data_path: str = None, target_names=None, feature_configure_path: str = None,
                  dataset_type: str = "plain", type_inference: str = "plain", data_clear: str = "plain",
                  data_clear_flag=None, feature_generator: str = "featuretools", feature_generator_flag=None,
                  unsupervised_feature_selector: str = "unsupervised", unsupervised_feature_selector_flag=None,
                  supervised_feature_selector: str = "supervised", supervised_feature_selector_flag=None, model_zoo=None,
-                 auto_ml: str = "plain", opt_model_names: List[str] = None):
+                 supervised_selector_names=None, auto_ml: str = "plain", opt_model_names: List[str] = None,
+                 auto_ml_path: str = None, selector_config_path: str = None):
         """
         :param name:
         :param work_root:
@@ -49,23 +50,29 @@ class UdfModelingTree(BaseModelingTree):
         :param auto_ml: auto ml name
         """
 
-        super().__init__(name, work_root, task_type, metric_name, train_data_path, val_data_path, target_names,
-                         feature_configure_path, dataset_type, type_inference, data_clear, feature_generator,
-                         unsupervised_feature_selector, supervised_feature_selector, auto_ml, opt_model_names)
+        super().__init__(name=name, work_root=work_root, task_type=task_type, metric_name=metric_name,
+                         train_data_path=train_data_path, val_data_path=val_data_path, target_names=target_names,
+                         feature_configure_path=feature_configure_path, dataset_type=dataset_type,
+                         type_inference=type_inference, data_clear=data_clear, feature_generator=feature_generator,
+                         unsupervised_feature_selector=unsupervised_feature_selector,
+                         supervised_feature_selector=supervised_feature_selector, auto_ml=auto_ml,
+                         opt_model_names=opt_model_names, auto_ml_path=auto_ml_path,
+                         selector_config_path=selector_config_path)
+
         if model_zoo is None:
             model_zoo = ["xgboost", "lightgbm", "catboost", "lr_lightgbm", "dnn"]
 
         if supervised_feature_selector_flag is None:
-            supervised_feature_selector_flag = [False]
+            supervised_feature_selector_flag = True
 
         if unsupervised_feature_selector_flag is None:
-            unsupervised_feature_selector_flag = [False]
+            unsupervised_feature_selector_flag = True
 
         if feature_generator_flag is None:
-            feature_generator_flag = [False]
+            feature_generator_flag = True
 
         if data_clear_flag is None:
-            data_clear_flag = [False]
+            data_clear_flag = True
 
         self.data_clear_flag = data_clear_flag
         self.feature_generator_flag = feature_generator_flag
@@ -79,8 +86,30 @@ class UdfModelingTree(BaseModelingTree):
         self.best_result_root = None
         self.best_model_name = None
 
+        self._model_names = model_zoo
+        self._supervised_selector_names = supervised_selector_names
+        self._auto_ml_names = opt_model_names
+        self.jobs = None
+
+        self.multiprocess_config = dict()
+
+        self.pipeline_configure = {"work_root": self.work_root,
+                                   "data_clear_flag": data_clear_flag,
+                                   "data_clear": self.data_clear,
+                                   "feature_generator_flag": feature_generator_flag,
+                                   "feature_generator": self.feature_generator,
+                                   "unsupervised_feature_selector_flag": unsupervised_feature_selector_flag,
+                                   "unsupervised_feature_selector": self.unsupervised_feature_selector,
+                                   "supervised_feature_selector_flag": supervised_feature_selector_flag,
+                                   "supervised_feature_selector": self.supervised_feature_selector,
+                                   "metric_name": self.metric_name,
+                                   "task_type": self.task_type,
+                                   "target_names": self.target_names,
+                                   "dataset_type": self.dataset_type,
+                                   "type_inference": self.type_inference
+                                   }
+
     def run_route(self,
-                  folder_prefix_str,
                   data_clear_flag,
                   feature_generator_flag,
                   unsupervised_feature_selector_flag,
@@ -89,15 +118,12 @@ class UdfModelingTree(BaseModelingTree):
                   auto_ml_path,
                   selector_config_path):
 
-        work_root = self.work_root + "/" + folder_prefix_str
+        assert isinstance(data_clear_flag, bool) and \
+               isinstance(feature_generator_flag, bool) and \
+               isinstance(unsupervised_feature_selector_flag, bool) and \
+               isinstance(supervised_feature_selector_flag, bool)
 
-        pipeline_configure = {"data_clear_flag": data_clear_flag,
-                              "feature_generator_flag": feature_generator_flag,
-                              "unsupervised_feature_selector_flag": unsupervised_feature_selector_flag,
-                              "supervised_feature_selector_flag": supervised_feature_selector_flag,
-                              "metric_name": self.metric_name,
-                              "task_type": self.task_type
-                              }
+        work_root = self.work_root
 
         work_feature_root = work_root + "/feature"
 
@@ -108,8 +134,7 @@ class UdfModelingTree(BaseModelingTree):
                         "unsupervised_feature": work_feature_root + "/" + EnvironmentConfigure.feature_dict().unsupervised_feature,
                         "supervised_feature": work_feature_root + "/" + EnvironmentConfigure.feature_dict().supervised_feature,
                         "label_encoding_path": work_feature_root + "/" + EnvironmentConfigure.feature_dict().label_encoding_path,
-                        "impute_path": work_feature_root + "/" + EnvironmentConfigure.feature_dict().impute_path,
-                        "final_feature_config": work_feature_root + "/" + EnvironmentConfigure.feature_dict().final_feature_config}
+                        "impute_path": work_feature_root + "/" + EnvironmentConfigure.feature_dict().impute_path}
 
         preprocess_chain = PreprocessRoute(name="PreprocessRoute",
                                            feature_path_dict=feature_dict,
@@ -119,12 +144,12 @@ class UdfModelingTree(BaseModelingTree):
                                            val_data_path=self.val_data_path,
                                            test_data_path=None,
                                            target_names=self.target_names,
-                                           type_inference_name="typeinference",
-                                           data_clear_name="plaindataclear",
+                                           type_inference_name=self.type_inference,
+                                           data_clear_name=self.data_clear,
                                            data_clear_flag=data_clear_flag,
-                                           feature_generator_name="featuretools",
+                                           feature_generator_name=self.feature_generator,
                                            feature_generator_flag=feature_generator_flag,
-                                           feature_selector_name="unsupervised",
+                                           feature_selector_name=self.unsupervised_feature_selector,
                                            feature_selector_flag=unsupervised_feature_selector_flag)
 
         try:
@@ -146,7 +171,8 @@ class UdfModelingTree(BaseModelingTree):
         model_save_root = work_model_root + "/model_save"
         model_config_root = work_model_root + "/model_parameters"
         feature_config_root = work_model_root + "/feature_config"
-
+        feature_dict["final_feature_config"] = \
+            feature_config_root + "/" + EnvironmentConfigure.feature_dict().final_feature_config
         core_chain = CoreRoute(name="core_route",
                                train_flag=True,
                                model_save_root=model_save_root,
@@ -156,10 +182,9 @@ class UdfModelingTree(BaseModelingTree):
                                pre_feature_configure_path=feature_dict["unsupervised_feature"],
                                model_name=model_name,
                                label_encoding_path=feature_dict["label_encoding_path"],
-                               model_type="tree_model",
                                metrics_name=self.metric_name,
                                task_type=self.task_type,
-                               feature_selector_name="feature_selector",
+                               feature_selector_name=self._supervised_selector_names,
                                feature_selector_flag=supervised_feature_selector_flag,
                                auto_ml_type="auto_ml",
                                auto_ml_path=auto_ml_path,
@@ -169,27 +194,56 @@ class UdfModelingTree(BaseModelingTree):
         core_chain.run(**entity_dict)
         local_metric = core_chain.optimal_metrics
         assert local_metric is not None
-        local_model = core_chain.optimal_model
-        return local_model, local_metric, work_root, pipeline_configure
+        return {"work_model_root": work_model_root,
+                "model_name": model_name,
+                "metrics_result": local_metric,
+                "final_file_path": feature_dict["final_feature_config"]}
 
     def _run(self):
+        train_results = []
+        for model in self.model_zoo:
+            local_result = self.run_route(data_clear_flag=self.data_clear_flag,
+                                          feature_generator_flag=self.feature_generator_flag,
+                                          unsupervised_feature_selector_flag=self.unsupervised_feature_selector_flag,
+                                          supervised_feature_selector_flag=self.supervised_feature_selector_flag,
+                                          model_name=model,
+                                          auto_ml_path=self.auto_ml_path,
+                                          selector_config_path=self.selector_config_path)
 
-        for data_clear in self.data_clear_flag:
-            for feature_generator in self.feature_generator_flag:
-                for unsupervised_feature_sel in self.unsupervised_feature_selector_flag:
-                    for supervise_feature_sel in self.supervised_feature_selector_flag:
-                        for model in self.model_zoo:
+            if local_result is not None:
+                train_results.append(local_result)
+            self.find_best_result(train_results=train_results)
 
-                            prefix = str(data_clear) + "_" + str(feature_generator) + "_" + str(
-                                unsupervised_feature_sel) + "_" + str(supervise_feature_sel)
-                            local_result = self.run_route(folder_prefix_str=prefix,
-                                                          data_clear_flag=data_clear,
-                                                          feature_generator_flag=feature_generator,
-                                                          unsupervised_feature_selector_flag=unsupervised_feature_sel,
-                                                          supervised_feature_selector_flag=supervise_feature_sel,
-                                                          model_name=model,
-                                                          auto_ml_path="/configure_files/automl_params",
-                                                          selector_config_path="/configure_files/selector_params")
+    def find_best_result(self, train_results):
 
-                            if local_result is not None:
-                                self.update_best(*local_result)
+        best_result = {}
+
+        if len(train_results) == 0:
+            raise NoResultReturnException("All subprocesses have failed.")
+        logger.info("%d subprocess(es) have return result(s) successfully.", len(train_results))
+
+        for result in train_results:
+            model_name = result.get("model_name")
+
+            if best_result.get(model_name) is None:
+                best_result[model_name] = result
+
+            else:
+                if result.get("metrics_result") is not None:
+                    if best_result.get(model_name).get("metrics_result").__cmp__(
+                            result.get("metrics_result")) < 0:
+                        best_result[model_name] = result
+
+        for result in train_results:
+            result["metrics_result"] = float(result.get("metrics_result").result)
+
+        self.pipeline_configure.update(best_result)
+
+    def set_pipeline_config(self):
+
+        yaml_dict = {}
+
+        if self.pipeline_configure is not None:
+            yaml_dict.update(self.pipeline_configure)
+
+        yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/pipeline_config.yaml")

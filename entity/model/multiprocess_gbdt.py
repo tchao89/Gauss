@@ -42,6 +42,16 @@ class MultiprocessGaussLightgbm(ModelWrapper):
     def __repr__(self):
         pass
 
+    def generate_sub_dataset(self, dataset: BaseDataset):
+        if self._feature_list is not None:
+            data = dataset.feature_choose(self._feature_list)
+            target = dataset.get_dataset().target
+
+            data_pair = Bunch(data=data, target=target, target_names=dataset.get_dataset().target_names)
+            dataset = MultiprocessPlaintextDataset(name="train_data", task_type=self._task_type, data_pair=data_pair)
+
+        return dataset
+
     def load_data(self, dataset: BaseDataset):
         """
         :param dataset:
@@ -50,6 +60,8 @@ class MultiprocessGaussLightgbm(ModelWrapper):
 
         # dataset is a bunch object, including data, target, feature_names, target_names, generated_feature_names.
         if self._train_flag:
+            dataset = self.generate_sub_dataset(dataset=dataset)
+
             logger.info("Reading base dataset, " + "with current memory usage: %.2f GiB",
                         get_current_memory_gb()["memory_usage"])
             dataset = dataset.get_dataset()
@@ -158,12 +170,15 @@ class MultiprocessGaussLightgbm(ModelWrapper):
                     get_current_memory_gb()["memory_usage"])
         assert "data" in dataset.get_dataset() and "target" in dataset.get_dataset()
         assert "data" in val_dataset.get_dataset() and "target" in val_dataset.get_dataset()
+        dataset = self.generate_sub_dataset(dataset=dataset)
+        val_dataset = self.generate_sub_dataset(dataset=val_dataset)
 
         train_data = dataset.get_dataset().data
         eval_data = val_dataset.get_dataset().data
 
         train_label = dataset.get_dataset().target
         eval_label = val_dataset.get_dataset().target
+
         # 默认生成的为预测值的概率值，传入metrics之后再处理.
         logger.info("Starting predicting, " + "with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])

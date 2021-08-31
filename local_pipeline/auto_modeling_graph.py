@@ -2,17 +2,16 @@
 #
 # Copyright (c) 2021, Citic-Lab. All rights reserved.
 # Authors: Lab
-
 from __future__ import annotations
 
 import os
 
 from typing import List
 
-from pipeline.core_chain import CoreRoute
-from pipeline.preprocess_chain import PreprocessRoute
-from pipeline.mapping import EnvironmentConfigure
-from pipeline.base_modeling_tree import BaseModelingTree
+from local_pipeline.core_chain import CoreRoute
+from local_pipeline.preprocess_chain import PreprocessRoute
+from local_pipeline.mapping import EnvironmentConfigure
+from local_pipeline.base_modeling_graph import BaseModelingGraph
 
 from utils.bunch import Bunch
 from utils.check_dataset import check_data
@@ -21,7 +20,7 @@ from utils.Logger import logger
 
 
 # This class is used to train model.
-class AutoModelingTree(BaseModelingTree):
+class AutoModelingGraph(BaseModelingGraph):
     def __init__(self, name: str, work_root: str, task_type: str, metric_name: str, train_data_path: str,
                  val_data_path: str = None, feature_configure_path: str = None, target_names: List[str] = None,
                  dataset_type: str = "plain", type_inference: str = "plain", data_clear: str = "plain",

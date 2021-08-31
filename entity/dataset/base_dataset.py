@@ -32,10 +32,12 @@ class BaseDataset(Entity):
 
     @abc.abstractmethod
     def load_data(self):
+        """load data from file provided."""
         pass
 
     @abc.abstractmethod
     def get_dataset(self):
+        """return loaded data."""
         pass
 
     @property
@@ -68,4 +70,5 @@ class BaseDataset(Entity):
 
     @abc.abstractmethod
     def feature_choose(self, feature_list):
+        """eliminate features which are not selected."""
         pass

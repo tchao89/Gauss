@@ -11,10 +11,10 @@ from multiprocessing import Pool, shared_memory, cpu_count
 import numpy as np
 
 from entity.dataset.multiprocess_plain_dataset import MultiprocessPlaintextDataset
-from pipeline.core_chain import CoreRoute
-from pipeline.preprocess_chain import PreprocessRoute
-from pipeline.mapping import EnvironmentConfigure
-from pipeline.base_modeling_tree import BaseModelingTree
+from local_pipeline.core_chain import CoreRoute
+from local_pipeline.preprocess_chain import PreprocessRoute
+from local_pipeline.mapping import EnvironmentConfigure
+from local_pipeline.base_modeling_graph import BaseModelingGraph
 from utils.common_component import yaml_write
 
 from utils.exception import PipeLineLogicError, NoResultReturnException
@@ -25,8 +25,8 @@ from utils.bunch import Bunch
 from utils.callback import multiprocess_callback
 
 
-# pipeline defined by user.
-class MultiprocessUdfModelingTree(BaseModelingTree):
+# local_pipeline defined by user.
+class MultiprocessUdfModelingGraph(BaseModelingGraph):
     def __init__(self, name: str, work_root: str, task_type: str, metric_name: str, train_data_path: str,
                  val_data_path: str = None, target_names=None, feature_configure_path: str = None,
                  dataset_type: str = "plain", type_inference: str = "plain", data_clear: str = "plain",
@@ -113,22 +113,21 @@ class MultiprocessUdfModelingTree(BaseModelingTree):
                isinstance(supervised_feature_selector_flag, bool)
 
         work_root = self.work_root
-        self.pipeline_config = {"work_root": self.work_root,
-                                "data_clear_flag": data_clear_flag,
-                                "data_clear": self.data_clear,
-                                "feature_generator_flag": feature_generator_flag,
-                                "feature_generator": self.feature_generator,
-                                "unsupervised_feature_selector_flag": unsupervised_feature_selector_flag,
-                                "unsupervised_feature_selector": self.unsupervised_feature_selector,
-                                "supervised_feature_selector_flag": supervised_feature_selector_flag,
-                                "supervised_feature_selector":self.supervised_feature_selector,
-                                "metric_name": self.metric_name,
-                                "task_type": self.task_type,
-                                "target_names": self.target_names,
-                                "dataset_type": self.dataset_type,
-                                "type_inference": self.type_inference,
-
-                                }
+        self.pipeline_configure = {"work_root": self.work_root,
+                                   "data_clear_flag": data_clear_flag,
+                                   "data_clear": self.data_clear,
+                                   "feature_generator_flag": feature_generator_flag,
+                                   "feature_generator": self.feature_generator,
+                                   "unsupervised_feature_selector_flag": unsupervised_feature_selector_flag,
+                                   "unsupervised_feature_selector": self.unsupervised_feature_selector,
+                                   "supervised_feature_selector_flag": supervised_feature_selector_flag,
+                                   "supervised_feature_selector": self.supervised_feature_selector,
+                                   "metric_name": self.metric_name,
+                                   "task_type": self.task_type,
+                                   "target_names": self.target_names,
+                                   "dataset_type": self.dataset_type,
+                                   "type_inference": self.type_inference
+                                   }
 
         work_feature_root = work_root + "/feature"
 
@@ -274,7 +273,7 @@ class MultiprocessUdfModelingTree(BaseModelingTree):
 
             async_result = async_result.get(timeout=10)
 
-            logger.info("Find best model and update pipeline configure, " + "with current memory usage: %.2f GiB",
+            logger.info("Find best model and update local_pipeline configure, " + "with current memory usage: %.2f GiB",
                         get_current_memory_gb()["memory_usage"])
             self.find_best_async_result(async_result)
         finally:
@@ -327,14 +326,14 @@ class MultiprocessUdfModelingTree(BaseModelingTree):
         for subprocess_result in success_results:
             subprocess_result["metrics_result"] = float(subprocess_result.get("metrics_result").result)
 
-        self.pipeline_config.update(best_result)
+        self.pipeline_configure.update(best_result)
 
     def set_pipeline_config(self):
 
         yaml_dict = {}
 
-        if self.pipeline_config is not None:
-            yaml_dict.update(self.pipeline_config)
+        if self.pipeline_configure is not None:
+            yaml_dict.update(self.pipeline_configure)
 
         yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/pipeline_config.yaml")
 
@@ -429,7 +428,8 @@ class MultiprocessUdfModelingTree(BaseModelingTree):
         model_config_root = work_model_root + "/model_parameters"
         feature_config_root = work_model_root + "/feature_config"
 
-        feature_dict["final_feature_config"] = feature_config_root + "/" + EnvironmentConfigure.feature_dict().final_feature_config
+        feature_dict[
+            "final_feature_config"] = feature_config_root + "/" + EnvironmentConfigure.feature_dict().final_feature_config
 
         local_metric = None
 

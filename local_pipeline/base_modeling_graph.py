@@ -12,8 +12,8 @@ from utils.common_component import yaml_write
 from utils.exception import NoResultReturnException
 
 
-# pipeline defined by user.
-class BaseModelingTree(object):
+# local_pipeline defined by user.
+class BaseModelingGraph(object):
     def __init__(self,
                  name: str,
                  work_root: str,
@@ -57,7 +57,7 @@ class BaseModelingTree(object):
         self.best_result_root = None
         assert opt_model_names is not None
         self._opt_model_names = opt_model_names
-        self.pipeline_config = None
+        self.pipeline_configure = None
 
         self.auto_ml_path = auto_ml_path
         self.selector_config_path = selector_config_path
@@ -80,24 +80,24 @@ class BaseModelingTree(object):
         entity_factory = gauss_factory.get_factory(choice="entity")
         return entity_factory.get_entity(entity_name=entity_name, **params)
 
-    # local_best_model, local_best_metric, local_best_work_root, pipeline configure
+    # local_best_model, local_best_metric, local_best_work_root, local_pipeline configure
     def update_best(self, *params):
         best_model = params[0]
         best_metric = params[1]
         best_result_root = params[2]
-        pipeline_config = params[3]
+        pipeline_configure = params[3]
 
         if self.best_metric is None:
             self.best_model = best_model
             self.best_metric = best_metric
             self.best_result_root = best_result_root
-            self.pipeline_config = pipeline_config
+            self.pipeline_configure = pipeline_configure
 
         if self.best_metric.__cmp__(best_metric) < 0:
             self.best_model = best_model
             self.best_metric = best_metric
             self.best_result_root = best_result_root
-            self.pipeline_config = pipeline_config
+            self.pipeline_configure = pipeline_configure
 
     def run(self, *args):
         self._run(*args)
@@ -120,6 +120,6 @@ class BaseModelingTree(object):
                      "auto_ml": self.auto_ml,
                      "best_metric": float(self.best_metric.result)}
 
-        if self.pipeline_config is not None:
-            yaml_dict.update(self.pipeline_config)
+        if self.pipeline_configure is not None:
+            yaml_dict.update(self.pipeline_configure)
         yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/pipeline_config.yaml")
