@@ -3,6 +3,7 @@
 # Copyright (c) 2021, Citic Inc. All rights reserved.
 # Authors: Lab
 
+import numpy as np
 import pandas as pd
 
 from utils.bunch import Bunch
@@ -11,7 +12,12 @@ from entity.dataset.base_dataset import BaseDataset
 class SequenceDataset(BaseDataset):
     """Dataset for loading sequence shape time series data.
     """
-    
+
+    REG = "regression"
+    CLS = "classification"
+    MUL = "multi"
+    UNI = "unique"
+
     def __init__(self, **params):
         """
         :param period_sep: delimeter between identify period data.
@@ -41,6 +47,7 @@ class SequenceDataset(BaseDataset):
         
         self._miss_label = False
         self._val_start = None
+        self.need_data_clear = False
 
         if not params.get("data_pair"):
             self._bunch = Bunch()
@@ -77,32 +84,32 @@ class SequenceDataset(BaseDataset):
 
         while line:
             period_data, period_labels = self._feature_label_split(line)
-            step_count = len(period_data)
-            miss_count = 0
+            step_length = len(period_data)
+            miss_counter = 0
 
             if not self._has_feature_name:
                 fea_names = [str(i) for i in range(len(period_data))]
     
             for idx, step_data in enumerate(period_data):
                 data.append(self._strip_and_split(step_data, self._fea_sep))
-                if self._dataset_type == "multi":
+                if self._dataset_type == self.MUL:
                     if self._miss_label:
                         try:
-                            step_label_idx = period_labels[idx-miss_count][0]
+                            step_label_idx = period_labels[idx-miss_counter][0]
                         except Exception:
                             step_label_idx = period_labels[-1][0]
 
                         if step_label_idx == idx:
-                            labels.append(period_labels[idx-miss_count][1])
+                            labels.append(period_labels[idx-miss_counter][1])
                         else:
-                            miss_count += 1
+                            miss_counter += 1
                             labels.append(None)
                     else:
                         labels.append(period_labels[idx][1])
 
-            if self._dataset_type == "unique":
+            if self._dataset_type == self.UNI:
                 labels += period_labels
-            time_steps.append(step_count)
+            time_steps.append(step_length)
             line = file.readline()
         
         self._bunch.data = pd.DataFrame(data=data, columns=fea_names)
@@ -119,14 +126,17 @@ class SequenceDataset(BaseDataset):
         in a period, that will clarified by the attribute `miss_label`.
         """
         data, label = self._strip_and_split(line, self._label_sep)
-        self._dataset_type = "multi" if self._fea_sep in label else "unique"
+        self._dataset_type = self.MUL if self._fea_sep in label else self.UNI
 
         data = self._strip_and_split(data, self._period_sep)
         label = self._strip_and_split(label, self._period_sep)
-        if self._dataset_type == "multi":
+        if self._dataset_type == self.MUL:
             self._miss_label = True if len(label) != len(data) else False
             label = [self._strip_and_split(x, self._fea_sep) for x in label]
-            label = [(int(value[0]), value[1]) for value in label]
+            if self._task_type == self.REG:
+                label = [(int(value[0]), float(value[1])) for value in label]
+            else:
+                label = [(int(value[0]), int(value[1])) for value in label]
         return data, label
 
     def _strip_and_split(self, sample, delimiter):
@@ -190,3 +200,36 @@ class SequenceDataset(BaseDataset):
     def _reset_index(self, args):
         for arg in args:
             arg.reset_index(drop=True, inplace=True)
+
+
+    @property
+    def data(self):
+        return self._bunch.data
+
+    @property
+    def labels(self):
+        return self._bunch.target
+
+    @property
+    def steps(self):
+        return self._bunch.steps
+    
+    @property
+    def dataset_type(self):
+        return self._dataset_type
+
+    @property
+    def task_type(self):
+        return self._task_type
+
+    @property
+    def columns(self):
+        return self.data.columns
+
+    @property
+    def need_data_clean(self):
+        return self.need_data_clear
+
+    @need_data_clean.setter
+    def need_data_clean(self, value):
+        self.need_data_clear = value
