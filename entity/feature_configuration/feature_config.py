@@ -34,6 +34,12 @@ class FeatureItemConf(object):
         else:
             self.default_value = default_value
 
+    def __repr__(self):
+        res = "<index: {index}, dtype: {dtype}, ftype: {ftype}>".format(
+            name=self._name, index=self._index, dtype=self._dtype, ftype=self._ftype
+        )
+        return res
+
 
     @property
     def name(self):
@@ -94,7 +100,14 @@ class FeatureConf(Entity):
         self._feature_dict = Bunch()
 
     def __repr__(self):
-        pass
+        res = ""
+        for k, v in self._feature_dict.items():
+            line = "{name}: \t{info}\n".format(
+                name=k,
+                info=v
+            )
+            res += line
+        return res
 
     def parse(self, method=None):
         assert method in ["user", "system"]
