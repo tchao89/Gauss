@@ -2,124 +2,127 @@
 #
 # Copyright (c) 2021, Citic-Lab. All rights reserved.
 # Authors: Lab
-
+"""
+Abstract object for pipelines.
+"""
 from __future__ import annotations
 
 import abc
 
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
-from utils.common_component import yaml_write
-from utils.exception import NoResultReturnException
+
+from utils.bunch import Bunch
 
 
-# local_pipeline defined by user.
-class BaseModelingGraph(object):
-    def __init__(self,
-                 name: str,
-                 work_root: str,
-                 task_type: str,
-                 metric_name: str,
-                 train_data_path: str,
-                 val_data_path: str = None,
-                 target_names=None,
-                 feature_configure_path: str = None,
-                 dataset_type: str = "plain",
-                 type_inference: str = "plain",
-                 data_clear: str = "plain",
-                 feature_generator: str = "featuretools",
-                 unsupervised_feature_selector: str = "unsupervised",
-                 supervised_feature_selector: str = "supervised",
-                 auto_ml: str = "plain",
-                 opt_model_names=None,
-                 auto_ml_path: str = None,
-                 selector_config_path: str = None
-                 ):
-        self.name = name
-        # experiment root path
-        self.work_root = work_root
-        self.task_type = task_type
-        self.metric_name = metric_name
-        self.train_data_path = train_data_path
-        self.val_data_path = val_data_path
-        self.target_names = target_names
-        self.feature_configure_path = feature_configure_path
-        self.dataset_type = dataset_type
-        self.type_inference = type_inference
-        self.data_clear = data_clear
-        self.feature_generator = feature_generator
-        self.unsupervised_feature_selector = unsupervised_feature_selector
-        self.supervised_feature_selector = supervised_feature_selector
-        self.auto_ml = auto_ml
+class BaseModelingGraph:
+    """
+    BaseModelingGraph object.
+    """
 
-        self.already_data_clear = None
-        self.best_model = None
-        self.best_metric = None
-        self.best_result_root = None
-        assert opt_model_names is not None
-        self._opt_model_names = opt_model_names
-        self.pipeline_configure = None
+    def __init__(self, **params):
+        """
 
-        self.auto_ml_path = auto_ml_path
-        self.selector_config_path = selector_config_path
+        :param name:
+        :param work_root:
+        :param task_name:
+        :param metric_name:
+        :param train_data_path:
+        :param val_data_path:
+        :param target_names:
+        :param feature_configure_path:
+        :param dataset_name:
+        :param type_inference_name:
+        :param data_clear_name:
+        :param feature_generator_name:
+        :param unsupervised_feature_selector_name:
+        :param supervised_feature_selector_name:
+        :param auto_ml_name:
+        :param opt_model_names:
+        :param auto_ml_path:
+        :param selector_config_path:
+        """
+        assert params["opt_model_names"] is not None
+
+        self._attributes_names = Bunch(
+            name=params["name"],
+            task_name=params["task_name"],
+            target_names=params["target_names"],
+        )
+
+        self._work_paths = Bunch(
+            work_root=params["work_root"],
+            train_data_path=params["train_data_path"],
+            val_data_path=params["val_data_path"],
+            feature_configure_path=params["feature_configure_path"],
+            auto_ml_path=params["auto_ml_path"],
+            selector_config_path=params["selector_config_path"],
+        )
+
+        self._entity_names = Bunch(
+            dataset_name=params["dataset_name"],
+            metric_name=params["metric_name"],
+            feature_configure_name=params["feature_configure_name"]
+        )
+
+        self._component_names = Bunch(
+            type_inference_name=params["type_inference_name"],
+            data_clear_name=params["data_clear_name"],
+            feature_generator_name=params["feature_generator_name"],
+            unsupervised_feature_selector_name=params["unsupervised_feature_selector_name"],
+            supervised_feature_selector_name=params["supervised_feature_selector_name"],
+            auto_ml_name=params["auto_ml_name"]
+        )
+
+        self._global_values = Bunch(
+            selector_trial_num=params["selector_trial_num"],
+            auto_ml_trial_num=params["auto_ml_trial_num"],
+            opt_model_names=params["opt_model_names"],
+            supervised_selector_model_names=params["supervised_selector_model_names"]
+        )
+
+        self._already_data_clear = None
+        self._pipeline_configure = None
 
     @abc.abstractmethod
-    def run_route(self, *params):
+    def _run_route(self, **params):
         pass
 
     @classmethod
-    def create_component(cls, component_name: str, **params):
-
+    def _create_component(cls, component_name: str, **params):
         gauss_factory = GaussFactoryProducer()
         component_factory = gauss_factory.get_factory(choice="component")
         return component_factory.get_component(component_name=component_name, **params)
 
     @classmethod
-    def create_entity(cls, entity_name: str, **params):
-
+    def _create_entity(cls, entity_name: str, **params):
         gauss_factory = GaussFactoryProducer()
         entity_factory = gauss_factory.get_factory(choice="entity")
         return entity_factory.get_entity(entity_name=entity_name, **params)
 
-    # local_best_model, local_best_metric, local_best_work_root, local_pipeline configure
-    def update_best(self, *params):
-        best_model = params[0]
-        best_metric = params[1]
-        best_result_root = params[2]
-        pipeline_configure = params[3]
-
-        if self.best_metric is None:
-            self.best_model = best_model
-            self.best_metric = best_metric
-            self.best_result_root = best_result_root
-            self.pipeline_configure = pipeline_configure
-
-        if self.best_metric.__cmp__(best_metric) < 0:
-            self.best_model = best_model
-            self.best_metric = best_metric
-            self.best_result_root = best_result_root
-            self.pipeline_configure = pipeline_configure
-
-    def run(self, *args):
-        self._run(*args)
-        self.set_pipeline_config()
+    def run(self):
+        """
+        Start training model with pipeline.
+        :return:
+        """
+        self._run()
+        self._set_pipeline_config()
 
     @abc.abstractmethod
-    def _run(self, *params):
+    def _run(self):
         pass
 
-    def set_pipeline_config(self):
+    @abc.abstractmethod
+    def _set_pipeline_config(self):
+        pass
 
-        if self.best_model is None:
-            raise NoResultReturnException("Best model is None.")
+    @abc.abstractmethod
+    def _find_best_result(self, train_results):
+        pass
 
-        yaml_dict = {"best_root": self.best_result_root,
-                     "best_model_name": self.best_model.name,
-                     "work_root": self.work_root,
-                     "task_type": self.task_type,
-                     "metric_name": self.metric_name,
-                     "auto_ml": self.auto_ml,
-                     "best_metric": float(self.best_metric.result)}
-
-        if self.pipeline_configure is not None:
-            yaml_dict.update(self.pipeline_configure)
-        yaml_write(yaml_dict=yaml_dict, yaml_file=self.work_root + "/pipeline_config.yaml")
+    @property
+    def pipeline_configure(self):
+        """
+        This method is used to get pipeline configure.
+        :return: dict
+        """
+        return self._pipeline_configure

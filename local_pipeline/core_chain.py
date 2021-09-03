@@ -22,6 +22,7 @@ class CoreRoute(Component):
                  name: str,
                  train_flag: bool,
                  model_name: str,
+                 feature_configure_name: str,
                  model_save_root: str,
                  model_config_root: str,
                  feature_config_root: str,
@@ -29,13 +30,14 @@ class CoreRoute(Component):
                  pre_feature_configure_path: Any(str, None),
                  label_encoding_path: str,
                  metrics_name: str,
-                 task_type: str,
-                 feature_selector_name: str,
+                 task_name: str,
+                 feature_selector_model_names: List[str],
+                 selector_trial_num: int,
                  feature_selector_flag: bool,
                  supervised_selector_name: str = None,
-                 auto_ml_type: str = "XXX",
                  auto_ml_path: str = "",
                  auto_ml_name: str = None,
+                 auto_ml_trial_num: int = None,
                  opt_model_names: List[str] = None,
                  selector_config_path: str = ""
                  ):
@@ -45,12 +47,10 @@ class CoreRoute(Component):
             train_flag=train_flag
         )
 
-        assert task_type in ["classification", "regression"]
+        assert task_name in ["classification", "regression"]
 
-        # name of auto ml object
-        self._auto_ml_type = auto_ml_type
         # name of feature_selector_name
-        self._feature_selector_name = feature_selector_name
+        self._feature_selector_name = supervised_selector_name
         # name of model, which will be used to create entity
         self._model_name = model_name
         # 模型保存根目录
@@ -61,7 +61,7 @@ class CoreRoute(Component):
 
         self._model_config_root = model_config_root
         self._feature_config_root = feature_config_root
-        self._task_type = task_type
+        self._task_type = task_name
         self._metrics_name = metrics_name
         self._feature_selector_flag = feature_selector_flag
 
@@ -72,8 +72,8 @@ class CoreRoute(Component):
         self._final_file_path = target_feature_configure_path
 
         # create feature configure
-        feature_conf_params = Bunch(name="featureconfigure", file_path=None)
-        self.feature_conf = self.create_entity(entity_name="featureconfigure", **feature_conf_params)
+        feature_conf_params = Bunch(name=feature_configure_name, file_path=None)
+        self.feature_conf = self.create_entity(entity_name=feature_configure_name, **feature_conf_params)
 
         # create metrics and set optimize_mode
         metrics_factory = MetricsFactory()
@@ -97,35 +97,34 @@ class CoreRoute(Component):
             self._auto_ml_path = auto_ml_path
             self.selector_config_path = selector_config_path
 
-            if self.auto_ml_name is not None:
-                self._opt_model_names = [self.auto_ml_name]
-
-            tuner_params = Bunch(name=self._auto_ml_type,
+            tuner_params = Bunch(name=self.auto_ml_name,
                                  train_flag=self._train_flag,
                                  enable=self.enable,
+                                 auto_ml_trial_num=auto_ml_trial_num,
                                  opt_model_names=self._opt_model_names,
                                  optimize_mode=self._optimize_mode,
                                  auto_ml_path=self._auto_ml_path)
 
-            self.auto_ml = self.create_component(component_name="tabularautoml", **tuner_params)
-
+            self.auto_ml = self.create_component(component_name=auto_ml_name, **tuner_params)
             # auto_ml_path and selector_config_path are fixed configuration files.
             s_params = Bunch(name=self._feature_selector_name,
                              train_flag=self._train_flag,
                              enable=self.enable,
                              metrics_name=self._metrics_name,
-                             task_name=task_type,
+                             task_name=task_name,
                              model_config_root=model_config_root,
                              feature_config_root=feature_config_root,
                              feature_config_path=pre_feature_configure_path,
                              final_file_path=target_feature_configure_path,
                              label_encoding_configure_path=label_encoding_path,
+                             feature_selector_model_names=feature_selector_model_names,
+                             selector_trial_num=selector_trial_num,
                              selector_config_path=self.selector_config_path,
                              model_name=self._model_name,
                              auto_ml_path=auto_ml_path,
                              model_save_path=self._model_save_path)
 
-            self.feature_selector = self.create_component(component_name="supervisedfeatureselector", **s_params)
+            self.feature_selector = self.create_component(component_name=supervised_selector_name, **s_params)
         else:
             self._result = None
             self._feature_conf = None

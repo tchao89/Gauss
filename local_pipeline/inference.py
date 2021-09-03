@@ -52,7 +52,10 @@ class Inference(object):
         assert isinstance(predict_result, pd.DataFrame)
         predict_result.to_csv(os.path.join(self.out_put_path, "result.csv"), index=False)
 
-    def run(self):
+    def online_run(self, dataframe):
+        pass
+
+    def offline_run(self):
         work_feature_root = self.work_root + "/feature"
 
         feature_dict = {"user_feature": "null",

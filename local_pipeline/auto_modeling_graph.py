@@ -45,19 +45,19 @@ class AutoModelingGraph(BaseModelingGraph):
                   supervised_feature_selector_flag: bool,
                   model_zoo: List[str]):
 
-        work_root = self.work_root + "/" + folder_prefix_str
+        work_root = self._work_root + "/" + folder_prefix_str
 
         pipeline_configure = {"data_clear_flag": data_clear_flag,
                               "feature_generator_flag": feature_generator_flag,
                               "unsupervised_feature_selector_flag": unsupervised_feature_generator_flag,
                               "supervised_feature_selector_flag": supervised_feature_selector_flag,
-                              "metric_name": self.metric_name,
+                              "metric_name": self._metric_name,
                               "task_type": self.task_type}
 
         work_feature_root = work_root + "/feature"
         feature_dict = Bunch()
 
-        feature_dict.user_feature = self.feature_configure_path
+        feature_dict.user_feature = self._feature_configure_path
         feature_dict.type_inference_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().type_inference_feature)
         feature_dict.data_clear_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().data_clear_feature)
         feature_dict.feature_generator_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().feature_generator_feature)
@@ -71,10 +71,10 @@ class AutoModelingGraph(BaseModelingGraph):
                                            feature_path_dict=feature_dict,
                                            task_type=self.task_type,
                                            train_flag=True,
-                                           train_data_path=self.train_data_path,
-                                           val_data_path=self.val_data_path,
+                                           train_data_path=self._train_data_path,
+                                           val_data_path=self._val_data_path,
                                            test_data_path=None,
-                                           target_names=self.target_names,
+                                           target_names=self._target_names,
                                            dataset_name="plaindataset",
                                            type_inference_name="typeinference",
                                            data_clear_name="plaindataclear",
@@ -119,7 +119,7 @@ class AutoModelingGraph(BaseModelingGraph):
                                    pre_feature_configure_path=feature_dict.unsupervised_feature,
                                    label_encoding_path=feature_dict.label_encoding_path,
                                    model_type="tree_model",
-                                   metrics_name=self.metric_name,
+                                   metrics_name=self._metric_name,
                                    task_type=self.task_type,
                                    feature_selector_name="supervised_selector",
                                    feature_selector_flag=supervised_feature_selector_flag,
