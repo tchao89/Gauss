@@ -74,7 +74,7 @@ class PreprocessRoute(Component):
         self._val_data_path = params["val_data_path"]
         self._train_data_path = params["train_data_path"]
         self._test_data_path = params["test_data_path"]
-        self._target_names = params["target_names"]
+        self._target_names = params.get("target_names")
         self._dataset_name = params["dataset_name"]
 
         # Create component algorithms.

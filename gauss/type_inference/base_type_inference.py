@@ -4,8 +4,6 @@
 # Authors: Lab
 import abc
 
-import pandas as pd
-
 from gauss.component import Component
 from entity.dataset.base_dataset import BaseDataset
 

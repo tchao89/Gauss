@@ -7,6 +7,7 @@ from __future__ import annotations
 import abc
 
 from entity.entity import Entity
+from entity.metrics.base_metric import MetricResult
 from utils.common_component import feature_list_generator
 
 
@@ -45,9 +46,15 @@ class ModelWrapper(Entity):
         self._best_model_params = None
         self._best_feature_list = None
 
+        self.metrics_history = []
+
         super(ModelWrapper, self).__init__(
             name=name,
         )
+
+    @property
+    def val_best_metric_result(self):
+        return self._best_metrics_result
 
     @abc.abstractmethod
     def _initialize_model(self):
@@ -62,15 +69,25 @@ class ModelWrapper(Entity):
             self._best_model_params = self._model_params
 
         if self._best_metrics_result is None:
-            self._best_metrics_result = self._val_metrics_result
+            self._best_metrics_result = MetricResult(
+                name=self._val_metrics_result.name,
+                result=self._val_metrics_result.result,
+                optimize_mode=self._val_metrics_result.optimize_mode
+            )
 
         if self._best_feature_list is None:
             self._best_feature_list = self._feature_list
 
+        # this value is used for test program.
+        self.metrics_history.append(self._val_metrics_result.result)
         if self._best_metrics_result.__cmp__(self._val_metrics_result) < 0:
             self._best_model = self._model
             self._best_model_params = self._model_params
-            self._best_metrics_result = self._val_metrics_result
+            self._best_metrics_result = MetricResult(
+                name=self._val_metrics_result.name,
+                result=self._val_metrics_result.result,
+                optimize_mode=self._val_metrics_result.optimize_mode
+            )
             self._best_feature_list = self._feature_list
 
         self.update_best()
@@ -143,9 +160,6 @@ class ModelWrapper(Entity):
         self._model = self._best_model
         self._model_params = self._best_model_params
         self._feature_list = self._best_feature_list
-        del self._best_model
-        del self._best_model_params
-        del self._best_feature_list
         self.set_best()
 
     def update_feature_conf(self, feature_conf):

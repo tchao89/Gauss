@@ -35,6 +35,10 @@ class MetricResult(Entity):
         )
 
     @property
+    def optimize_mode(self):
+        return self._optimize_mode
+
+    @property
     def result(self):
         return self._result
 

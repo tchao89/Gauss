@@ -229,7 +229,7 @@ class UdfModelingGraph(BaseModelingGraph):
             supervised_selector_name=self._component_names["supervised_feature_selector_name"],
             feature_selector_model_names=self._global_values["supervised_selector_model_names"],
             selector_trial_num=self._global_values["selector_trial_num"],
-            feature_selector_flag=self._flag_dict["supervised_feature_selector_flag"],
+            supervised_feature_selector_flag=self._flag_dict["supervised_feature_selector_flag"],
             auto_ml_name=self._component_names["auto_ml_name"],
             auto_ml_trial_num=self._global_values["auto_ml_trial_num"],
             auto_ml_path=self._work_paths["auto_ml_path"],

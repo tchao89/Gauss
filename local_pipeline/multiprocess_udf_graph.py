@@ -150,28 +150,36 @@ class MultiprocessUdfModelingGraph(BaseModelingGraph):
         work_feature_root = work_root + "/feature"
 
         feature_dict = EnvironmentConfigure.feature_dict()
-        feature_dict = \
-            {"user_feature": self._work_paths["feature_configure_path"],
-             "type_inference_feature": join(work_feature_root,
-                                            feature_dict.type_inference_feature),
+        feature_dict = {"user_feature": self._work_paths[
+                "feature_configure_path"
+            ],
+             "type_inference_feature": join(
+                 work_feature_root,
+                 feature_dict.type_inference_feature),
 
-             "data_clear_feature": join(work_feature_root,
-                                        feature_dict.data_clear_feature),
+             "data_clear_feature": join(
+                 work_feature_root,
+                 feature_dict.data_clear_feature),
 
-             "feature_generator_feature": join(work_feature_root,
-                                               feature_dict.feature_generator_feature),
+             "feature_generator_feature": join(
+                 work_feature_root,
+                 feature_dict.feature_generator_feature),
 
-             "unsupervised_feature": join(work_feature_root,
-                                          feature_dict.unsupervised_feature),
+             "unsupervised_feature": join(
+                 work_feature_root,
+                 feature_dict.unsupervised_feature),
 
-             "supervised_feature": join(work_feature_root,
-                                        feature_dict.supervised_feature),
+             "supervised_feature": join(
+                 work_feature_root,
+                 feature_dict.supervised_feature),
 
-             "label_encoding_path": join(work_feature_root,
-                                         feature_dict.label_encoding_path),
+             "label_encoding_path": join(
+                 work_feature_root,
+                 feature_dict.label_encoding_path),
 
-             "impute_path": join(work_feature_root,
-                                 feature_dict.impute_path)
+             "impute_path": join(
+                 work_feature_root,
+                 feature_dict.impute_path)
              }
 
         preprocess_chain = self._preprocessing_run_route(feature_dict)
@@ -653,8 +661,8 @@ class MultiprocessUdfModelingGraph(BaseModelingGraph):
             )
         )
 
-        work_model_root = params["work_root"] + "/model/"\
-                          + params["model_name"]\
+        work_model_root = params["work_root"] + "/model/" \
+                          + params["model_name"] \
                           + "_" + params["auto_ml_name"]
         model_save_root = join(work_model_root, "model_save")
         model_config_root = join(work_model_root, "model_parameters")
@@ -690,7 +698,7 @@ class MultiprocessUdfModelingGraph(BaseModelingGraph):
                 task_name=self._attributes_names["task_name"],
                 feature_selector_model_names=params["selector_model_name"],
                 selector_trial_num=params["selector_trial_num"],
-                feature_selector_flag=params["supervised_feature_selector_flag"],
+                supervised_feature_selector_flag=params["supervised_feature_selector_flag"],
                 supervised_selector_name=params["supervised_feature_selector_name"],
                 auto_ml_path=params["auto_ml_path"],
                 auto_ml_name=params["auto_ml_name"],

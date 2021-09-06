@@ -102,7 +102,6 @@ class PlaintextDataset(BaseDataset):
             ))
 
         self.type_doc = self._data_path.split(".")[-1]
-        print(self.type_doc)
 
         if self.type_doc not in ["csv", "libsvm", "txt"]:
             raise TypeError(

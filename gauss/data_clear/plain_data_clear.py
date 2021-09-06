@@ -35,7 +35,6 @@ class PlainDataClear(BaseDataClear):
         super(PlainDataClear, self).__init__(name=params["name"], train_flag=params["train_flag"],
                                              enable=params["enable"])
 
-        self._model_name = params["model_name"]
         self._feature_configure_path = params["feature_configure_path"]
         self._final_file_path = params["final_file_path"]
         # 序列化模型

@@ -1,4 +1,10 @@
-# This is a root path configure file for feature
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2021, Citic-Lab. All rights reserved.
+# Authors: Lab
+"""
+This is a root path configure file for feature
+"""
 import os
 import random
 import string
@@ -6,7 +12,10 @@ import string
 from utils.bunch import Bunch
 
 
-class EnvironmentConfigure(object):
+class EnvironmentConfigure:
+    """
+    EnvironmentConfigure object
+    """
     def __init__(self, work_root=None, user_feature=None):
         self.work_root = os.path.join(work_root, self.id_generator())
         user_feature_root, user_feature_file = os.path.split(user_feature)
@@ -16,11 +25,23 @@ class EnvironmentConfigure(object):
         self.user_feature_path = user_feature
 
     @classmethod
-    def id_generator(cls, size=6, chars=string.ascii_uppercase + string.digits + string.ascii_lowercase):
+    def id_generator(cls,
+                     size=6,
+                     chars=string.ascii_uppercase + string.digits + string.ascii_lowercase):
+        """
+        Generate experiment id
+        :param size:
+        :param chars:
+        :return:
+        """
         return ''.join(random.choice(chars) for _ in range(size))
 
     @staticmethod
     def feature_dict():
+        """
+        Configuration files name
+        :return:
+        """
         feature_dict = Bunch()
 
         feature_dict.type_inference_feature = "type_inference_feature.yaml"

@@ -2,6 +2,9 @@
 #
 # Copyright (c) 2020, Citic Inc. All rights reserved.
 # Authors: Lab
+"""
+component factory
+"""
 from gauss_factory.abstarct_guass import AbstractGauss
 
 from gauss.data_clear.plain_data_clear import PlainDataClear
@@ -12,37 +15,76 @@ from gauss.type_inference.plain_type_inference import PlainTypeInference
 from gauss.auto_ml.tabular_auto_ml import TabularAutoML
 
 class ComponentFactory(AbstractGauss):
-
+    """
+    ComponentFactory object
+    """
     def get_entity(self, entity_name: str):
+        """
+        It does not work here
+        :param entity_name:
+        :return:
+        """
         return None
 
     def get_component(self, component_name: str, **params):
-
-        if component_name.lower() == "plaindataclear":
-            # name: str, train_flag: bool, enable: bool, model_name: str, feature_configure_path: str, strategy_dict
+        """
+        Get component.
+        :param component_name:
+        :param params:
+        :return:
+        """
+        if component_name.lower() == "plain_data_clear":
+            # name: str,
+            # train_flag: bool,
+            # enable: bool,
+            # model_name: str,
+            # feature_configure_path: str,
+            # strategy_dict
             return PlainDataClear(**params)
 
-        if component_name.lower() == "featuretoolsgeneration":
-            # name: str, train_flag: bool, enable: bool, feature_config_path: str, label_encoding_configure_path: str
+        if component_name.lower() == "featuretools_generation":
+            # name: str,
+            # train_flag: bool,
+            # enable: bool,
+            # feature_config_path: str,
+            # label_encoding_configure_path: str
             return FeatureToolsGenerator(**params)
 
-        if component_name.lower() == "supervisedfeatureselector":
-            # name: str, train_flag: bool, enable: bool, feature_config_path: str, label_encoding_configure_path: str,
-            # task_name: str, selector_config_path: str, metrics_name: str
+        if component_name.lower() == "supervised_feature_selector":
+            # name: str,
+            # train_flag: bool,
+            # enable: bool,
+            # feature_config_path: str,
+            # label_encoding_configure_path: str,
+            # task_name: str,
+            # selector_config_path: str,
+            # metrics_name: str
             return SupervisedFeatureSelector(**params)
 
-        if component_name.lower() == "unsupervisedfeatureselector":
-            # name: str, train_flag: bool, enable: bool, feature_config_path: str,
-            # label_encoding_configure_path: str, feature_select_configure_path: str
+        if component_name.lower() == "unsupervised_feature_selector":
+            # name: str,
+            # train_flag: bool,
+            # enable: bool,
+            # feature_config_path: str,
+            # label_encoding_configure_path: str,
+            # feature_select_configure_path: str
             return UnsupervisedFeatureSelector(**params)
 
-        if component_name.lower() == "plaintypeinference":
-            # name: str, task_name: str, train_flag: bool, source_file_path="null",
-            # final_file_path: str, final_file_prefix="final"
+        if component_name.lower() == "plain_type_inference":
+            # name: str,
+            # task_name: str,
+            # train_flag: bool,
+            # source_file_path="null",
+            # final_file_path: str,
+            # final_file_prefix="final"
             return PlainTypeInference(**params)
 
-        if component_name.lower() == "tabularautoml":
-            # name: str, train_flag: bool, enable: bool, opt_model_names, auto_ml_path
+        if component_name.lower() == "tabular_auto_ml":
+            # name: str,
+            # train_flag: bool,
+            # enable: bool,
+            # opt_model_names,
+            # auto_ml_path
             return TabularAutoML(**params)
 
         return None
