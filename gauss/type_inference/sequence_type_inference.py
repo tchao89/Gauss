@@ -21,6 +21,7 @@ from utils.common_component import (
 
 class SequenceTypeInference(BaseTypeInference):
     """
+    TODO: fill api doc.
     """
     EPSILON = 0.00001
     THRESHOLD = 0.95
@@ -75,7 +76,9 @@ class SequenceTypeInference(BaseTypeInference):
     def _predict_run(self, **entity):
         config = yaml_read(self._final_file_path)
         if not set(entity["dataset"].columns) == set(config):
-            raise ValueError("dataset features doesn't match configuration defined features.")
+            raise ValueError(
+                "dataset features doesn't match configuration defined features."
+                )
 
 
     def dtype_inference(self, dataset: BaseDataset):
@@ -123,6 +126,8 @@ class SequenceTypeInference(BaseTypeInference):
                 int_counter += 1
         if int_counter + series.isna().sum() == series.shape[0]:
             return True
+        else:
+            return False
     
     def _count_and_index(self, series):
         float_counter = 0
@@ -136,7 +141,8 @@ class SequenceTypeInference(BaseTypeInference):
         return float_counter, string_idx
 
     def _string_column_selector(self, fea_name: str):
-        if self.init_feature_config and self.init_feature_config.feature_dict.get(fea_name) \
+        if self.init_feature_config is not None \
+            and self.init_feature_config.feature_dict.get(fea_name) \
             and self.init_feature_config.feature_dict.get(fea_name).dtype == self.STRING:
 
             self.final_feature_config.feature_dict[fea_name].dtype = self.STRING
