@@ -175,7 +175,11 @@ class SequenceDataset(BaseDataset):
         val = [valset, valset_target, valset_steps]
         self._reset_index(train+val)
 
-        data_pair = Bunch(data=valset, target=valset_target, steps=valset_steps)
+        data_pair = Bunch(
+            data=valset, target=valset_target, 
+            steps=valset_steps,
+            feature_names=bunch.feature_names
+            )
         return SequenceDataset(
             name="seq_valset",
             task_type=self._task_type,

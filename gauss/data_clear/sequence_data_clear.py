@@ -72,9 +72,8 @@ class SequenceDataClear(BaseDataClear):
             self._save_imputer_path = params["save_imputer_path"]
             self._strategy_dict = params["strategy_dict"] \
                 if params.get("strategy_dict") else None
-
-            self._missing_values = np.nan if not params.get("missing_values") \
-                else params["missing_values"]
+            self._missing_values = params["missing_values"] \
+                if params.get("missing_values") else np.nan 
             
             self._default_cate_imputer = SimpleImputer(
                 missing_values=self._missing_values,
@@ -94,8 +93,7 @@ class SequenceDataClear(BaseDataClear):
                 self._already_data_clear = True
                 logger.info(
                     "Cleaning dataset, with memory usage: {memory} GiB.".\
-                        format(
-                            memory=get_current_memory_gb()["memory_usage"]
+                        format(memory=get_current_memory_gb()["memory_usage"]
                 ))
                 self._clean(dataset=entity["dataset"])
             else:
@@ -103,15 +101,13 @@ class SequenceDataClear(BaseDataClear):
 
             logger.info(
                 "Cleaned feature configuration generated, with memory usage: {memory} GiB.".\
-                    format(
-                        memory=round(get_current_memory_gb()["memory_usage"], 2)
+                    format(memory=round(get_current_memory_gb()["memory_usage"], 2)
                 ))
             self.final_configure_generation()
 
             logger.info(
                 "Imputer serializing and saving, with memory usage: {memory} GiB".\
-                    format(
-                        memory=round(get_current_memory_gb()["memory_usage"], 2)
+                    format(memory=round(get_current_memory_gb()["memory_usage"], 2)
                 ))
             self._save_serialized()
 
@@ -120,8 +116,7 @@ class SequenceDataClear(BaseDataClear):
 
             logger.info(
                 "Data cleaning finished, with memory usage: {memory} GiB".\
-                    format(
-                        memory=get_current_memory_gb()["memory_usage"]
+                    format(memory=get_current_memory_gb()["memory_usage"]
                 ))
 
         def _predict_run(self, **entity):
