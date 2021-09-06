@@ -115,6 +115,7 @@ class SequenceDataset(BaseDataset):
         self._bunch.data = pd.DataFrame(data=data, columns=fea_names)
         self._bunch.target = pd.DataFrame(data=labels, columns=label_name)
         self._bunch.steps = pd.DataFrame(data=time_steps, columns=["steps"])
+        self._bunch.feature_names = self._bunch.data.columns
 
     def _feature_label_split(self, line):
         """Split feature columns and label columns to separete contents.
