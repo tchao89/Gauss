@@ -10,7 +10,7 @@ from core.nni.algorithms.hpo.evolution_tuner import EvolutionTuner
 from gauss.auto_ml.base_auto_ml import BaseAutoML
 from entity.dataset.base_dataset import BaseDataset
 from entity.model.model import ModelWrapper
-from entity.metrics.base_metric import BaseMetric
+from entity.metrics.base_metric import BaseMetric, MetricResult
 
 from utils.Logger import logger
 from utils.base import get_current_memory_gb
@@ -24,8 +24,12 @@ class TabularAutoML(BaseAutoML):
         :param enable:
         :param opt_model_names: opt_model is a list object, and can includes tpe, random_search, anneal and evolution.
         """
-        super(TabularAutoML, self).__init__(params["name"], params["train_flag"], params["enable"],
-                                            params["opt_model_names"])
+        super().__init__(
+            name=params["name"],
+            train_flag=params["train_flag"],
+            enable=params["enable"],
+            task_name=params["task_name"],
+            opt_model_names=params["opt_model_names"])
 
         assert "optimize_mode" in params
         assert params["optimize_mode"] in ["minimize", "maximize"]
@@ -46,6 +50,8 @@ class TabularAutoML(BaseAutoML):
 
         self._result = None
         self._multi_process_result = []
+
+        self._local_best = None
 
     def chose_tuner_set(self):
         """This method will fill self.opt_tuners, which contains all opt tuners you need in this experiment.
@@ -83,7 +89,7 @@ class TabularAutoML(BaseAutoML):
 
     def _train_run(self, **entity):
         assert "model" in entity and isinstance(entity["model"], ModelWrapper)
-        assert "dataset" in entity and isinstance(entity["dataset"], BaseDataset)
+        assert "train_dataset" in entity and isinstance(entity["train_dataset"], BaseDataset)
         assert "val_dataset" in entity and isinstance(entity["val_dataset"], BaseDataset)
         assert "metrics" in entity and isinstance(entity["metrics"], BaseMetric)
 
@@ -93,12 +99,18 @@ class TabularAutoML(BaseAutoML):
 
         self._model = entity["model"]
 
+        self._local_best = None
         # 在此处创建模型数据对象, 继承entity对象, 放进entity字典
         for tuner_algorithms in self.opt_tuners:
             tuner = tuner_algorithms
 
-            logger.info("Starting update search space, " + "with current memory usage: %.2f GiB",
-                        get_current_memory_gb()["memory_usage"])
+            logger.info(
+                "Starting update search space, "
+                "with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
+
             tuner.update_search_space(self._search_space.get(entity["model"].name))
 
             for trial in range(self.trial_num):
@@ -133,8 +145,12 @@ class TabularAutoML(BaseAutoML):
                                 get_current_memory_gb()["memory_usage"])
                     self._model.update_best_model()
 
-                    metrics = self._model.val_metrics.result
-                    tuner.receive_trial_result(trial, receive_params, metrics)
+                    metrics = self._model.val_metrics
+
+                    self.__update_local_best(metrics)
+
+                    metrics_result = self._model.val_metrics.result
+                    tuner.receive_trial_result(trial, receive_params, metrics_result)
                 else:
                     raise ValueError("Default parameters is None.")
 
@@ -145,9 +161,29 @@ class TabularAutoML(BaseAutoML):
     def _predict_run(self, **entity):
         pass
 
+    def __update_local_best(self, metrics):
+        """
+        This method will update model, model parameters and
+        validation metric result in each training.
+        :return: None
+        """
+        if self.local_best is None:
+            self._local_best = MetricResult(
+                name="local_best",
+                result=metrics.result,
+                optimize_mode=metrics.optimize_mode
+            )
+
+        if self.local_best.__cmp__(metrics) < 0:
+            self._local_best = MetricResult(
+                name=metrics.name,
+                result=metrics.result,
+                optimize_mode=metrics.optimize_mode
+            )
+
     @property
-    def model_wrapper(self):
-        return self._model
+    def local_best(self):
+        return self._local_best
 
     @property
     def optimal_metrics(self):

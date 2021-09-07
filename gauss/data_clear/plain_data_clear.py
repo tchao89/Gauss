@@ -33,7 +33,7 @@ class PlainDataClear(BaseDataClear):
         """
 
         super(PlainDataClear, self).__init__(name=params["name"], train_flag=params["train_flag"],
-                                             enable=params["enable"])
+                                             enable=params["enable"], task_name=params["task_name"])
 
         self._feature_configure_path = params["feature_configure_path"]
         self._final_file_path = params["final_file_path"]
@@ -54,10 +54,10 @@ class PlainDataClear(BaseDataClear):
         logger.info("Data clear component flag: " + str(self._enable))
         if self._enable is True:
             self._already_data_clear = True
-            assert "dataset" in entity.keys()
+            assert "train_dataset" in entity.keys()
             logger.info("Running clean() method and clearing, " + "with current memory usage: %.2f GiB",
                         get_current_memory_gb()["memory_usage"])
-            self._clean(dataset=entity["dataset"])
+            self._clean(dataset=entity["train_dataset"])
 
         else:
             self._already_data_clear = False
@@ -79,8 +79,8 @@ class PlainDataClear(BaseDataClear):
                     get_current_memory_gb()["memory_usage"])
 
     def _predict_run(self, **entity):
-        assert "dataset" in entity.keys()
-        dataset = entity["dataset"]
+        assert "infer_dataset" in entity.keys()
+        dataset = entity["infer_dataset"]
 
         data = dataset.get_dataset().data
         assert isinstance(data, pd.DataFrame)

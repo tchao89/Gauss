@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic-Lab. All rights reserved.
-# Authors: luoqing
 """
+-*- coding: utf-8 -*-
+
+Copyright (c) 2020, Citic-Lab. All rights reserved.
+Authors: luoqing
 component object, base class.
 """
 from __future__ import absolute_import
@@ -21,12 +21,16 @@ class Component(metaclass=abc.ABCMeta):
     def __init__(self,
                  name: str,
                  train_flag: bool = True,
-                 enable: bool = True):
+                 enable: bool = True,
+                 task_name: str = None):
         """Construct a Component.
 
         :param name: The name of the Component.
         :param train_flag: The flag of train or inference statues of current workflow
         """
+        assert task_name in ["classification", "regression"]
+
+        self._task_name = task_name
         self._name = name
         self._train_flag = train_flag
         self._enable = enable
@@ -54,6 +58,13 @@ class Component(metaclass=abc.ABCMeta):
         :return: bool
         """
         return self._train_flag
+
+    def task_name(self):
+        """
+        Get task name.
+        :return: string
+        """
+        return self._task_name
 
     def run(self, **entity):
         """

@@ -1,8 +1,9 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic-Lab. All rights reserved.
-# Authors: citic-lab
+"""
+-*- coding: utf-8 -*-
 
+Copyright (c) 2020, Citic-Lab. All rights reserved.
+Authors: citic-lab
+"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -14,7 +15,7 @@ import numpy as np
 import pandas as pd
 import lightgbm as lgb
 
-from entity.model.model import ModelWrapper
+from entity.model.multiprocess_model import MultiprocessModelWrapper
 from entity.dataset.base_dataset import BaseDataset
 from entity.dataset.multiprocess_plain_dataset import MultiprocessPlaintextDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
@@ -24,16 +25,19 @@ from utils.Logger import logger
 from utils.base import get_current_memory_gb
 
 
-class MultiprocessGaussLightgbm(ModelWrapper):
+class MultiprocessGaussLightgbm(MultiprocessModelWrapper):
+    """
+    lightgbm running in multiprocess udf mode.
+    """
     need_data_clear = False
 
     def __init__(self, **params):
-        super(MultiprocessGaussLightgbm, self).__init__(
+        super().__init__(
             name=params["name"],
             model_path=params["model_path"],
             model_config_root=params["model_config_root"],
             feature_config_root=params["feature_config_root"],
-            task_type=params["task_type"],
+            task_name=params["task_name"],
             train_flag=params["train_flag"]
         )
 
@@ -44,103 +48,65 @@ class MultiprocessGaussLightgbm(ModelWrapper):
     def __repr__(self):
         pass
 
-    def generate_sub_dataset(self, dataset: BaseDataset):
-        if self._feature_list is not None:
-            data = dataset.feature_choose(self._feature_list)
-            target = dataset.get_dataset().target
-
-            data_pair = Bunch(
-                data=data,
-                target=target,
-                target_names=dataset.get_dataset().target_names
-            )
-            dataset = MultiprocessPlaintextDataset(
-                name="train_data",
-                task_type=self._task_type,
-                data_pair=data_pair
-            )
-
-        return dataset
-
-    def load_data(self, dataset: BaseDataset):
+    def __load_data(self, dataset: BaseDataset):
         """
-        :param dataset:
+        :param dataset: BaseDataset
         :return: lgb.Dataset
         """
 
         # dataset is a bunch object,
         # including data, target, feature_names, target_names, generated_feature_names.
         if self._train_flag:
-            dataset = self.generate_sub_dataset(dataset=dataset)
-
-            logger.info("Reading base dataset, "
-                        + "with current memory usage: %.2f GiB",
-                        get_current_memory_gb()["memory_usage"])
-            dataset = dataset.get_dataset()
-
-            logger.info("Check base dataset, "
-                        + "with current memory usage: %.2f GiB",
-                        get_current_memory_gb()["memory_usage"])
-            self._check_bunch(dataset=dataset)
-
-            logger.info("Construct lgb.Dataset object in load_data method, "
-                        + "with current memory usage: %.2f GiB",
-                        get_current_memory_gb()["memory_usage"])
-            train_data = [dataset.data, dataset.target.flatten()]
+            dataset = self._generate_sub_dataset(dataset=dataset)
 
             lgb_data = lgb.Dataset(
-                data=train_data[0],
-                label=train_data[1],
+                data=dataset.get("data"),
+                label=dataset.get("target"),
                 free_raw_data=False,
                 silent=True
             )
-            logger.info("Method load_data() has finished, "
-                        + "with current memory usage: %.2f GiB",
-                        get_current_memory_gb()["memory_usage"])
+            logger.info(
+                "Method load_data() has finished, "
+                "with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
             return lgb_data
-        else:
-            dataset = dataset.get_dataset()
-            self._check_bunch(dataset=dataset)
-            return dataset.data
+
+        dataset = dataset.get_dataset()
+        self._check_bunch(dataset=dataset)
+        return dataset.data
 
     def _initialize_model(self):
         pass
 
-    @classmethod
-    def _check_bunch(cls, dataset: Bunch):
-        keys = [
-            "data",
-            "target",
-            "feature_names",
-            "target_names",
-            "generated_feature_names"
-                ]
-        for key in dataset.keys():
-            assert key in keys
-
-    def update_feature_conf(self, feature_conf):
-        self._feature_conf = feature_conf
-        self._feature_list = feature_index_generator(feature_conf=self._feature_conf)
-        assert self._feature_list is not None
-        return self._feature_list
-
-    def train(self, dataset: BaseDataset, val_dataset: BaseDataset, **entity):
+    def train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
         assert self._train_flag is True
 
-        logger.info("Construct lightgbm training dataset, "
-                    + "with current memory usage: %.2f GiB",
-                    get_current_memory_gb()["memory_usage"])
-        lgb_train = self.load_data(dataset=dataset)
+        logger.info(
+            "Construct lightgbm training dataset, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+        lgb_train = self.__load_data(dataset=train_dataset)
 
         assert isinstance(lgb_train, lgb.Dataset)
-        logger.info("Construct lightgbm validation dataset, "
-                    + "with current memory usage: %.2f GiB",
-                    get_current_memory_gb()["memory_usage"])
-        lgb_eval = self.load_data(dataset=val_dataset).set_reference(lgb_train)
+        logger.info(
+            "Construct lightgbm validation dataset, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+        lgb_eval = self.__load_data(dataset=val_dataset).set_reference(lgb_train)
 
-        logger.info("Set preprocessing parameters for lightgbm, "
-                    + "with current memory usage: %.2f GiB",
-                    get_current_memory_gb()["memory_usage"])
+        logger.info(
+            "Set preprocessing parameters for lightgbm, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+
         if self._model_params is not None:
             self._model_config = {
                 "Name": self.name,
@@ -152,33 +118,44 @@ class MultiprocessGaussLightgbm(ModelWrapper):
 
             params = self._model_params
 
-            logger.info("Start training lightgbm model, "
-                        + "with current memory usage: %.2f GiB",
-                        get_current_memory_gb()["memory_usage"])
+            logger.info(
+                "Start training lightgbm model, "
+                "with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
+
             self._model = lgb.train(params,
                                     lgb_train,
                                     num_boost_round=200,
                                     valid_sets=lgb_eval,
                                     early_stopping_rounds=2,
                                     verbose_eval=False)
-            logger.info("Training lightgbm model finished, "
-                        + "with current memory usage: %.2f GiB",
-                        get_current_memory_gb()["memory_usage"])
+
+            logger.info(
+                "Training lightgbm model finished, "
+                "with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
         else:
             raise ValueError("Model parameters is None.")
 
-    def predict(self, dataset: BaseDataset, **entity):
+    def predict(self, infer_dataset: BaseDataset, **entity):
         assert self._train_flag is False
 
         if entity.get("feature_conf") is not None:
             features = feature_index_generator(feature_conf=entity.get("feature_conf"))
-            data = dataset.feature_choose(features)
+            data = infer_dataset.feature_choose(features)
 
             data_pair = Bunch(data=data, target=None, target_names=None)
-            dataset = MultiprocessPlaintextDataset(name="inference_data", task_type=self._train_flag,
-                                                   data_pair=data_pair)
+            infer_dataset = MultiprocessPlaintextDataset(
+                name="inference_data",
+                task_name=self._train_flag,
+                data_pair=data_pair
+            )
 
-        lgb_test = self.load_data(dataset=dataset)
+        lgb_test = self.__load_data(dataset=infer_dataset)
         assert os.path.isfile(self._model_path + "/" + self.model_file_name)
 
         self._model = lgb.Booster(model_file=self._model_path + "/" + self.model_file_name)
@@ -196,13 +173,23 @@ class MultiprocessGaussLightgbm(ModelWrapper):
     def _predict_process(self):
         pass
 
-    def eval(self, dataset: BaseDataset, val_dataset: BaseDataset, metrics: BaseMetric, **entity):
-        logger.info("Starting evaluation, " + "with current memory usage: %.2f GiB",
-                    get_current_memory_gb()["memory_usage"])
-        assert "data" in dataset.get_dataset() and "target" in dataset.get_dataset()
+    def eval(self,
+             train_dataset: BaseDataset,
+             val_dataset: BaseDataset,
+             metrics: BaseMetric,
+             **entity
+             ):
+
+        logger.info(
+            "Starting evaluation, with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+        assert "data" in train_dataset.get_dataset() and "target" in train_dataset.get_dataset()
         assert "data" in val_dataset.get_dataset() and "target" in val_dataset.get_dataset()
-        dataset = self.generate_sub_dataset(dataset=dataset)
-        val_dataset = self.generate_sub_dataset(dataset=val_dataset)
+
+        dataset = self._generate_sub_dataset(dataset=train_dataset)
+        val_dataset = self._generate_sub_dataset(dataset=val_dataset)
 
         train_data = dataset.get_dataset().data
         eval_data = val_dataset.get_dataset().data
@@ -211,8 +198,11 @@ class MultiprocessGaussLightgbm(ModelWrapper):
         eval_label = val_dataset.get_dataset().target
 
         # 默认生成的为预测值的概率值，传入metrics之后再处理.
-        logger.info("Starting predicting, " + "with current memory usage: %.2f GiB",
-                    get_current_memory_gb()["memory_usage"])
+        logger.info(
+            "Starting predicting, with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
         val_y_pred = self._model.predict(eval_data, num_iteration=self._model.best_iteration)
         train_y_pred = self._model.predict(train_data)
 
@@ -232,27 +222,14 @@ class MultiprocessGaussLightgbm(ModelWrapper):
 
         self._val_metrics_result = val_metrics_result
         self._train_metrics_result = train_metrics_result
-        logger.info("train_metric: " + str(self._train_metrics_result.result) + "   val_metrics: " + str(
-            self._val_metrics_result.result))
 
-    def get_train_loss(self):
-        pass
+        logger.info(
+            "train_metric: %s, val_metrics: %s",
+            self._train_metrics_result.result,
+            self._val_metrics_result.result
+        )
 
-    def get_val_loss(self):
-        pass
-
-    @property
-    def train_metric(self):
-        return self._train_metrics_result
-
-    @property
-    def val_metrics(self):
-        return self._val_metrics_result
-
-    def model_save(self, model_path=None):
-
-        if model_path is not None:
-            self._model_path = model_path
+    def model_save(self):
 
         assert self._model_path is not None
         assert self._model is not None
@@ -272,17 +249,20 @@ class MultiprocessGaussLightgbm(ModelWrapper):
         yaml_write(yaml_dict={"features": self._feature_list},
                    yaml_file=os.path.join(self._feature_config_root, self.feature_config_file_name))
 
-    def update_params(self, **params):
-        if self._model_params is None:
-            self._model_params = {}
-
-        self._model_params.update(params)
-
     def set_weight(self):
-        pass
+        """
+        This method can set weight for different label.
+        :return: None
+        """
 
     def update_best(self):
-        pass
+        """
+        Do not need to operate.
+        :return:
+        """
 
     def set_best(self):
-        pass
+        """
+        Do not need to operate.
+        :return:
+        """

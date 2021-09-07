@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic Inc. All rights reserved.
-# Authors: Lab
 """
+-*- coding: utf-8 -*-
+
+Copyright (c) 2020, Citic Inc. All rights reserved.
+Authors: Lab
 component factory
 """
 from gauss_factory.abstarct_guass import AbstractGauss
@@ -12,6 +12,7 @@ from gauss.feature_generation.featuretools_generation import FeatureToolsGenerat
 from gauss.feature_select.supervised_feature_selector import SupervisedFeatureSelector
 from gauss.feature_select.unsupervised_feature_selector import UnsupervisedFeatureSelector
 from gauss.type_inference.plain_type_inference import PlainTypeInference
+from gauss.label_encode.plain_label_encode import PlainLabelEncode
 from gauss.auto_ml.tabular_auto_ml import TabularAutoML
 
 class ComponentFactory(AbstractGauss):
@@ -37,6 +38,7 @@ class ComponentFactory(AbstractGauss):
             # name: str,
             # train_flag: bool,
             # enable: bool,
+            # task_name" str,
             # model_name: str,
             # feature_configure_path: str,
             # strategy_dict
@@ -46,9 +48,19 @@ class ComponentFactory(AbstractGauss):
             # name: str,
             # train_flag: bool,
             # enable: bool,
+            # task_name" str,
             # feature_config_path: str,
-            # label_encoding_configure_path: str
+            # final_file_path: str
             return FeatureToolsGenerator(**params)
+
+        if component_name.lower() == "plain_label_encoder":
+            # name: str,
+            # train_flag: bool,
+            # enable: bool,
+            # task_name" str,
+            # feature_config_path: str,
+            # final_file_path: str
+            return PlainLabelEncode(**params)
 
         if component_name.lower() == "supervised_feature_selector":
             # name: str,
@@ -65,6 +77,7 @@ class ComponentFactory(AbstractGauss):
             # name: str,
             # train_flag: bool,
             # enable: bool,
+            # task_name" str,
             # feature_config_path: str,
             # label_encoding_configure_path: str,
             # feature_select_configure_path: str
@@ -74,6 +87,7 @@ class ComponentFactory(AbstractGauss):
             # name: str,
             # task_name: str,
             # train_flag: bool,
+            # enable: bool
             # source_file_path="null",
             # final_file_path: str,
             # final_file_prefix="final"
@@ -83,6 +97,7 @@ class ComponentFactory(AbstractGauss):
             # name: str,
             # train_flag: bool,
             # enable: bool,
+            # task_name" str,
             # opt_model_names,
             # auto_ml_path
             return TabularAutoML(**params)

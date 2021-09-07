@@ -65,6 +65,11 @@
     "max_iter": 10000
   },
 
+  "dnn": {
+    "validate_steps": 50,
+    "log_steps": 50
+  },
+
   "classification": {
     "weight": 1
   },

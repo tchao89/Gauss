@@ -14,7 +14,7 @@ class BaseDataset(Entity):
     def __init__(self,
                  name: str,
                  data_path: str,
-                 task_type: str,
+                 task_name: str,
                  target_name=None,
                  memory_only=True):
 
@@ -28,7 +28,7 @@ class BaseDataset(Entity):
         self._column_size = 0
         self._row_size = 0
         self._default_print_size = 5
-        self._task_type = task_type
+        self._task_name = task_name
 
     @abc.abstractmethod
     def load_data(self):

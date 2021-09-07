@@ -26,7 +26,8 @@ class CoreRoute(Component):
 
         super().__init__(
             name=params["name"],
-            train_flag=params["train_flag"]
+            train_flag=params["train_flag"],
+            task_name=params["task_name"]
         )
 
         assert params["task_name"] in ["classification", "regression"]
@@ -42,7 +43,7 @@ class CoreRoute(Component):
 
         self._model_config_root = params["model_config_root"]
         self._feature_config_root = params["feature_config_root"]
-        self._task_type = params["task_name"]
+        self._task_name = params["task_name"]
         self._metrics_name = params["metrics_name"]
         self._feature_selector_flag = params["supervised_feature_selector_flag"]
 
@@ -75,7 +76,7 @@ class CoreRoute(Component):
             model_config_root=params["model_config_root"],
             feature_config_root=params["feature_config_root"],
             train_flag=self._train_flag,
-            task_type=self._task_type
+            task_name=self._task_name
         )
 
         self.model = self.create_entity(entity_name=self._model_name, **model_params)
@@ -88,6 +89,7 @@ class CoreRoute(Component):
                 name=self.auto_ml_name,
                 train_flag=self._train_flag,
                 enable=self.enable,
+                task_name=params["task_name"],
                 auto_ml_trial_num=params["auto_ml_trial_num"],
                 opt_model_names=self._opt_model_names,
                 optimize_mode=self._optimize_mode,
@@ -127,9 +129,8 @@ class CoreRoute(Component):
             self._feature_conf = None
 
     def _train_run(self, **entity):
-
-        assert "dataset" in entity
-        assert "val_dataset" in entity
+        assert "train_dataset" in entity.keys()
+        assert "val_dataset" in entity.keys()
 
         entity["model"] = self.model
         entity["metrics"] = self.metrics
@@ -141,13 +142,13 @@ class CoreRoute(Component):
             self.feature_selector.run(**entity)
 
         else:
-            train_dataset = entity["dataset"]
+            train_dataset = entity["train_dataset"]
             self.metrics.label_name = train_dataset.get_dataset().target_names[0]
 
             feature_conf = yaml_read(self._feature_config_path)
             self.feature_conf.file_path = self._feature_config_path
             self.feature_conf.parse(method="system")
-            self.feature_conf.feature_selector(feature_list=None)
+            self.feature_conf.feature_select(feature_list=None)
             entity["model"].update_feature_conf(feature_conf=self.feature_conf)
 
             logger.info(
@@ -164,9 +165,22 @@ class CoreRoute(Component):
         self._best_model = entity["model"]
         # self._best_metrics is a MetricsResult object.
         self._best_metrics = entity["model"].val_best_metric_result
-        print(entity["model"].metrics_history)
-        print(max(entity["model"].metrics_history))
-        print(len(entity["model"].metrics_history))
+
+        logger.info(
+            "Using {}, all training model metric results are : {}".format(
+                self._model_name, entity["model"].metrics_history
+            )
+        )
+
+        logger.info("Using {}, best metric result is : {:.6f}".format(
+            self._model_name, max(entity["model"].metrics_history)
+            )
+        )
+
+        logger.info("Using {}, num of total models is {:d}".format(
+            self._model_name, len(entity["model"].metrics_history)
+            )
+        )
         entity["model"].model_save()
 
     def _predict_run(self, **entity):
@@ -174,7 +188,7 @@ class CoreRoute(Component):
         :param entity:
         :return: This method will return predict result for test dataset.
         """
-        assert "dataset" in entity
+        assert "infer_dataset" in entity
         assert self._model_save_path is not None
         assert self._train_flag is False
 
@@ -184,16 +198,16 @@ class CoreRoute(Component):
             entity["feature_configure"].file_path = self._final_file_path
             entity["feature_configure"].parse(method="system")
 
-            dataset = entity["dataset"]
+            dataset = entity["infer_dataset"]
             feature_config = entity["feature_configure"]
 
             assert self._model_save_path
             assert self._final_file_path
 
-            self._result = self.model.predict(dataset=dataset, feature_conf=feature_config)
+            self._result = self.model.predict(infer_dataset=dataset, feature_conf=feature_config)
 
         else:
-            self._result = self.model.predict(dataset=entity.get("dataset"))
+            self._result = self.model.predict(infer_dataset=entity.get("infer_dataset"))
 
     @property
     def optimal_metrics(self):

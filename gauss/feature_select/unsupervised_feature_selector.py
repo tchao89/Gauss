@@ -27,6 +27,7 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         super(UnsupervisedFeatureSelector, self).__init__(name=params["name"],
                                                           train_flag=params["train_flag"],
                                                           enable=params["enable"],
+                                                          task_name=params["task_name"],
                                                           feature_configure_path=params["feature_config_path"])
 
         self.feature_list = []
@@ -41,8 +42,8 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         :param entity:
         :return:
         """
-        assert "dataset" in entity.keys()
-        dataset = entity['dataset']
+        assert "train_dataset" in entity.keys()
+        dataset = entity['train_dataset']
         assert isinstance(dataset, BaseDataset)
         data = dataset.get_dataset().data
 
@@ -66,9 +67,9 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         self.final_configure_generation(dataset=dataset)
 
     def _predict_run(self, **entity):
-        assert "dataset" in entity.keys()
+        assert "infer_dataset" in entity.keys()
 
-        dataset = entity['dataset']
+        dataset = entity['infer_dataset']
         conf = yaml_read(yaml_file=self._final_file_path)
 
         if self._enable is True:

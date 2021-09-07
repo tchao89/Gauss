@@ -67,6 +67,7 @@ class UdfModelingGraph(BaseModelingGraph):
             feature_configure_name=params["feature_configure_name"],
             dataset_name=params["dataset_name"],
             type_inference_name=params["type_inference_name"],
+            label_encoder_name=params["label_encoder_name"],
             data_clear_name=params["data_clear_name"],
             feature_generator_name=params["feature_generator_name"],
             unsupervised_feature_selector_name=params["unsupervised_feature_selector_name"],
@@ -97,6 +98,7 @@ class UdfModelingGraph(BaseModelingGraph):
 
         self._flag_dict = Bunch(
             data_clear_flag=params["data_clear_flag"],
+            label_encoder_flag=params["label_encoder_name"],
             feature_generator_flag=params["feature_generator_flag"],
             unsupervised_feature_selector_flag=params["unsupervised_feature_selector_flag"],
             supervised_feature_selector_flag=params["supervised_feature_selector_flag"]
@@ -167,7 +169,10 @@ class UdfModelingGraph(BaseModelingGraph):
                                          feature_dict.label_encoding_path),
 
              "impute_path": join(work_feature_root,
-                                 feature_dict.impute_path)
+                                 feature_dict.impute_path),
+
+             "label_encoder_feature": join(work_feature_root,
+                                           feature_dict.label_encoder_feature)
              }
 
         preprocess_chain = PreprocessRoute(
@@ -183,6 +188,8 @@ class UdfModelingGraph(BaseModelingGraph):
             type_inference_name=self._component_names["type_inference_name"],
             data_clear_name=self._component_names["data_clear_name"],
             data_clear_flag=self._flag_dict["data_clear_flag"],
+            label_encoder_name=self._component_names["label_encoder_name"],
+            label_encoder_flag=self._flag_dict["label_encoder_flag"],
             feature_generator_name=self._component_names["feature_generator_name"],
             feature_generator_flag=self._flag_dict["feature_generator_flag"],
             unsupervised_feature_selector_name=self._component_names["unsupervised_feature_selector_name"],
@@ -204,7 +211,7 @@ class UdfModelingGraph(BaseModelingGraph):
                       model_name=params.get("model_name")) is not True:
             return None
 
-        assert "dataset" in entity_dict and "val_dataset" in entity_dict
+        assert "train_dataset" in entity_dict and "val_dataset" in entity_dict
 
         work_model_root = work_root + "/model/" + params.get("model_name") + "/"
         model_save_root = work_model_root + "/model_save"

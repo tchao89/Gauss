@@ -48,10 +48,9 @@ class PreprocessRoute(Component):
 
         super().__init__(
             name=params["name"],
-            train_flag=params["train_flag"]
+            train_flag=params["train_flag"],
+            task_name=params["task_name"]
         )
-
-        self._task_type = params["task_name"]
 
         # 用户提供的特征说明文件
         assert "user_feature" in params["feature_path_dict"]
@@ -98,10 +97,25 @@ class PreprocessRoute(Component):
                 name=params["data_clear_name"],
                 train_flag=self._train_flag,
                 enable=params["data_clear_flag"],
+                task_name=params["task_name"],
                 feature_configure_path=params["feature_path_dict"]["type_inference_feature"],
                 data_clear_configure_path=params["feature_path_dict"]["impute_path"],
                 final_file_path=params["feature_path_dict"]["data_clear_feature"],
                 strategy_dict=None
+            )
+        )
+
+        logger.info("Creating label encoding object.")
+        self.label_encoder = self.create_component(
+            component_name=params["label_encoder_name"],
+            **Bunch(
+                name=params["label_encoder_name"],
+                train_flag=self._train_flag,
+                enable=params["label_encoder_flag"],
+                task_name=params["task_name"],
+                feature_config_path=params["feature_path_dict"]["data_clear_feature"],
+                final_file_path=params["feature_path_dict"]["label_encoder_feature"],
+                label_encoding_configure_path=params["feature_path_dict"]["label_encoding_path"],
             )
         )
 
@@ -112,8 +126,8 @@ class PreprocessRoute(Component):
                 name=params["feature_generator_name"],
                 train_flag=self._train_flag,
                 enable=params["feature_generator_flag"],
-                feature_config_path=params["feature_path_dict"]["data_clear_feature"],
-                label_encoding_configure_path=params["feature_path_dict"]["label_encoding_path"],
+                task_name=params["task_name"],
+                feature_config_path=params["feature_path_dict"]["label_encoder_feature"],
                 final_file_path=params["feature_path_dict"]["feature_generator_feature"]
             )
         )
@@ -125,6 +139,7 @@ class PreprocessRoute(Component):
                 name=params["unsupervised_feature_selector_name"],
                 train_flag=self._train_flag,
                 enable=params["unsupervised_feature_selector_flag"],
+                task_name=params["task_name"],
                 label_encoding_configure_path=params["feature_path_dict"]["label_encoding_path"],
                 feature_config_path=params["feature_path_dict"]["feature_generator_feature"],
                 final_file_path=params["feature_path_dict"]["unsupervised_feature"]
@@ -170,7 +185,7 @@ class PreprocessRoute(Component):
         # 拼接数据
         dataset_params = Bunch(
             name=self._dataset_name,
-            task_type=self._task_type,
+            task_name=self._task_name,
             data_pair=None,
             data_path=self._train_data_path,
             target_name=self._target_names,
@@ -184,7 +199,7 @@ class PreprocessRoute(Component):
         if self._val_data_path is not None:
             val_dataset_params = Bunch(
                 name=self._dataset_name,
-                task_type=self._task_type,
+                task_name=self._task_name,
                 data_pair=None,
                 data_path=self._val_data_path,
                 target_name=self._target_names,
@@ -196,7 +211,7 @@ class PreprocessRoute(Component):
             )
             train_dataset.union(val_dataset)
 
-        entity_dict["dataset"] = train_dataset
+        entity_dict["train_dataset"] = train_dataset
         # 类型推导
         logger.info("Starting type inference.")
         self.type_inference.run(**entity_dict)
@@ -210,6 +225,9 @@ class PreprocessRoute(Component):
                 and train_dataset.need_data_clear is True \
                 and self._feature_generator_flag is True:
             raise PipeLineLogicError("Aberrant dataset can not generate additional features.")
+
+        logger.info("Starting encoding features and labels.")
+        self.label_encoder.run(**entity_dict)
 
         logger.info("Starting feature generation.")
         # 特征生成
@@ -233,7 +251,7 @@ class PreprocessRoute(Component):
 
         dataset_params = Bunch(
             name="test",
-            task_type=self._task_type,
+            task_name=self._task_name,
             data_pair=None,
             data_path=self._test_data_path,
             target_name=self._target_names,
@@ -243,7 +261,7 @@ class PreprocessRoute(Component):
             entity_name=self._dataset_name,
             **dataset_params
         )
-        entity_dict["dataset"] = test_dataset
+        entity_dict["infer_dataset"] = test_dataset
 
         self.type_inference.run(**entity_dict)
         # 数据清洗

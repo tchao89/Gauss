@@ -35,6 +35,7 @@ class PlainTypeInference(BaseTypeInference):
         super(PlainTypeInference, self).__init__(
             name=params["name"],
             train_flag=params["train_flag"],
+            task_name=params["task_name"],
             source_file_path=params["source_file_path"],
             final_file_path=params["final_file_path"],
             final_file_prefix=params["final_file_prefix"]
@@ -59,13 +60,14 @@ class PlainTypeInference(BaseTypeInference):
         self.final_feature_configure = FeatureConf(name='target feature path', file_path=params["final_file_path"])
 
     def _train_run(self, **entity):
-        assert "dataset" in entity.keys()
+        print(entity.keys())
+        assert "train_dataset" in entity.keys()
 
-        self.dtype_inference(dataset=entity["dataset"])
+        self.dtype_inference(dataset=entity["train_dataset"])
 
-        self.ftype_inference(dataset=entity["dataset"])
+        self.ftype_inference(dataset=entity["train_dataset"])
 
-        self.target_check(dataset=entity["dataset"])
+        self.target_check(dataset=entity["train_dataset"])
 
         self._check_init_final_conf()
         self.final_configure_generation()
@@ -73,10 +75,10 @@ class PlainTypeInference(BaseTypeInference):
 
     def _predict_run(self, **entity):
         # just detect error in test dataset.
-        assert "dataset" in entity.keys()
+        assert "infer_dataset" in entity.keys()
         conf = yaml_read(yaml_file=self._final_file_path)
 
-        for col in entity["dataset"].get_dataset().data.columns:
+        for col in entity["infer_dataset"].get_dataset().data.columns:
             assert col in list(conf)
 
     def _string_column_selector(self, feature_name: str):

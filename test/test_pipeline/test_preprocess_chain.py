@@ -1,6 +1,6 @@
-from pipeline.preprocess_chain import PreprocessRoute
-from pipeline.core_chain import CoreRoute
-from pipeline.mapping import EnvironmentConfigure
+from local_pipeline.preprocess_chain import PreprocessRoute
+from local_pipeline.core_chain import CoreRoute
+from local_pipeline.mapping import EnvironmentConfigure
 
 
 user_feature = "/home/liangqian/PycharmProjects/Gauss/test_dataset/feature_conf.yaml"

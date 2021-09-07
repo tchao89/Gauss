@@ -32,8 +32,14 @@ class MultiprocessPlaintextDataset(BaseDataset):
             if params.get(item) is None:
                 params[item] = None
 
-        super(MultiprocessPlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_type"],
-                                                           params["target_name"], params["memory_only"])
+        super().__init__(
+            params["name"],
+            params["data_path"],
+            params["task_name"],
+            params["target_name"],
+            params["memory_only"]
+        )
+
         if params["data_path"] is not None:
             assert os.path.isfile(params["data_path"])
 
@@ -327,7 +333,7 @@ class MultiprocessPlaintextDataset(BaseDataset):
         val_target = val_target.reset_index(drop=True)
 
         return MultiprocessPlaintextDataset(name="train_data",
-                                            task_type="train",
+                                            task_name="train",
                                             data_pair=Bunch(data=val_data, target=val_target))
 
     @property

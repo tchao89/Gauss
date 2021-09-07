@@ -56,6 +56,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
             name=params["name"],
             train_flag=params["train_flag"],
             enable=params["enable"],
+            task_name=params["task_name"],
             feature_configure_path=params["feature_config_path"]
         )
 
@@ -175,18 +176,16 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
             get_current_memory_gb()["memory_usage"]
         )
 
-        assert "dataset" in entity.keys()
+        assert "train_dataset" in entity.keys()
         assert "val_dataset" in entity.keys()
         assert "model" in entity.keys()
         assert "metrics" in entity.keys()
         assert "auto_ml" in entity.keys()
         assert "feature_configure" in entity.keys()
 
-        original_dataset = entity["dataset"]
+        original_dataset = entity["train_dataset"]
 
         original_val_dataset = entity["val_dataset"]
-
-        feature_configure = entity["feature_configure"]
 
         logger.info(
             "Loading hyperparameters and search space "
@@ -263,6 +262,9 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                         trial, get_current_memory_gb()["memory_usage"]
                     )
                 )
+
+                feature_configure = copy.deepcopy(entity["feature_configure"])
+
                 # 创建自动机器学习对象
                 model_tuner = copy.deepcopy(entity["auto_ml"])
                 model_tuner.is_final_set = False
@@ -305,7 +307,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 feature_configure.file_path = self._feature_configure_path
 
                 feature_configure.parse(method="system")
-                feature_configure.feature_selector(feature_list=feature_list)
+                feature_configure.feature_select(feature_list=feature_list)
 
                 logger.info(
                     "Update hyperparameters of model, "
@@ -318,17 +320,18 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 logger.info(
                     "Auto model training starts, with current memory usage: {:.2f} GiB".format(
                         get_current_memory_gb()["memory_usage"]
-                    ))
+                    )
+                )
                 # 返回训练好的最佳模型
                 model_tuner.run(
                     model=model,
-                    dataset=original_dataset,
+                    train_dataset=original_dataset,
                     val_dataset=original_val_dataset,
                     metrics=metrics
                 )
 
                 assert isinstance(model.val_metrics, MetricResult)
-                optimal_metrics = model_tuner.optimal_metrics
+                local_optimal_metrics = model_tuner.local_best
 
                 logger.info(
                     "Receive supervised selectors training trial result, "
@@ -336,7 +339,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                         get_current_memory_gb()["memory_usage"]
                     )
                 )
-                selector_tuner.receive_trial_result(trial, receive_params, optimal_metrics)
+                selector_tuner.receive_trial_result(trial, receive_params, local_optimal_metrics.result)
 
             model.set_best_model()
             self._optimal_metrics = model.val_best_metric_result.result

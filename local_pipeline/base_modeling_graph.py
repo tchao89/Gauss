@@ -67,6 +67,7 @@ class BaseModelingGraph:
         self._component_names = Bunch(
             type_inference_name=params["type_inference_name"],
             data_clear_name=params["data_clear_name"],
+            label_encoder_name=params["label_encoder_name"],
             feature_generator_name=params["feature_generator_name"],
             unsupervised_feature_selector_name=params["unsupervised_feature_selector_name"],
             supervised_feature_selector_name=params["supervised_feature_selector_name"],

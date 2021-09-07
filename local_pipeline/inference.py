@@ -123,7 +123,7 @@ class Inference:
         preprocess_chain.run()
         entity_dict = preprocess_chain.entity_dict
 
-        assert "dataset" in entity_dict
+        assert "infer_dataset" in entity_dict
         model_save_root = self.work_model_root + "/model_save"
         model_config_root = self.work_model_root + "/model_config"
         feature_config_root = self.work_model_root + "/feature_config"

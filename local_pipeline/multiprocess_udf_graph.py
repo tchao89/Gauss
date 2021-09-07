@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2021, Citic-Lab. All rights reserved.
-# Authors: Lab
 """
+-*- coding: utf-8 -*-
+
+Copyright (c) 2021, Citic-Lab. All rights reserved.
+Authors: Lab
 This pipeline is multiprocess version of udf modeling graph.
 """
 from __future__ import annotations
@@ -38,7 +38,7 @@ class MultiprocessUdfModelingGraph(BaseModelingGraph):
         """
         :param name:
         :param work_root:
-        :param task_type:
+        :param task_name:
         :param metric_name:
         :param train_data_path:
         :param val_data_path:
@@ -187,8 +187,8 @@ class MultiprocessUdfModelingGraph(BaseModelingGraph):
         entity_dict = preprocess_chain.entity_dict
         self._already_data_clear = preprocess_chain.already_data_clear
 
-        assert "dataset" in entity_dict and "val_dataset" in entity_dict
-        dataset = entity_dict["dataset"]
+        assert "train_dataset" in entity_dict and "val_dataset" in entity_dict
+        dataset = entity_dict["train_dataset"]
         val_dataset = entity_dict["val_dataset"]
 
         logger.info(
@@ -614,9 +614,9 @@ class MultiprocessUdfModelingGraph(BaseModelingGraph):
             buffer=shared_target_names_memory.buf
         ).tolist()
 
-        entity_dict["dataset"] = MultiprocessPlaintextDataset(
+        entity_dict["train_dataset"] = MultiprocessPlaintextDataset(
             name="train_data",
-            task_type=self._attributes_names["task_name"],
+            task_name=self._attributes_names["task_name"],
             data_pair=Bunch(
                 data=shared_data,
                 target=shared_target,
@@ -653,7 +653,7 @@ class MultiprocessUdfModelingGraph(BaseModelingGraph):
 
         entity_dict["val_dataset"] = MultiprocessPlaintextDataset(
             name="val_data",
-            task_type=self._attributes_names["task_name"],
+            task_name=self._attributes_names["task_name"],
             data_pair=Bunch(
                 data=shared_val_data,
                 target=shared_val_target,

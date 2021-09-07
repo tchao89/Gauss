@@ -1,13 +1,19 @@
-auto_ml: auto_ml
-data_clear: plaindataclear
-feature_generator: featuretools
+auto_ml_name: tabular_auto_ml
+data_clear_name: plain_data_clear
+feature_generator_name: featuretools_generation
+feature_configure_name: feature_configure
+label_encoder_name: plain_label_encoder
+label_encoder_flag: True
 opt_model_names:
 - tpe
 - random_search
 - anneal
 - evolution
-supervised_feature_selector: supervised
-supervised_selector_names:
+supervised_feature_selector_name: supervised_feature_selector
+supervised_selector_model_names:
 - GBDTSelector
-type_inference: plaintypeinference
-unsupervised_feature_selector: unsupervised
+selector_trial_num: 1
+auto_ml_trial_num: 2
+max_exec_duration: 36000
+type_inference_name: plain_type_inference
+unsupervised_feature_selector_name: unsupervised_feature_selector

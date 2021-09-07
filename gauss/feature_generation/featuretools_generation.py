@@ -3,13 +3,10 @@
 # Copyright (c) 2020, Citic-Lab. All rights reserved.
 # Authors: citic-lab
 import gc
-import shelve
 import operator
-import time
 
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import LabelEncoder
 
 from core import featuretools as ft
 from core.featuretools.variable_types.variable import Discrete, Boolean, Numeric
@@ -18,20 +15,21 @@ from entity.dataset.base_dataset import BaseDataset
 from gauss.feature_generation.base_feature_generation import BaseFeatureGenerator
 from utils.Logger import logger
 from utils.common_component import yaml_read, yaml_write
-from utils.base import reduce_data, get_current_memory_gb
+from utils.base import get_current_memory_gb
 
 
 class FeatureToolsGenerator(BaseFeatureGenerator):
 
     def __init__(self, **params):
 
-        super(FeatureToolsGenerator, self).__init__(name=params["name"],
-                                                    train_flag=params["train_flag"],
-                                                    enable=params["enable"],
-                                                    feature_configure_path=params["feature_config_path"])
+        super().__init__(
+            name=params["name"],
+            train_flag=params["train_flag"],
+            enable=params["enable"],
+            task_name=params["task_name"],
+            feature_configure_path=params["feature_config_path"]
+        )
 
-        self._label_encoding_configure_path = params["label_encoding_configure_path"]
-        self.label_encoding = {}
         self._final_file_path = params["final_file_path"]
 
         self.variable_types = {}
@@ -44,21 +42,13 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         self.index_name = "data_id"
 
     def _train_run(self, **entity):
-        assert "dataset" in entity.keys()
-        dataset = entity["dataset"]
+        assert "train_dataset" in entity.keys()
+        dataset = entity["train_dataset"]
 
-        logger.info("Loading Data clearing feature configuration, " + "with current memory usage: %.2f GiB",
+        logger.info("Loading Data clearing feature configuration, with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])
-        self._set_feature_configure()
+        self._load_feature_configure()
         assert self.feature_configure is not None
-
-        logger.info("Starting label encoding, " + "with current memory usage: %.2f GiB",
-                    get_current_memory_gb()["memory_usage"])
-        self._label_encoding(dataset=dataset)
-
-        logger.info("Label encoding serialize, " + "with current memory usage: %.2f GiB",
-                    get_current_memory_gb()["memory_usage"])
-        self._label_encoding_serialize()
 
         logger.info("Feature generation component flag: " + str(self._enable) + ", with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])
@@ -72,42 +62,19 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
         self.final_configure_generation(dataset=dataset)
 
     def _predict_run(self, **entity):
-        assert "dataset" in entity.keys()
-        dataset = entity['dataset']
+        assert "infer_dataset" in entity.keys()
+        dataset = entity['infer_dataset']
 
         data = dataset.get_dataset().data
         assert isinstance(data, pd.DataFrame)
 
-        feature_names = dataset.get_dataset().feature_names
-
-        self._set_feature_configure()
+        self._load_feature_configure()
         assert self.feature_configure is not None
-
-        with shelve.open(self._label_encoding_configure_path) as shelve_open:
-            le_model_list = shelve_open['label_encoding']
-
-            for col in feature_names:
-                if self.feature_configure[col]['ftype'] == "category" or self.feature_configure[col]['ftype'] == "bool":
-                    assert le_model_list.get(col)
-                    le_model = le_model_list[col]
-
-                    label_dict = dict(zip(le_model.classes_, le_model.transform(le_model.classes_)))
-                    status_list = data[col].unique()
-
-                    for item in status_list:
-                        if label_dict.get(item) is None:
-                            logger.info(
-                                "feature: " + str(col) + " has an abnormal value (unseen by label encoding): " + str(
-                                    item))
-                            raise ValueError("feature: " + str(
-                                col) + " has an abnormal value (unseen by label encoding): " + str(item))
-
-                    data[col] = le_model.transform(data[col])
 
         if self._enable is True:
             self._ft_generator(dataset=dataset)
 
-    def _set_feature_configure(self):
+    def _load_feature_configure(self):
         self.feature_configure = yaml_read(self._feature_configure_path)
 
     def _ft_generator(self, dataset: BaseDataset):
@@ -169,28 +136,6 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
             dataset.get_dataset().data = generated_data
             dataset.get_dataset().generated_feature_names = feature_names
             self.generated_feature_names = list(dataset.get_dataset().data.columns)
-
-    def _label_encoding(self, dataset: BaseDataset):
-        feature_names = dataset.get_dataset().feature_names
-        data = dataset.get_dataset().data
-
-        for feature in feature_names:
-            if self.feature_configure[feature]['ftype'] == 'category' or \
-                    self.feature_configure[feature]['ftype'] == 'bool':
-                item_label_encoding = LabelEncoder()
-                item_label_encoding_model = item_label_encoding.fit(data[feature])
-                self.label_encoding[feature] = item_label_encoding_model
-
-                data[feature] = item_label_encoding_model.transform(data[feature])
-
-        logger.info("Label encoding finished, starting to reduce dataframe and save memory, " + "with current memory usage: %.2f GiB",
-                    get_current_memory_gb()["memory_usage"])
-        reduce_data(dataframe=dataset.get_dataset().data)
-
-    def _label_encoding_serialize(self):
-        # 序列化label encoding模型字典
-        with shelve.open(self._label_encoding_configure_path) as shelve_open:
-            shelve_open['label_encoding'] = self.label_encoding
 
     def clean_dataset(self, df):
         assert isinstance(df, pd.DataFrame)
