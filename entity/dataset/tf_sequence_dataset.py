@@ -5,6 +5,7 @@
 
 import numpy as np
 import pandas as pd
+from pandas.core.indexes.base import Index
 
 from utils.bunch import Bunch
 from entity.dataset.base_dataset import BaseDataset
@@ -39,9 +40,9 @@ class SequenceDataset(BaseDataset):
         self._period_sep = params["period_seq"] \
             if params.get("period_seq") else ";"
         self._fea_sep = params["fea_seq"] \
-            if params.get("period_seq") else ","
+            if params.get("fea_seq") else ","
         self._label_sep = params["label_seq"] \
-            if params.get("period_seq") else "\t"
+            if params.get("label_seq") else "\t"
         self._has_feature_name = params["has_feature_name"] \
             if params.get("has_feature_name") else False
         
@@ -73,8 +74,10 @@ class SequenceDataset(BaseDataset):
         
         data = []
         labels = []
+        label_index = []
         time_steps = []
         label_name = ["label"]
+        stepper = 0
 
         if self._has_feature_name:
             fea_names, label_name = self._strip_and_split(line, self._label_sep)
@@ -85,37 +88,37 @@ class SequenceDataset(BaseDataset):
         while line:
             period_data, period_labels = self._feature_label_split(line)
             step_length = len(period_data)
-            miss_counter = 0
+            flag = True
 
-            if not self._has_feature_name:
-                fea_names = [str(i) for i in range(len(period_data))]
-    
-            for idx, step_data in enumerate(period_data):
-                data.append(self._strip_and_split(step_data, self._fea_sep))
-                if self._dataset_type == self.MUL:
-                    if self._miss_label:
-                        try:
-                            step_label_idx = period_labels[idx-miss_counter][0]
-                        except Exception:
-                            step_label_idx = period_labels[-1][0]
+            for step_data in period_data:
+                if not self._has_feature_name and flag:                    
+                    fea_names = [str(i) for i in range(len(step_data))]
+                    flag = False
+                if self._multi_fea:
+                    data.append(self._strip_and_split(step_data, self._fea_sep))
+                else:
+                    data.append(step_data)
 
-                        if step_label_idx == idx:
-                            labels.append(period_labels[idx-miss_counter][1])
-                        else:
-                            miss_counter += 1
-                            labels.append(None)
-                    else:
-                        labels.append(period_labels[idx][1])
-
-            if self._dataset_type == self.UNI:
+            if self._dataset_type == self.MUL:
+                for idx, step_label in period_labels:
+                    labels.append(step_label)
+                    cur_idx = int(idx + np.array(time_steps[:stepper]).sum())
+                    label_index.append(cur_idx)
+                    stepper += 1
+            elif self._dataset_type == self.UNI:
                 labels += period_labels
+
             time_steps.append(step_length)
             line = file.readline()
-        
+
         self._bunch.data = pd.DataFrame(data=data, columns=fea_names)
         self._bunch.target = pd.DataFrame(data=labels, columns=label_name)
         self._bunch.steps = pd.DataFrame(data=time_steps, columns=["steps"])
         self._bunch.feature_names = self._bunch.data.columns
+        if self._dataset_type == self.MUL:
+            self._bunch.indies = pd.DataFrame(data=label_index, columns=["indies"])
+
+        print(self._bunch)
 
     def _feature_label_split(self, line):
         """Split feature columns and label columns to separete contents.
@@ -128,6 +131,7 @@ class SequenceDataset(BaseDataset):
         """
         data, label = self._strip_and_split(line, self._label_sep)
         self._dataset_type = self.MUL if self._fea_sep in label else self.UNI
+        self._multi_fea = True if self._fea_sep in data else False
 
         data = self._strip_and_split(data, self._period_sep)
         label = self._strip_and_split(label, self._period_sep)
@@ -137,10 +141,10 @@ class SequenceDataset(BaseDataset):
             if self._task_type == self.REG:
                 label = [(int(value[0]), float(value[1])) for value in label]
             else:
-                label = [(int(value[0]), int(value[1])) for value in label]
+                label = [(int(value[0]), value[1]) for value in label]
         return data, label
 
-    def _strip_and_split(self, sample, delimiter):
+    def _strip_and_split(self, sample, delimiter=None):
         sample = sample.strip()
         sample = sample.split(delimiter)
         return sample
