@@ -17,10 +17,8 @@ import lightgbm as lgb
 
 from entity.model.multiprocess_model import MultiprocessModelWrapper
 from entity.dataset.base_dataset import BaseDataset
-from entity.dataset.multiprocess_plain_dataset import MultiprocessPlaintextDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
-from utils.bunch import Bunch
-from utils.common_component import mkdir, yaml_write, feature_index_generator
+from utils.common_component import mkdir, yaml_write
 from utils.Logger import logger
 from utils.base import get_current_memory_gb
 
@@ -41,9 +39,9 @@ class MultiprocessGaussLightgbm(MultiprocessModelWrapper):
             train_flag=params["train_flag"]
         )
 
-        self.model_file_name = self.name + ".txt"
-        self.model_config_file_name = self.name + ".yaml"
-        self.feature_config_file_name = self.name + ".yaml"
+        self.__model_file_name = self.name + ".txt"
+        self.__model_config_file_name = self.name + ".yaml"
+        self.__feature_config_file_name = self.name + ".yaml"
 
     def __repr__(self):
         pass
@@ -144,21 +142,12 @@ class MultiprocessGaussLightgbm(MultiprocessModelWrapper):
     def predict(self, infer_dataset: BaseDataset, **entity):
         assert self._train_flag is False
 
-        if entity.get("feature_conf") is not None:
-            features = feature_index_generator(feature_conf=entity.get("feature_conf"))
-            data = infer_dataset.feature_choose(features)
-
-            data_pair = Bunch(data=data, target=None, target_names=None)
-            infer_dataset = MultiprocessPlaintextDataset(
-                name="inference_data",
-                task_name=self._train_flag,
-                data_pair=data_pair
-            )
-
         lgb_test = self.__load_data(dataset=infer_dataset)
-        assert os.path.isfile(self._model_path + "/" + self.model_file_name)
+        assert os.path.isfile(self._model_path + "/" + self.__model_file_name)
 
-        self._model = lgb.Booster(model_file=self._model_path + "/" + self.model_file_name)
+        self._model = lgb.Booster(
+            model_file=self._model_path + "/" + self.__model_file_name
+        )
 
         inference_result = self._model.predict(lgb_test)
         inference_result = pd.DataFrame({"result": inference_result})
@@ -191,11 +180,11 @@ class MultiprocessGaussLightgbm(MultiprocessModelWrapper):
         dataset = self._generate_sub_dataset(dataset=train_dataset)
         val_dataset = self._generate_sub_dataset(dataset=val_dataset)
 
-        train_data = dataset.get_dataset().data
-        eval_data = val_dataset.get_dataset().data
+        train_data = dataset.get("data")
+        eval_data = val_dataset.get("data")
 
-        train_label = dataset.get_dataset().target
-        eval_label = val_dataset.get_dataset().target
+        train_label = dataset.get("target")
+        eval_label = val_dataset.get("target")
 
         # 默认生成的为预测值的概率值，传入metrics之后再处理.
         logger.info(
@@ -240,14 +229,14 @@ class MultiprocessGaussLightgbm(MultiprocessModelWrapper):
         except AssertionError:
             mkdir(self._model_path)
 
-        self._model.save_model(os.path.join(self._model_path, self.model_file_name))
+        self._model.save_model(os.path.join(self._model_path, self.__model_file_name))
 
         yaml_write(yaml_dict=self._model_config,
-                   yaml_file=os.path.join(self._model_config_root, self.model_config_file_name))
+                   yaml_file=os.path.join(self._model_config_root, self.__model_config_file_name))
 
         assert self._feature_list is not None
         yaml_write(yaml_dict={"features": self._feature_list},
-                   yaml_file=os.path.join(self._feature_config_root, self.feature_config_file_name))
+                   yaml_file=os.path.join(self._feature_config_root, self.__feature_config_file_name))
 
     def set_weight(self):
         """

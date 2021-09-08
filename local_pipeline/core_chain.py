@@ -81,6 +81,8 @@ class CoreRoute(Component):
 
         self.model = self.create_entity(entity_name=self._model_name, **model_params)
 
+        self._best_metrics = None
+
         if self._train_flag:
             self._auto_ml_path = params["auto_ml_path"]
             self.selector_config_path = params["selector_config_path"]
@@ -162,42 +164,37 @@ class CoreRoute(Component):
 
             yaml_write(yaml_dict=feature_conf, yaml_file=self._final_file_path)
 
-        self._best_model = entity["model"]
         # self._best_metrics is a MetricsResult object.
         self._best_metrics = entity["model"].val_best_metric_result
 
         logger.info(
-            "Using {}, num of running auto machine learning train methods is : {}".format(
-                self._model_name, entity["auto_ml"].train_method_count
-            )
+            "Using %s, num of running auto machine learning train methods is : %s",
+            self._model_name, entity["auto_ml"].train_method_count
         )
 
         logger.info(
-            "Using {}, num of running auto machine learning algorithms trials is : {}".format(
-                self._model_name, entity["auto_ml"].algorithm_method_count
-            )
+            "Using %s, num of running auto machine learning algorithms trials is : %s",
+            self._model_name, entity["auto_ml"].algorithm_method_count
         )
 
         logger.info(
-            "Using {}, num of running auto machine learning model training trials is : {}".format(
-                self._model_name, entity["auto_ml"].trial_count
-            )
+            "Using %s, num of running auto machine learning model training trials is : %s",
+            self._model_name, entity["auto_ml"].trial_count
         )
 
         logger.info(
-            "Using {}, all training model metric results are : {}".format(
-                self._model_name, entity["model"].metrics_history
-            )
+            "Using %s, all training model metric results are : %s",
+            self._model_name, entity["model"].metrics_history
         )
 
         logger.info("Using {}, best metric result is : {:.10f}".format(
             self._model_name, max(entity["model"].metrics_history)
-            )
+        )
         )
 
         logger.info("Using {}, num of total models is {:d}".format(
             self._model_name, len(entity["model"].metrics_history)
-            )
+        )
         )
         entity["model"].model_save()
 
