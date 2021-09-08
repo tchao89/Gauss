@@ -21,6 +21,7 @@ class Inference:
     """
     Inference object
     """
+
     def __init__(self, **params):
         self.name = params["name"]
         self.model_name = params["model_name"]
@@ -33,13 +34,16 @@ class Inference:
 
         self.dataset_name = params["dataset_name"]
         self.target_names = params["target_names"]
+
         self.type_inference_name = params["type_inference_name"]
         self.data_clear_name = params["data_clear_name"]
+        self.label_encoder_name = params["label_encoder_name"]
         self.feature_generator_name = params["feature_generator_name"]
         self.unsupervised_feature_selector_name = params["unsupervised_feature_selector_name"]
         self.supervised_feature_selector_name = params["supervised_feature_selector_name"]
 
         self.data_clear_flag = params["data_clear_flag"]
+        self.label_encoder_flag = params["label_encoder_flag"]
         self.feature_generator_flag = params["feature_generator_flag"]
         self.unsupervised_feature_selector_flag = params["unsupervised_feature_selector_flag"]
         self.supervised_feature_selector_flag = params["supervised_feature_selector_flag"]
@@ -99,7 +103,11 @@ class Inference:
 
                         "impute_path": join(
                             work_feature_root,
-                            feature_dict.impute_path)
+                            feature_dict.impute_path),
+
+                        "label_encoder_feature": join(
+                            work_feature_root,
+                            feature_dict.label_encoder_feature)
                         }
         preprocessing_params = Bunch(
             name="PreprocessRoute",
@@ -113,6 +121,8 @@ class Inference:
             type_inference_name=self.type_inference_name,
             data_clear_name=self.data_clear_name,
             data_clear_flag=self.data_clear_flag,
+            label_encoder_name=self.label_encoder_name,
+            label_encoder_flag=self.label_encoder_flag,
             feature_generator_name=self.feature_generator_name,
             feature_generator_flag=self.feature_generator_flag,
             unsupervised_feature_selector_name=self.unsupervised_feature_selector_name,

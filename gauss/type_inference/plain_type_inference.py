@@ -60,7 +60,6 @@ class PlainTypeInference(BaseTypeInference):
         self.final_feature_configure = FeatureConf(name='target feature path', file_path=params["final_file_path"])
 
     def _train_run(self, **entity):
-        print(entity.keys())
         assert "train_dataset" in entity.keys()
 
         self.dtype_inference(dataset=entity["train_dataset"])

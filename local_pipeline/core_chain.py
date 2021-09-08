@@ -172,7 +172,7 @@ class CoreRoute(Component):
             )
         )
 
-        logger.info("Using {}, best metric result is : {:.6f}".format(
+        logger.info("Using {}, best metric result is : {:.10f}".format(
             self._model_name, max(entity["model"].metrics_history)
             )
         )
@@ -204,7 +204,8 @@ class CoreRoute(Component):
             assert self._model_save_path
             assert self._final_file_path
 
-            self._result = self.model.predict(infer_dataset=dataset, feature_conf=feature_config)
+            self.model.update_feature_conf(feature_conf=feature_config)
+            self._result = self.model.predict(infer_dataset=dataset)
 
         else:
             self._result = self.model.predict(infer_dataset=entity.get("infer_dataset"))

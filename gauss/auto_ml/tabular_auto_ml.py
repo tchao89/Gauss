@@ -61,10 +61,12 @@ class TabularAutoML(BaseAutoML):
         if not self._opt_model_names:
             raise ValueError("Object opt_model_names is empty.")
 
-        else:
+        if not self.opt_tuners:
             for opt_name in self._opt_model_names:
                 opt_tuner = self._chose_tuner(opt_name)
                 self.opt_tuners.append(opt_tuner)
+        else:
+            logger.info("Opt tuners have set.")
 
     def _chose_tuner(self, algorithms_name: str):
 
@@ -88,6 +90,8 @@ class TabularAutoML(BaseAutoML):
         self._is_final_set = final_set
 
     def _train_run(self, **entity):
+        self._train_method_count += 1
+
         assert "model" in entity and isinstance(entity["model"], ModelWrapper)
         assert "train_dataset" in entity and isinstance(entity["train_dataset"], BaseDataset)
         assert "val_dataset" in entity and isinstance(entity["val_dataset"], BaseDataset)
@@ -100,10 +104,12 @@ class TabularAutoML(BaseAutoML):
         self._model = entity["model"]
 
         self._local_best = None
-        # 在此处创建模型数据对象, 继承entity对象, 放进entity字典
-        for tuner_algorithms in self.opt_tuners:
-            tuner = tuner_algorithms
 
+        # 在此处创建模型数据对象, 继承entity对象, 放进entity字典
+        for tuner in self.opt_tuners:
+            self._trial_count += 1
+
+            assert len(self.opt_tuners) < 5, "Length of opt tuners is {:d}.".format(len(self.opt_tuners))
             logger.info(
                 "Starting update search space, "
                 "with current memory usage: {:.2f} GiB".format(
@@ -112,11 +118,10 @@ class TabularAutoML(BaseAutoML):
             )
 
             tuner.update_search_space(self._search_space.get(entity["model"].name))
-
             for trial in range(self.trial_num):
 
                 logger.info(
-                    "tuner algorithms: " + tuner_algorithms.algorithm_name + ", Auto machine learning trial number: %d",
+                    "tuner algorithms: " + tuner.algorithm_name + ", Auto machine learning trial number: %d",
                     trial)
                 if self._default_parameters is not None:
 
@@ -125,23 +130,23 @@ class TabularAutoML(BaseAutoML):
 
                     receive_params = tuner.generate_parameters(trial)
 
-                    logger.info("Generate hyper parameters, " + "with current memory usage: %.2f GiB",
+                    logger.info("Generate hyper parameters, with current memory usage: %.2f GiB",
                                 get_current_memory_gb()["memory_usage"])
                     params.update(receive_params)
 
-                    logger.info("Send parameters to model object, " + "with current memory usage: %.2f GiB",
+                    logger.info("Send parameters to model object, with current memory usage: %.2f GiB",
                                 get_current_memory_gb()["memory_usage"])
                     self._model.update_params(**params)
 
-                    logger.info("Model training, " + "with current memory usage: %.2f GiB",
+                    logger.info("Model training, with current memory usage: %.2f GiB",
                                 get_current_memory_gb()["memory_usage"])
                     self._model.train(**entity)
 
-                    logger.info("Evaluate model, " + "with current memory usage: %.2f GiB",
+                    logger.info("Evaluate model, with current memory usage: %.2f GiB",
                                 get_current_memory_gb()["memory_usage"])
                     self._model.eval(**entity)
 
-                    logger.info("Update best model, " + "with current memory usage: %.2f GiB",
+                    logger.info("Update best model, with current memory usage: %.2f GiB",
                                 get_current_memory_gb()["memory_usage"])
                     self._model.update_best_model()
 

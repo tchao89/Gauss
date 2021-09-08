@@ -9,7 +9,7 @@ from __future__ import annotations
 from abc import ABC
 
 from entity.dataset.base_dataset import BaseDataset
-from entity.dataset.multiprocess_plain_dataset import MultiprocessPlaintextDataset
+from entity.dataset.plain_dataset import PlaintextDataset
 from entity.model.model import ModelWrapper
 
 from utils.Logger import logger
@@ -47,7 +47,7 @@ class SingleProcessModelWrapper(ModelWrapper, ABC):
                 target=target,
                 target_names=dataset.get_dataset().target_names
             )
-            dataset = MultiprocessPlaintextDataset(
+            dataset = PlaintextDataset(
                 name="train_data",
                 task_name=self._task_name,
                 data_pair=data_pair
@@ -58,6 +58,7 @@ class SingleProcessModelWrapper(ModelWrapper, ABC):
                 get_current_memory_gb()["memory_usage"]
             )
         )
+
         dataset = dataset.get_dataset()
 
         logger.info(

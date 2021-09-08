@@ -18,11 +18,9 @@ import lightgbm as lgb
 
 from entity.model.single_process_model import SingleProcessModelWrapper
 from entity.dataset.base_dataset import BaseDataset
-from entity.dataset.plain_dataset import PlaintextDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from utils.base import get_current_memory_gb
-from utils.bunch import Bunch
-from utils.common_component import mkdir, yaml_write, feature_list_generator
+from utils.common_component import mkdir, yaml_write
 from utils.Logger import logger
 
 
@@ -48,12 +46,12 @@ class GaussLightgbm(SingleProcessModelWrapper):
         self.__model_config_file_name = self.name + ".yaml"
         self.__feature_config_file_name = self.name + ".yaml"
 
+        self.count = 0
+
     def __repr__(self):
         pass
 
-    def __load_data(self,
-                    dataset: BaseDataset
-                    ):
+    def __load_data(self, dataset: BaseDataset):
         """
         :param dataset: BaseDataset
         :return: lgb.Dataset
@@ -78,9 +76,8 @@ class GaussLightgbm(SingleProcessModelWrapper):
             )
             return lgb_data
 
-        dataset = dataset.get_dataset()
         self._check_bunch(dataset=dataset)
-        return dataset.data
+        return dataset.get("data")
 
     def _initialize_model(self):
         pass
@@ -151,31 +148,13 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
         else:
             raise ValueError("Model parameters is None.")
+        self.count += 1
 
     def predict(self,
                 infer_dataset: BaseDataset,
                 **entity
                 ):
         assert self._train_flag is False
-
-        if entity.get("feature_conf") is not None:
-            features = feature_list_generator(
-                feature_conf=entity.get("feature_conf")
-            )
-
-            data = infer_dataset.feature_choose(features)
-
-            data_pair = Bunch(
-                data=data,
-                target=None,
-                target_names=None
-            )
-
-            infer_dataset = PlaintextDataset(
-                name="inference_data",
-                task_type=self._train_flag,
-                data_pair=data_pair
-            )
 
         lgb_test = self.__load_data(dataset=infer_dataset)
         assert os.path.isfile(self._model_path + "/" + self.__model_file_name)
@@ -224,11 +203,11 @@ class GaussLightgbm(SingleProcessModelWrapper):
         dataset = self._generate_sub_dataset(dataset=train_dataset)
         val_dataset = self._generate_sub_dataset(dataset=val_dataset)
 
-        train_data = dataset.get_dataset().data.values
-        eval_data = val_dataset.get_dataset().data.values
+        train_data = dataset.get("data")
+        eval_data = val_dataset.get("data")
 
-        train_label = dataset.get_dataset().target.values
-        eval_label = val_dataset.get_dataset().target.values
+        train_label = dataset.get("target")
+        eval_label = val_dataset.get("target")
 
         # 默认生成的为预测值的概率值，传入metrics之后再处理.
         logger.info(
@@ -287,7 +266,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
                    yaml_file=os.path.join(
                        self._model_config_root,
                        self.__model_config_file_name
-                   )
+                        )
                    )
 
         assert self._feature_list is not None

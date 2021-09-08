@@ -24,6 +24,8 @@ class BaseAutoML(Component):
         )
 
         self._opt_model_names = opt_model_names
+        self._train_method_count = 0
+        self._trial_count = 0
 
     @abc.abstractmethod
     def _train_run(self, **entity):
@@ -32,3 +34,11 @@ class BaseAutoML(Component):
     @abc.abstractmethod
     def _predict_run(self, **entity):
         pass
+
+    @property
+    def train_method_count(self):
+        return self._train_method_count
+
+    @property
+    def trial_count(self):
+        return self._trial_count

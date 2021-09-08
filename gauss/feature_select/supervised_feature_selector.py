@@ -14,7 +14,8 @@ import numpy as np
 import pandas as pd
 
 from entity.dataset.base_dataset import BaseDataset
-from entity.model.model import ModelWrapper
+from entity.model.single_process_model import SingleProcessModelWrapper
+from entity.model.multiprocess_model import MultiprocessModelWrapper
 from entity.metrics.base_metric import MetricResult
 
 from gauss.feature_select.base_feature_selector import BaseFeatureSelector
@@ -201,8 +202,13 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         metrics = entity["metrics"]
         self._optimize_mode = metrics.optimize_mode
 
+        # 创建自动机器学习对象
+        model_tuner = entity["auto_ml"]
+        model_tuner.is_final_set = False
+
         model = entity["model"]
-        assert isinstance(model, ModelWrapper)
+        assert isinstance(model, SingleProcessModelWrapper) \
+               or isinstance(model, MultiprocessModelWrapper)
 
         selector_tuner = HyperoptTuner(algorithm_name="tpe", optimize_mode=self._optimize_mode)
 
@@ -255,7 +261,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 )
             )
             for trial in range(self.selector_trial_num):
-
                 logger.info(
                     "supervised selector models training, round: {:d}, "
                     "with current memory usage: {:.2f} GiB".format(
@@ -264,10 +269,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 )
 
                 feature_configure = copy.deepcopy(entity["feature_configure"])
-
-                # 创建自动机器学习对象
-                model_tuner = copy.deepcopy(entity["auto_ml"])
-                model_tuner.is_final_set = False
 
                 params = self._new_parameters
                 receive_params = selector_tuner.generate_parameters(trial)
@@ -341,9 +342,12 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 )
                 selector_tuner.receive_trial_result(trial, receive_params, local_optimal_metrics.result)
 
+        if model_tuner.is_final_set is False:
             model.set_best_model()
-            self._optimal_metrics = model.val_best_metric_result.result
 
+        self._optimal_metrics = model.val_best_metric_result.result
+
+        logger.info("Total trained models: {:d}".format(model.count))
         # save features
         self._final_feature_names = model.feature_list
         if isinstance(original_dataset.get_dataset().data, pd.DataFrame):

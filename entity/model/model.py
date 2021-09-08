@@ -12,7 +12,6 @@ from entity.entity import Entity
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import MetricResult, BaseMetric
 
-from utils.common_component import feature_list_generator
 from utils.bunch import Bunch
 
 
