@@ -167,6 +167,24 @@ class CoreRoute(Component):
         self._best_metrics = entity["model"].val_best_metric_result
 
         logger.info(
+            "Using {}, num of running auto machine learning train methods is : {}".format(
+                self._model_name, entity["auto_ml"].train_method_count
+            )
+        )
+
+        logger.info(
+            "Using {}, num of running auto machine learning algorithms trials is : {}".format(
+                self._model_name, entity["auto_ml"].algorithm_method_count
+            )
+        )
+
+        logger.info(
+            "Using {}, num of running auto machine learning model training trials is : {}".format(
+                self._model_name, entity["auto_ml"].trial_count
+            )
+        )
+
+        logger.info(
             "Using {}, all training model metric results are : {}".format(
                 self._model_name, entity["model"].metrics_history
             )

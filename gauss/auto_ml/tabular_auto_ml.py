@@ -107,7 +107,7 @@ class TabularAutoML(BaseAutoML):
 
         # 在此处创建模型数据对象, 继承entity对象, 放进entity字典
         for tuner in self.opt_tuners:
-            self._trial_count += 1
+            self._algorithm_method_count += 1
 
             assert len(self.opt_tuners) < 5, "Length of opt tuners is {:d}.".format(len(self.opt_tuners))
             logger.info(
@@ -119,6 +119,7 @@ class TabularAutoML(BaseAutoML):
 
             tuner.update_search_space(self._search_space.get(entity["model"].name))
             for trial in range(self.trial_num):
+                self._trial_count += 1
 
                 logger.info(
                     "tuner algorithms: " + tuner.algorithm_name + ", Auto machine learning trial number: %d",
