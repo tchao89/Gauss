@@ -17,7 +17,27 @@ from utils.common_component import (
 class SequenceLabelEncode(BaseLabelEncode):
     """Hash the categorical feature values for sequence dataset.
 
+    Features has `ftype` is category or bool will normalized to 
+    numbers, which stands for original string or bool values. In 
+    training process, encoder will be saved as serialized binary
+    file after fit and transform, when in predicting, binary encoder
+    file will be loaded to raplace categorical values in infer 
+    dataset by transfed values. 
 
+    Parameters:
+    ----------
+    feature_configure_path : Path of configuration yaml file to
+        be loaded.
+
+    save_config_path : Path of generated configuration yaml to 
+        be saved.
+
+    save_encoder_path : Path of fitted encoder to be saved.
+    
+    Examples:
+    ----------
+    >>> encoder = SequenceLabelEncode(...)
+    >>> encoder.run(dataset=dataset)
     """
 
     CATE = "category"
@@ -26,16 +46,27 @@ class SequenceLabelEncode(BaseLabelEncode):
     CLS = "classification"
 
     def __init__(self, **params):
+        """
+        Parameters:
+        ----------
+        feature_configure_path : Path of configuration yaml file to
+            be loaded.
 
+        save_config_path : Path of generated configuration yaml to 
+            be saved.
+
+        save_encoder_path : Path of fitted encoder to be saved
+        """
+          
         super(SequenceLabelEncode, self).__init__(
             name=params["name"],
-            train_flag=params["train_flag"],
+            train_flag=params["train_flag"]\
+                if params.get["train_flag"] else True,
             enable=params["enable"]\
                 if params.get("enable") else True,
             task_name=params["task_name"],
             feature_configure_path=params["feature_config_path"]
         )
-        self._task_name = params["task_name"]
         self._save_config_path = params["save_config_path"]
         self._save_encoder_path = params["save_encoder_path"]
 
@@ -62,7 +93,6 @@ class SequenceLabelEncode(BaseLabelEncode):
             self._feature_encode(data, feature_names, encoders)
             self._label_encode(label, label_name, encoders)
 
-
     def _encode(self, dataset):
         data = dataset.get_dataset().data
         feature_names = dataset.get_dataset().feature_names
@@ -73,24 +103,7 @@ class SequenceLabelEncode(BaseLabelEncode):
         self._label_encode(label, label_name)
 
         reduce_data(dataframe=data)
-
-    def _label_encode(self, label, label_name, encoders=None):
-        if self._train_flag:
-            if self._task_name == self.CLS:
-                encoder = LabelEncoder().fit(label)
-                label = encoder.transform(label)
-                self._encoders[label_name] = encoder
-        else:
-            if encoders is None:
-                raise AttributeError(
-                    "encoders must provide when predicting."
-                    "Please check the `train_flag` or encoders."
-                    )
-            if self._task_name == self.CLS:
-                encoder = encoders[label_name]
-                # blank for handle OOV.
-                label = encoder.transform(label)
-
+    
     def _feature_encode(self, data, feature_names, encoders=None):
         if self._train_flag:
             for fea_name in feature_names:
@@ -112,7 +125,25 @@ class SequenceLabelEncode(BaseLabelEncode):
                     # hash_table = dict(zip(encoder.classes_, encoder.transform(encoder.classes_)))
                     # blank for handle oov features.
                     data[fea_name] = encoder.transform(data[fea_name])
-                    
+
+    def _label_encode(self, label, label_name, encoders=None):
+        if self._train_flag:
+            if self._task_name == self.CLS:
+                encoder = LabelEncoder().fit(label)
+                label = encoder.transform(label)
+                self._encoders[label_name] = encoder
+        else:
+            if encoders is None:
+                raise AttributeError(
+                    "encoders must provide when predicting."
+                    "Please check the `train_flag` or encoders."
+                    )
+            if self._task_name == self.CLS:
+                encoder = encoders[label_name]
+                # blank for handle OOV.
+                label = encoder.transform(label)
+
+
     def _final_configure_generation(self):
         yaml_write(yaml_dict=self._feature_config, yaml_file=self._save_config_path)
 

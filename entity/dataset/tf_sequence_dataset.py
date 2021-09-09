@@ -5,13 +5,51 @@
 
 import numpy as np
 import pandas as pd
-from pandas.core.indexes.base import Index
 
 from utils.bunch import Bunch
 from entity.dataset.base_dataset import BaseDataset
 
 class SequenceDataset(BaseDataset):
     """Dataset for loading sequence shape time series data.
+
+    Dataset .txt file to be loaded should strictly follow the format
+    standard:
+
+        1. A line of data stands for a period, which include data part
+            and label part. M to M or M to 1 are supported. 
+
+        2. A period can include single or couples time steps. 
+        
+        3. A time step can include single or couples features.
+        
+        4. Labels in M to M should contain time step indies and values.
+        
+        5. Values and labels should be seprated by `\\t`.
+        
+        6. Time steps should be seperated by `;`, this rule applies in both
+            values and labels.
+        
+        7. Features should be seperated by `,`, same as rule 6.
+
+    Parameters:
+    -----------
+
+    period_sep : delimeter between identify period data.
+
+    fea_sep : delimeter between feature columns in a period.
+
+    label_sep : delimeter between feature columns and labels in a period.
+
+    has_feature_name : boolean value, True for including feature names in 1st
+        row, False for not.
+
+    Attributes:
+    -----------
+
+    dataset_type : many-to-many, or many-to-one.
+
+    task_name : current dataset label type , `classification` or 
+        `regression`.
     """
 
     REG = "regression"
@@ -21,10 +59,15 @@ class SequenceDataset(BaseDataset):
 
     def __init__(self, **params):
         """
-        :param period_sep: delimeter between identify period data.
-        :param fea_sep: delimeter between feature columns in a period.
-        :param label_sep: delimeter between feature columns and labels in a period.
-        :param has_feature_name: boolean value, True for including feature names in 1st
+        Parameters:
+        -----------
+        period_sep : delimeter between identify period data.
+
+        fea_sep : delimeter between feature columns in a period.
+  
+        label_sep : delimeter between feature columns and labels in a period.
+  
+        has_feature_name : boolean value, True for including feature names in 1st
             row, False for not.
         """
         super(SequenceDataset, self).__init__(
@@ -60,13 +103,14 @@ class SequenceDataset(BaseDataset):
      
 
     def build_dataset(self):
+        """Read .txt file to SequenceDataset."""
+
         file = open(self._filepath)
         self._read_from_file(file)
         file.close()
 
     def _read_from_file(self, file):
         line = file.readline()
-        
         data = []
         labels = []
         label_index = []
@@ -118,8 +162,11 @@ class SequenceDataset(BaseDataset):
         """Split feature columns and label columns to separete contents.
 
         And set the dataset type to `multi` or `unique` by the number of labels.
-            1. `multi` means m to m, each sample has a label value. 
+
+            1. `multi` means m to m, each sample has a label value.
+
             2. `unique` means m to 1, a time period including m steps data has a single label.
+
         Meanwhile, m to m dataset also include a specific situation, couple lables may missed
         in a period, that will clarified by the attribute `miss_label`.
         """
@@ -143,19 +190,11 @@ class SequenceDataset(BaseDataset):
         sample = sample.split(delimiter)
         return sample
 
-    def load_data(self):
-        self.build_dataset()
-
-    def get_dataset(self):
-        return self._bunch
-
     def split(self, val_start=0.8):
         if self._val_start is None:
             self._val_start = int(val_start * len(self._bunch.steps))
         bunch = self._bunch
-
-        count = bunch.steps.iloc[self._val_start:, :].sum().values[0]
-        
+        count = bunch.steps.iloc[self._val_start:, :].sum().values[0]        
         valset = bunch.data.iloc[-count:, :]
         bunch.data = bunch.data.iloc[:-count, :]
         
@@ -196,7 +235,13 @@ class SequenceDataset(BaseDataset):
         bunch.data.reset_index(drop=True, inplace=True)
         bunch.target.reset_index(drop=True, inplace=True)
         bunch.steps.reset_index(drop=True, inplace=True)
+    
+    def load_data(self):
+        self.build_dataset()
 
+    def get_dataset(self):
+        return self._bunch
+        
     def feature_choose(self, feature_list):
         pass
 
@@ -205,18 +250,6 @@ class SequenceDataset(BaseDataset):
             arg.reset_index(drop=True, inplace=True)
 
 
-    @property
-    def data(self):
-        return self._bunch.data
-
-    @property
-    def labels(self):
-        return self._bunch.target
-
-    @property
-    def steps(self):
-        return self._bunch.steps
-    
     @property
     def dataset_type(self):
         return self._dataset_type
