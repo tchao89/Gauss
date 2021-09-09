@@ -88,36 +88,16 @@ class SequenceDataClear(BaseDataClear):
 
 
         def _train_run(self, **entity):
-            logger.info("Data cleaning activated: {flag}".format(flag=self._enable))
+            logger.info("Data cleaning status: {flag}".format(flag=self._enable))
             if self._enable:
                 self._already_data_clear = True
-                logger.info(
-                    "Cleaning dataset, with memory usage: {memory} GiB.".\
-                        format(memory=get_current_memory_gb()["memory_usage"]
-                ))
                 self._clean(dataset=entity["dataset"])
             else:
                 self._already_data_clear = False
-
-            logger.info(
-                "Cleaned feature configuration generated, with memory usage: {memory} GiB.".\
-                    format(memory=round(get_current_memory_gb()["memory_usage"], 2)
-                ))
             self.final_configure_generation()
-
-            logger.info(
-                "Imputer serializing and saving, with memory usage: {memory} GiB".\
-                    format(memory=round(get_current_memory_gb()["memory_usage"], 2)
-                ))
             self._save_serialized()
-
             if self._feature_imputers is not None:
                del self._feature_imputers
-
-            logger.info(
-                "Data cleaning finished, with memory usage: {memory} GiB".\
-                    format(memory=get_current_memory_gb()["memory_usage"]
-                ))
 
         def _predict_run(self, **entity):
             dataset = entity["dataset"]

@@ -190,7 +190,7 @@ class SequenceTypeInference(BaseTypeInference):
     def target_check(self, dataset: BaseDataset):
         for label_name in dataset.labels:
             label = dataset.labels.loc[:, label_name]
-            self._target_dtype_check(dataset, label)
+            # self._target_dtype_check(dataset, label)
             self._target_count_check(dataset, label)
     
     def _target_dtype_check(self, dataset, label):
