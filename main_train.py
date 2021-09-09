@@ -9,36 +9,6 @@ from local_pipeline.udf_modeling_graph import UdfModelingGraph
 from local_pipeline.multiprocess_udf_graph import MultiprocessUdfModelingGraph
 from utils.common_component import yaml_read
 
-# --------------- this block just for test ---------------
-from local_pipeline.mapping import EnvironmentConfigure
-from utils.bunch import Bunch
-from utils.common_component import yaml_write
-from utils.Logger import logger
-
-user_feature = "/home/liangqian/PycharmProjects/Gauss/test_dataset/feature_conf.yaml"
-environ_configure = EnvironmentConfigure(work_root="/home/liangqian/PycharmProjects/Gauss/experiments",
-                                         user_feature="/home/liangqian/PycharmProjects/Gauss/test_dataset/feature_conf.yaml")
-
-pipeline_dict = Bunch()
-# ["udf", "auto", "multi_udf"]
-pipeline_dict.mode = "udf"
-pipeline_dict.work_root = environ_configure.work_root
-pipeline_dict.task_name = "classification"
-pipeline_dict.metric_name = "auc"
-pipeline_dict.train_data_path = "/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical_train_realdata.csv"
-pipeline_dict.val_data_path = "/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical_val_realdata.csv"
-pipeline_dict.target_names = ["deposit"]
-pipeline_dict.feature_configure_path = environ_configure.user_feature_path
-pipeline_dict.dataset_name = "plaindataset"
-pipeline_dict.model_zoo = ["lightgbm"]
-pipeline_dict.data_clear_flag = True
-pipeline_dict.feature_generator_flag = True
-pipeline_dict.unsupervised_feature_selector_flag = True
-pipeline_dict.supervised_feature_selector_flag = True
-config_path = environ_configure.work_root + "/train_user_config.yaml"
-yaml_write(yaml_dict=dict(pipeline_dict), yaml_file=config_path)
-# --------------- test block end ---------------
-
 
 def main(config=config_path):
     pipeline_configure = yaml_read(config)
