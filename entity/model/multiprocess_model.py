@@ -6,16 +6,16 @@ Authors: Lab
 """
 from __future__ import annotations
 
+import copy
 from abc import ABC
 
 from entity.dataset.base_dataset import BaseDataset
-from entity.dataset.multiprocess_plain_dataset import MultiprocessPlaintextDataset
 from entity.model.model import ModelWrapper
 
 from utils.base import get_current_memory_gb
 from utils.bunch import Bunch
 from utils.Logger import logger
-from utils.common_component import feature_index_generator
+from utils.feature_index_exec import feature_index_generator
 
 
 class MultiprocessModelWrapper(ModelWrapper, ABC):
@@ -48,11 +48,7 @@ class MultiprocessModelWrapper(ModelWrapper, ABC):
                 target=target,
                 target_names=dataset.get_dataset().target_names
             )
-            dataset = MultiprocessPlaintextDataset(
-                name="train_data",
-                task_name=self._task_name,
-                data_pair=data_pair
-            )
+            dataset = copy.deepcopy(dataset).set_dataset(data_pair=data_pair)
 
         logger.info(
             "Reading base dataset, "

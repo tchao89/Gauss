@@ -18,7 +18,7 @@ from local_pipeline.core_chain import CoreRoute
 from local_pipeline.preprocess_chain import PreprocessRoute
 from local_pipeline.mapping import EnvironmentConfigure
 from local_pipeline.base_modeling_graph import BaseModelingGraph
-from utils.common_component import yaml_write
+from utils.yaml_exec import yaml_write
 
 from utils.exception import PipeLineLogicError, NoResultReturnException
 from utils.base import get_current_memory_gb

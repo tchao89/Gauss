@@ -13,6 +13,7 @@ import os.path
 from utils.bunch import Bunch
 from utils.exception import PipeLineLogicError
 from utils.Logger import logger
+
 from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 

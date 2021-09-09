@@ -5,15 +5,16 @@
 import re
 import copy
 
-from utils.Logger import logger
-from utils.common_component import yaml_write, yaml_read
-
 import numpy as np
 import pandas as pd
 
 from entity.dataset.base_dataset import BaseDataset
 from gauss.type_inference.base_type_inference import BaseTypeInference
 from entity.feature_configuration.feature_config import FeatureItemConf, FeatureConf
+
+from utils.Logger import logger
+from utils.yaml_exec import yaml_read
+from utils.yaml_exec import yaml_write
 
 
 class PlainTypeInference(BaseTypeInference):

@@ -30,6 +30,10 @@ class BaseDataset(Entity):
         self._default_print_size = 5
         self._task_name = task_name
 
+        # Bunch object, including features, target,
+        # feature_names[optional], target_names[optional]
+        self._bunch = None
+
     @abc.abstractmethod
     def load_data(self):
         """load data from file provided."""
@@ -39,6 +43,10 @@ class BaseDataset(Entity):
     def get_dataset(self):
         """return loaded data."""
         pass
+
+    @abc.abstractmethod
+    def set_dataset(self, data_pair):
+        """change dataset"""
 
     @property
     def column_size(self):
@@ -58,7 +66,7 @@ class BaseDataset(Entity):
 
     @property
     def task_type(self):
-        return self._task_type
+        return self._task_name
 
     @abc.abstractmethod
     def split(self):

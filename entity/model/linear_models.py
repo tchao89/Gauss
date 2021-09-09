@@ -19,7 +19,7 @@ from entity.model.single_process_model import SingleProcessModelWrapper
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from utils.bunch import Bunch
-from utils.common_component import mkdir
+from utils.base import mkdir
 
 
 class GaussLinearModels(SingleProcessModelWrapper):

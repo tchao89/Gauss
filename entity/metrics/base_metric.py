@@ -2,15 +2,16 @@
 #
 # Copyright (c) 2020, Citic Inc. All rights reserved.
 # Authors: Lab
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+
 import abc
 from abc import ABC
-from typing import Dict, List
+from typing import List
 
 import numpy as np
+
 from entity.entity import Entity
 
 

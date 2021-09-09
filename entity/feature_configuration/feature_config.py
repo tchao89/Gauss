@@ -9,7 +9,8 @@ import yaml
 
 from entity.entity import Entity
 from utils.bunch import Bunch
-from utils.common_component import yaml_read, yaml_write
+from utils.yaml_exec import yaml_read
+from utils.yaml_exec import yaml_write
 
 
 class FeatureItemConf(object):

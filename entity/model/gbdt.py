@@ -19,8 +19,10 @@ import lightgbm as lgb
 from entity.model.single_process_model import SingleProcessModelWrapper
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
+
 from utils.base import get_current_memory_gb
-from utils.common_component import mkdir, yaml_write
+from utils.base import mkdir
+from utils.yaml_exec import yaml_write
 from utils.Logger import logger
 
 
@@ -35,9 +37,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
     def __init__(self, **params):
         super().__init__(
             name=params["name"],
-            model_path=params["model_path"],
-            model_config_root=params["model_config_root"],
-            feature_config_root=params["feature_config_root"],
+            model_root_path=params["model_root_path"],
             task_name=params["task_name"],
             train_flag=params["train_flag"]
         )
@@ -157,10 +157,10 @@ class GaussLightgbm(SingleProcessModelWrapper):
         assert self._train_flag is False
 
         lgb_test = self.__load_data(dataset=infer_dataset)
-        assert os.path.isfile(self._model_path + "/" + self.__model_file_name)
+        assert os.path.isfile(self._model_save_root + "/" + self.__model_file_name)
 
         self._model = lgb.Booster(
-            model_file=self._model_path + "/" + self.__model_file_name
+            model_file=self._model_save_root + "/" + self.__model_file_name
         )
 
         inference_result = self._model.predict(lgb_test)
@@ -246,18 +246,18 @@ class GaussLightgbm(SingleProcessModelWrapper):
                     )
 
     def model_save(self):
-        assert self._model_path is not None
+        assert self._model_save_root is not None
         assert self._model is not None
 
         try:
-            assert os.path.isdir(self._model_path)
+            assert os.path.isdir(self._model_save_root)
 
         except AssertionError:
-            mkdir(self._model_path)
+            mkdir(self._model_save_root)
 
         self._model.save_model(
             os.path.join(
-                self._model_path,
+                self._model_save_root,
                 self.__model_file_name
             )
         )
@@ -269,7 +269,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
                         )
                    )
 
-        assert self._feature_list is not None
         yaml_write(yaml_dict={"features": self._feature_list},
                    yaml_file=os.path.join(
                        self._feature_config_root,

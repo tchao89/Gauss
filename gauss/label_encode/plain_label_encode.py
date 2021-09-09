@@ -13,8 +13,10 @@ from entity.dataset.base_dataset import BaseDataset
 from gauss.label_encode.base_label_encode import BaseLabelEncode
 
 from utils.Logger import logger
-from utils.base import get_current_memory_gb, reduce_data
-from utils.common_component import yaml_read, yaml_write
+from utils.base import get_current_memory_gb
+from utils.reduce_data import reduce_data
+from utils.yaml_exec import yaml_read
+from utils.yaml_exec import yaml_write
 
 
 class PlainLabelEncode(BaseLabelEncode):

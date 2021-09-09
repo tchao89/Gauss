@@ -16,7 +16,7 @@ from local_pipeline.base_modeling_graph import BaseModelingGraph
 
 from utils.bunch import Bunch
 from utils.check_dataset import check_data
-from utils.common_component import yaml_write
+from utils.yaml_exec import yaml_write
 from utils.exception import PipeLineLogicError, NoResultReturnException
 from utils.Logger import logger
 
@@ -214,18 +214,14 @@ class UdfModelingGraph(BaseModelingGraph):
         assert "train_dataset" in entity_dict and "val_dataset" in entity_dict
 
         work_model_root = work_root + "/model/" + params.get("model_name") + "/"
-        model_save_root = work_model_root + "/model_save"
-        model_config_root = work_model_root + "/model_parameters"
-        feature_config_root = work_model_root + "/feature_config"
+        feature_config_root = work_model_root + "feature_config"
         feature_dict["final_feature_config"] = \
             feature_config_root + "/" + EnvironmentConfigure.feature_dict().final_feature_config
 
         core_chain = CoreRoute(
             name="core_route",
             train_flag=True,
-            model_save_root=model_save_root,
-            model_config_root=model_config_root,
-            feature_config_root=feature_config_root,
+            model_root_path=work_model_root,
             target_feature_configure_path=feature_dict["final_feature_config"],
             pre_feature_configure_path=feature_dict["unsupervised_feature"],
             model_name=params.get("model_name"),

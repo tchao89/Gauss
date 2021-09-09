@@ -11,7 +11,8 @@ from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 from gauss_factory.entity_factory import MetricsFactory
 
-from utils.common_component import yaml_write, yaml_read
+from utils.yaml_exec import yaml_read
+from utils.yaml_exec import yaml_write
 from utils.Logger import logger
 from utils.base import get_current_memory_gb
 from utils.bunch import Bunch
@@ -32,17 +33,11 @@ class CoreRoute(Component):
 
         assert params["task_name"] in ["classification", "regression"]
 
-        # name of feature_selector_name
-        self._feature_selector_name = params.get("supervised_selector_name")
         # name of model, which will be used to create entity
         self._model_name = params["model_name"]
-        # 模型保存根目录
-        self._model_save_path = params["model_save_root"]
 
         self.auto_ml_name = params.get("auto_ml_name")
 
-        self._model_config_root = params["model_config_root"]
-        self._feature_config_root = params["feature_config_root"]
         self._task_name = params["task_name"]
         self._metrics_name = params["metrics_name"]
         self._feature_selector_flag = params["supervised_feature_selector_flag"]
@@ -72,9 +67,7 @@ class CoreRoute(Component):
         # create model
         model_params = Bunch(
             name=self._model_name,
-            model_path=self._model_save_path,
-            model_config_root=params["model_config_root"],
-            feature_config_root=params["feature_config_root"],
+            model_root_path=params["model_root_path"],
             train_flag=self._train_flag,
             task_name=self._task_name
         )
@@ -102,30 +95,29 @@ class CoreRoute(Component):
                 component_name=params["auto_ml_name"],
                 **tuner_params
             )
-            # auto_ml_path and selector_config_path are fixed configuration files.
-            s_params = Bunch(
-                name=self._feature_selector_name,
-                train_flag=self._train_flag,
-                enable=self.enable,
-                metrics_name=self._metrics_name,
-                task_name=params["task_name"],
-                model_config_root=params["model_config_root"],
-                feature_config_root=params["feature_config_root"],
-                feature_config_path=params["pre_feature_configure_path"],
-                final_file_path=params["target_feature_configure_path"],
-                label_encoding_configure_path=params["label_encoding_path"],
-                feature_selector_model_names=params["feature_selector_model_names"],
-                selector_trial_num=params["selector_trial_num"],
-                selector_config_path=self.selector_config_path,
-                model_name=self._model_name,
-                auto_ml_path=params["auto_ml_path"],
-                model_save_path=self._model_save_path
-            )
 
-            self.feature_selector = self.create_component(
-                component_name=params["supervised_selector_name"],
-                **s_params
-            )
+            if self._feature_selector_flag is True:
+                # auto_ml_path and selector_config_path are fixed configuration files.
+                s_params = Bunch(
+                    name=params["supervised_selector_name"],
+                    train_flag=self._train_flag,
+                    enable=self.enable,
+                    metrics_name=self._metrics_name,
+                    task_name=params["task_name"],
+                    model_root_path=params["model_root_path"],
+                    feature_config_path=params["pre_feature_configure_path"],
+                    final_file_path=params["target_feature_configure_path"],
+                    feature_selector_model_names=params["feature_selector_model_names"],
+                    selector_trial_num=params["selector_trial_num"],
+                    selector_config_path=self.selector_config_path,
+                    model_name=self._model_name,
+                    auto_ml_path=params["auto_ml_path"],
+                )
+
+                self.feature_selector = self.create_component(
+                    component_name=params["supervised_selector_name"],
+                    **s_params
+                )
         else:
             self._result = None
             self._feature_conf = None
@@ -136,10 +128,10 @@ class CoreRoute(Component):
 
         entity["model"] = self.model
         entity["metrics"] = self.metrics
+        entity["auto_ml"] = self.auto_ml
 
         if self._feature_selector_flag is True:
             entity["feature_configure"] = self.feature_conf
-            entity["auto_ml"] = self.auto_ml
 
             self.feature_selector.run(**entity)
 
@@ -150,8 +142,10 @@ class CoreRoute(Component):
             feature_conf = yaml_read(self._feature_config_path)
             self.feature_conf.file_path = self._feature_config_path
             self.feature_conf.parse(method="system")
+            # if feature_list is None, all feature's used will be set true.
             self.feature_conf.feature_select(feature_list=None)
-            entity["model"].update_feature_conf(feature_conf=self.feature_conf)
+
+            entity["model"].update_feature_conf(feature_conf=feature_conf)
 
             logger.info(
                 "Auto machine learning component has started, "
@@ -204,7 +198,6 @@ class CoreRoute(Component):
         :return: This method will return predict result for test dataset.
         """
         assert "infer_dataset" in entity
-        assert self._model_save_path is not None
         assert self._train_flag is False
 
         if self._feature_selector_flag:
@@ -216,7 +209,6 @@ class CoreRoute(Component):
             dataset = entity["infer_dataset"]
             feature_config = entity["feature_configure"]
 
-            assert self._model_save_path
             assert self._final_file_path
 
             self.model.update_feature_conf(feature_conf=feature_config)

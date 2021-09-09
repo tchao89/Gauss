@@ -14,7 +14,7 @@ from sklearn.datasets import load_svmlight_file
 from utils.bunch import Bunch
 from entity.dataset.base_dataset import BaseDataset
 from utils.Logger import logger
-from utils.base import reduce_data
+from utils.reduce_data import reduce_data
 
 
 class PlaintextDataset(BaseDataset):
@@ -58,7 +58,6 @@ class PlaintextDataset(BaseDataset):
 
         self._data_pair = params["data_pair"]
         self.type_doc = None
-        self._bunch = None
         # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
         # by the length of validation dataset.
@@ -91,6 +90,10 @@ class PlaintextDataset(BaseDataset):
 
     def get_dataset(self):
         return self._bunch
+
+    def set_dataset(self, data_pair):
+        self._bunch = data_pair
+        return self
 
     def load_data(self, data_path=None):
         if data_path is not None:

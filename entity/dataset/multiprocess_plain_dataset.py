@@ -14,12 +14,11 @@ from sklearn.datasets import load_svmlight_file
 from utils.bunch import Bunch
 from entity.dataset.base_dataset import BaseDataset
 from utils.Logger import logger
-from utils.base import reduce_data
+from utils.reduce_data import reduce_data
 from utils.base import get_current_memory_gb
 
 
 class MultiprocessPlaintextDataset(BaseDataset):
-
     def __init__(self, **params):
         """
         :param name: module name.
@@ -100,6 +99,9 @@ class MultiprocessPlaintextDataset(BaseDataset):
 
     def get_dataset(self):
         return self._bunch
+
+    def set_dataset(self, data_pair):
+        self._bunch = data_pair
 
     def load_data(self, data_path=None):
         if data_path is not None:

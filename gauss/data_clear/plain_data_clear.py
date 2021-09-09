@@ -14,8 +14,9 @@ from sklearn.impute import SimpleImputer
 from gauss.data_clear.base_data_clear import BaseDataClear
 from entity.dataset.base_dataset import BaseDataset
 
-from utils.common_component import yaml_read
-from utils.base import reduce_data, get_current_memory_gb
+from utils.base import get_current_memory_gb
+from utils.yaml_exec import yaml_read
+from utils.reduce_data import reduce_data
 from utils.Logger import logger
 
 

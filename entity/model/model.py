@@ -6,11 +6,13 @@ Authors: Lab
 """
 from __future__ import annotations
 
+import os
 import abc
 
 from entity.entity import Entity
 from entity.dataset.base_dataset import BaseDataset
-from entity.metrics.base_metric import MetricResult, BaseMetric
+from entity.metrics.base_metric import BaseMetric
+from entity.metrics.base_metric import MetricResult
 
 from utils.bunch import Bunch
 
@@ -21,10 +23,21 @@ class ModelWrapper(Entity):
     model which doesn't use multiprocess.
     """
     def __init__(self, **params):
-        self._model_path = params["model_path"]
-        # model_config save root
-        self._model_config_root = params["model_config_root"]
-        self._feature_config_root = params["feature_config_root"]
+        self._model_root_path = params["model_root_path"]
+        self._feature_config_root = os.path.join(
+            params["model_root_path"],
+            "feature_config"
+        )
+
+        self._model_config_root = os.path.join(
+            params["model_root_path"],
+            "model_parameters"
+        )
+
+        self._model_save_root = os.path.join(
+            params["model_root_path"],
+            "model_save"
+        )
 
         self._task_name = params["task_name"]
         self._train_flag = params["train_flag"]

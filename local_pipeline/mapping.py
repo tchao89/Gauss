@@ -52,6 +52,6 @@ class EnvironmentConfigure:
         feature_dict.label_encoding_path = "label_encoding_models"
         feature_dict.impute_path = "impute_models"
         feature_dict.final_feature_config = "final_feature_config.yaml"
-        feature_dict.label_encoder_feature = "label_encoder_feature"
+        feature_dict.label_encoder_feature = "label_encoder_feature.yaml"
 
         return feature_dict

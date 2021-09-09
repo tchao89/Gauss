@@ -14,7 +14,8 @@ from core.featuretools.variable_types.variable import Discrete, Boolean, Numeric
 from entity.dataset.base_dataset import BaseDataset
 from gauss.feature_generation.base_feature_generation import BaseFeatureGenerator
 from utils.Logger import logger
-from utils.common_component import yaml_read, yaml_write
+from utils.yaml_exec import yaml_read
+from utils.yaml_exec import yaml_write
 from utils.base import get_current_memory_gb
 
 

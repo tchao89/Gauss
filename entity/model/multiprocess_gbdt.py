@@ -18,9 +18,10 @@ import lightgbm as lgb
 from entity.model.multiprocess_model import MultiprocessModelWrapper
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
-from utils.common_component import mkdir, yaml_write
-from utils.Logger import logger
+from utils.base import mkdir
 from utils.base import get_current_memory_gb
+from utils.yaml_exec import yaml_write
+from utils.Logger import logger
 
 
 class MultiprocessGaussLightgbm(MultiprocessModelWrapper):

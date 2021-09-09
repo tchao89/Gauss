@@ -1,4 +1,9 @@
+"""
+-*- coding: utf-8 -*-
 
+Copyright (c) 2020, Citic-Lab. All rights reserved.
+Authors: citic-lab
+"""
 import pandas as pd
 from scipy.stats import chi2
 from sklearn.feature_selection import chi2, SelectKBest
@@ -7,7 +12,9 @@ from gauss.feature_select.base_feature_selector import BaseFeatureSelector
 from entity.dataset.base_dataset import BaseDataset
 from core.featuretools import variable_types
 
-from utils.common_component import yaml_write, yaml_read, feature_list_generator
+from utils.yaml_exec import yaml_read
+from utils.yaml_exec import yaml_write
+from utils.feature_name_exec import feature_list_generator
 from utils.Logger import logger
 from utils.base import get_current_memory_gb
 
