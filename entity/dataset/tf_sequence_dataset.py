@@ -56,12 +56,7 @@ class SequenceDataset(BaseDataset):
             self._bunch = params["data_pair"]
 
     def __repr__(self):
-        content = "data:\n {data} target:\n {target} steps:\n {steps}".format(
-            data=self._bunch.data,
-            target=self._bunch.target,
-            steps=self._bunch.steps
-            )
-        return content
+        return str(self._bunch)
      
 
     def build_dataset(self):
@@ -115,10 +110,9 @@ class SequenceDataset(BaseDataset):
         self._bunch.target = pd.DataFrame(data=labels, columns=label_name)
         self._bunch.steps = pd.DataFrame(data=time_steps, columns=["steps"])
         self._bunch.feature_names = self._bunch.data.columns
+        self._bunch.target_names = label_name
         if self._dataset_type == self.MUL:
-            self._bunch.indies = pd.DataFrame(data=label_index, columns=["indies"])
-
-        print(self._bunch)
+            self._bunch.indies = pd.DataFrame(data=label_index, columns=["label_index"])
 
     def _feature_label_split(self, line):
         """Split feature columns and label columns to separete contents.
