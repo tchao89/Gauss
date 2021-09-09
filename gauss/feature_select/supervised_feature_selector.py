@@ -129,7 +129,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         return None
 
     @classmethod
-    def read_search_space(cls, json_dict: dict, res=None):
+    def __load_search_space(cls, json_dict: dict, res=None):
         """
         Read search space configuration.
         :param json_dict:
@@ -143,13 +143,13 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
             if isinstance(key_value, dict) and \
                     "_type" not in key_value.keys() and \
                     "_value" not in key_value.keys():
-                cls.read_search_space(key_value, res)
+                cls.__load_search_space(key_value, res)
             else:
                 res[key] = key_value
         return res
 
     @classmethod
-    def read_default_params(cls, json_dict: dict, res=None):
+    def __load_default_params(cls, json_dict: dict, res=None):
         """
         Read default parameters.
         :param json_dict:
@@ -161,7 +161,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         for key in json_dict.keys():
             key_value = json_dict.get(key)
             if isinstance(key_value, dict):
-                cls.read_default_params(key_value, res)
+                cls.__load_default_params(key_value, res)
             else:
                 res[key] = key_value
         return res
@@ -239,11 +239,11 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 lgb_params = lgb_params.keys()
 
                 # flatten dict
-                self._new_parameters = self.read_default_params(json_dict=self._new_parameters)
+                self._new_parameters = self.__load_default_params(json_dict=self._new_parameters)
 
                 search_space = self._search_space[model_name]
 
-                search_space = self.read_search_space(json_dict=search_space)
+                search_space = self.__load_search_space(json_dict=search_space)
 
             # 更新特征选择模块的搜索空间
             logger.info(

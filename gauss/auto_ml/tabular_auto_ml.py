@@ -58,11 +58,11 @@ class TabularAutoML(BaseAutoML):
 
         self.__local_best = None
 
-        self.chose_tuner_set()
-        self.set_search_space()
-        self.set_default_params()
+        self.__chose_tuner_set()
+        self.__set_search_space()
+        self.__set_default_params()
 
-    def chose_tuner_set(self):
+    def __chose_tuner_set(self):
         """This method will fill self.opt_tuners,
         which contains all opt tuners you need in this experiment.
         :return: None
@@ -237,7 +237,7 @@ class TabularAutoML(BaseAutoML):
         """
         return self.__default_parameters
 
-    def set_default_params(self):
+    def __set_default_params(self):
         """
         Load default parameters.
         :return: None
@@ -254,7 +254,7 @@ class TabularAutoML(BaseAutoML):
         """
         return self.__search_space
 
-    def set_search_space(self):
+    def __set_search_space(self):
         """
         Load search space configuration.
         :return: None
