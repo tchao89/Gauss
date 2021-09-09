@@ -31,7 +31,7 @@ class SequenceDataset(BaseDataset):
             name=params["name"], 
             data_path=params["data_path"] \
                 if params.get("data_path") else None,
-            task_type=params["task_type"], 
+            task_name=params["task_name"], 
             target_name=None, 
             memory_only=params["memory_only"] \
                  if params.get("memory_only") else True
@@ -132,7 +132,7 @@ class SequenceDataset(BaseDataset):
         if self._dataset_type == self.MUL:
             self._miss_label = True if len(label) != len(data) else False
             label = [self._strip_and_split(x, self._fea_sep) for x in label]
-            if self._task_type == self.REG:
+            if self._task_name == self.REG:
                 label = [(int(value[0]), float(value[1])) for value in label]
             else:
                 label = [(int(value[0]), value[1]) for value in label]
@@ -180,7 +180,7 @@ class SequenceDataset(BaseDataset):
             )
         return SequenceDataset(
             name="seq_valset",
-            task_type=self._task_type,
+            task_name=self._task_name,
             data_pair=data_pair
         )
         
@@ -222,8 +222,8 @@ class SequenceDataset(BaseDataset):
         return self._dataset_type
 
     @property
-    def task_type(self):
-        return self._task_type
+    def task_name(self):
+        return self._task_name
 
     @property
     def columns(self):

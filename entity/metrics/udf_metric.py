@@ -54,7 +54,8 @@ class AUC(BaseMetric):
             self._metrics_result = MetricResult(name=self.name, result=float('nan'), optimize_mode=self._optimize_mode)
         else:
             auc = roc_auc_score(y_true=labels_map, y_score=predict)
-            self._metrics_result = MetricResult(name=self.name, result=auc, meta={'#': predict.size}, optimize_mode=self._optimize_mode)
+            self._metrics_result = MetricResult(name=self.name, result=auc, meta={'#': predict.size},
+                                                optimize_mode=self._optimize_mode)
 
         return self._metrics_result
 

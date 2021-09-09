@@ -23,7 +23,8 @@ class BaseLabelEncode(Component):
             name=name,
             train_flag=train_flag,
             enable=enable,
-            # task_name=task_name
+            task_name=task_name
+
         )
         self._feature_configure_path = feature_configure_path
 

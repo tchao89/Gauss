@@ -53,6 +53,11 @@
     "log_steps": 50
   },
 
+  "dnn": {
+    "validate_steps": 50,
+    "log_steps": 50
+  },
+
   "classification": {
     "weight": 1
   },

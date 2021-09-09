@@ -2,6 +2,9 @@
 #
 # Copyright (c) 2020, Citic Inc. All rights reserved.
 # Authors: Lab
+"""
+
+"""
 from gauss_factory.abstarct_guass import AbstractGauss
 
 from entity.dataset.plain_dataset import PlaintextDataset
@@ -14,7 +17,9 @@ from entity.model.dnn_model import GaussNN
 from entity.metrics.udf_metric import AUC
 from entity.metrics.udf_metric import NNAUC
 
-# This class will be used in pipeline
+"""
+This class will be used in local_pipeline
+"""
 class EntityFactory(AbstractGauss):
     def get_entity(self, entity_name: str, **params):
         if entity_name is None:
@@ -25,7 +30,7 @@ class EntityFactory(AbstractGauss):
         if entity_name.lower() == "multiprocess_plaindataset":
             # parameters: name: str, task_type: str, data_pair: Bunch, data_path: str, target_name: str, memory_only: bool
             return MultiprocessPlaintextDataset(**params)
-        elif entity_name.lower() == "featureconfigure":
+        elif entity_name.lower() == "feature_configure":
             # parameters: name: str, file_path: str
             return FeatureConf(**params)
         elif entity_name.lower() == "lightgbm":

@@ -2,6 +2,10 @@
 #
 # Copyright (c) 2020, Citic-Lab. All rights reserved.
 # Authors: citic-lab
+"""
+Training model with supervised feature selector.
+"""
+import copy
 import os
 import json
 from typing import List
@@ -10,26 +14,35 @@ import numpy as np
 import pandas as pd
 
 from entity.dataset.base_dataset import BaseDataset
-from entity.model.model import ModelWrapper
+from entity.model.single_process_model import SingleProcessModelWrapper
+from entity.model.multiprocess_model import MultiprocessModelWrapper
 from entity.metrics.base_metric import MetricResult
+
 from gauss.feature_select.base_feature_selector import BaseFeatureSelector
 
 from core.nni.algorithms.feature_engineering.gradient_selector import FeatureGradientSelector
 from core.nni.algorithms.feature_engineering.gbdt_selector import GBDTSelector
 from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
 
+from utils.base import get_current_memory_gb
 from utils.common_component import yaml_read, yaml_write
+from utils.Logger import logger
 
 
 class SupervisedFeatureSelector(BaseFeatureSelector):
+    """
+    SupervisedFeatureSelector object.
+    """
 
     def __init__(self, **params):
         """
         :param name: Name of this operator.
         :param train_flag: It is a bool value, and if it is True,
-        this operator will be used for training, and if it is False, this operator will be used for predict.
+        this operator will be used for training, and if it is False, this operator will be
+        used for predict.
         :param enable: It is a bool value, and if it is True, this operator will be used.
-        :param feature_config_path: Feature config path is a path from yaml file which is generated from type inference operator.
+        :param feature_config_path: Feature config path is a path from yaml file which is
+        generated from type inference operator.
         :param label_encoding_configure_path:
         :param task_name:
         :param selector_config_path:
@@ -40,10 +53,13 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         assert "metrics_name" in params
         assert "model_save_path" in params
 
-        super(SupervisedFeatureSelector, self).__init__(name=params["name"],
-                                                        train_flag=params["train_flag"],
-                                                        enable=params["enable"],
-                                                        feature_configure_path=params["feature_config_path"])
+        super().__init__(
+            name=params["name"],
+            train_flag=params["train_flag"],
+            enable=params["enable"],
+            task_name=params["task_name"],
+            feature_configure_path=params["feature_config_path"]
+        )
 
         self._label_encoding_configure_path = params["label_encoding_configure_path"]
         self._metrics_name = params["metrics_name"]
@@ -59,12 +75,13 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         self._optimize_mode = None
 
         # selector names
-        self._feature_selector_names = ["GBDTSelector"]
+        self._feature_selector_names = params["feature_selector_model_names"]
         # max trail num for selector tuner
-        self.selector_trial_num = 1
+        self.selector_trial_num = params["selector_trial_num"]
         # default parameters concludes tree selector parameters and gradient parameters.
         # format: {"gradient_feature_selector": {"order": 4, "n_epochs": 100},
-        # "GBDTSelector": {"lgb_params": {}, "eval_ratio", 0.3, "importance_type": "gain", "early_stopping_rounds": 100}}
+        # "GBDTSelector": {"lgb_params": {}, "eval_ratio", 0.3, "importance_type":
+        # "gain", "early_stopping_rounds": 100}}
         self._search_space = None
         self._default_parameters = None
         self._final_feature_names = None
@@ -80,44 +97,71 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
     @property
     def feature_selector_names(self):
+        """
+        Get feature selector name.
+        :return:
+        """
         return self._feature_selector_names
 
     @feature_selector_names.setter
     def feature_selector_names(self, selector_names: List[str]):
+        """
+        set feature selector name.
+        :param selector_names:
+        :return:
+        """
         for item in selector_names:
             assert item in ["GBDTSelector", "gradient_feature_selector"]
         self._feature_selector_names = selector_names
 
     def choose_selector(self, selector_name: str, dataset: BaseDataset, params: dict):
-
+        """
+        Get selector model
+        :param selector_name:
+        :param dataset:
+        :param params:
+        :return:
+        """
         if selector_name == "gradient_feature_selector":
-
             return self._gradient_based_selector(dataset=dataset, params=params)
-        elif selector_name == "GBDTSelector":
-
+        if selector_name == "GBDTSelector":
             return self._tree_based_selector(dataset=dataset, params=params)
         return None
 
     @classmethod
-    def read_search_space(cls, json_dict: dict, res=None):
+    def __load_search_space(cls, json_dict: dict, res=None):
+        """
+        Read search space configuration.
+        :param json_dict:
+        :param res:
+        :return:
+        """
         if res is None:
             res = {}
         for key in json_dict.keys():
             key_value = json_dict.get(key)
-            if isinstance(key_value, dict) and "_type" not in key_value.keys() and "_value" not in key_value.keys():
-                cls.read_search_space(key_value, res)
+            if isinstance(key_value, dict) and \
+                    "_type" not in key_value.keys() and \
+                    "_value" not in key_value.keys():
+                cls.__load_search_space(key_value, res)
             else:
                 res[key] = key_value
         return res
 
     @classmethod
-    def read_default_params(cls, json_dict: dict, res=None):
+    def __load_default_params(cls, json_dict: dict, res=None):
+        """
+        Read default parameters.
+        :param json_dict:
+        :param res:
+        :return:
+        """
         if res is None:
             res = {}
         for key in json_dict.keys():
             key_value = json_dict.get(key)
             if isinstance(key_value, dict):
-                cls.read_default_params(key_value, res)
+                cls.__load_default_params(key_value, res)
             else:
                 res[key] = key_value
         return res
@@ -128,19 +172,27 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         :param entity: input dataset, metrics
         :return: None
         """
-        assert "dataset" in entity.keys()
+        logger.info(
+            "Starting training supervised selectors, with current memory usage: %.2f GiB",
+            get_current_memory_gb()["memory_usage"]
+        )
+
+        assert "train_dataset" in entity.keys()
         assert "val_dataset" in entity.keys()
         assert "model" in entity.keys()
         assert "metrics" in entity.keys()
         assert "auto_ml" in entity.keys()
         assert "feature_configure" in entity.keys()
 
-        original_dataset = entity["dataset"]
+        original_dataset = entity["train_dataset"]
 
         original_val_dataset = entity["val_dataset"]
 
-        feature_configure = entity["feature_configure"]
-
+        logger.info(
+            "Loading hyperparameters and search space "
+            "for supervised selector, with current memory usage: %.2f GiB",
+            get_current_memory_gb()["memory_usage"]
+        )
         self.set_default_params()
         self.set_search_space()
 
@@ -150,17 +202,25 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         metrics = entity["metrics"]
         self._optimize_mode = metrics.optimize_mode
 
-        model = entity["model"]
-        assert isinstance(model, ModelWrapper)
-
         # 创建自动机器学习对象
         model_tuner = entity["auto_ml"]
         model_tuner.is_final_set = False
+
+        model = entity["model"]
+        assert isinstance(model, SingleProcessModelWrapper) \
+               or isinstance(model, MultiprocessModelWrapper)
 
         selector_tuner = HyperoptTuner(algorithm_name="tpe", optimize_mode=self._optimize_mode)
 
         for model_name in self._feature_selector_names:
             # 梯度特征选择
+            logger.info(
+                "Choose supervised selector: {}, with current memory usage: {:.2f} GiB".format(
+                    model_name,
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
+
             if model_name == "gradient_feature_selector":
                 if self.check_dataset(original_dataset.get_dataset().data):
                     # 接受默认参数列表
@@ -174,20 +234,41 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 self._new_parameters = self._default_parameters[model_name]
 
                 assert self._new_parameters.get("lgb_params")
-                assert isinstance(self._new_parameters.get("lgb_params"), dict)
-                lgb_params = self._new_parameters.get("lgb_params").keys()
+                assert isinstance(self._new_parameters, dict)
+                lgb_params = self._new_parameters.get("lgb_params")
+                lgb_params = lgb_params.keys()
 
                 # flatten dict
-                self._new_parameters = self.read_default_params(json_dict=self._new_parameters)
+                self._new_parameters = self.__load_default_params(json_dict=self._new_parameters)
 
                 search_space = self._search_space[model_name]
 
-                search_space = self.read_search_space(json_dict=search_space)
+                search_space = self.__load_search_space(json_dict=search_space)
 
             # 更新特征选择模块的搜索空间
+            logger.info(
+                "Update search space for supervised selector, "
+                "with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
             selector_tuner.update_search_space(search_space=search_space)
 
+            logger.info(
+                "Starting training supervised selector models, "
+                "with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
             for trial in range(self.selector_trial_num):
+                logger.info(
+                    "supervised selector models training, round: {:d}, "
+                    "with current memory usage: {:.2f} GiB".format(
+                        trial, get_current_memory_gb()["memory_usage"]
+                    )
+                )
+
+                feature_configure = copy.deepcopy(entity["feature_configure"])
 
                 params = self._new_parameters
                 receive_params = selector_tuner.generate_parameters(trial)
@@ -203,35 +284,94 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
                     params["lgb_params"] = lgb_params_dict
 
-                feature_list = self.choose_selector(selector_name=model_name, dataset=original_dataset, params=params)
+                feature_list = self.choose_selector(
+                    selector_name=model_name,
+                    dataset=original_dataset,
+                    params=params
+                )
+                logger.info(
+                    "trial: {:d}, supervised selector training, and starting training model, "
+                    "with current memory usage: {:.2f} GiB".format(
+                        trial,
+                        get_current_memory_gb()["memory_usage"]
+                    )
+                )
 
                 metrics.label_name = original_dataset.get_dataset().target_names[0]
 
+                logger.info(
+                    "Parse feature configure and generate feature configure object, "
+                    "with current memory usage: {:.2f} GiB".format(
+                        get_current_memory_gb()["memory_usage"]
+                    )
+                )
                 feature_configure.file_path = self._feature_configure_path
 
                 feature_configure.parse(method="system")
-                feature_configure.feature_selector(feature_list=feature_list)
+                feature_configure.feature_select(feature_list=feature_list)
 
+                logger.info(
+                    "Update hyperparameters of model, "
+                    "with current memory usage: {:.2f} GiB".format(
+                        get_current_memory_gb()["memory_usage"]
+                    )
+                )
                 model.update_feature_conf(feature_conf=feature_configure)
 
+                logger.info(
+                    "Auto model training starts, with current memory usage: {:.2f} GiB".format(
+                        get_current_memory_gb()["memory_usage"]
+                    )
+                )
                 # 返回训练好的最佳模型
-                model_tuner.run(model=model, dataset=original_dataset, val_dataset=original_val_dataset,
-                                metrics=metrics)
+                model_tuner.run(
+                    model=model,
+                    train_dataset=original_dataset,
+                    val_dataset=original_val_dataset,
+                    metrics=metrics
+                )
 
                 assert isinstance(model.val_metrics, MetricResult)
-                new_metrics = model.val_metrics.result
+                local_optimal_metrics = model_tuner.local_best
 
-                selector_tuner.receive_trial_result(trial, receive_params, new_metrics)
+                logger.info(
+                    "Receive supervised selectors training trial result, "
+                    "with current memory usage: {:.2f} GiB".format(
+                        get_current_memory_gb()["memory_usage"]
+                    )
+                )
+                selector_tuner.receive_trial_result(trial, receive_params, local_optimal_metrics.result)
 
         if model_tuner.is_final_set is False:
             model.set_best_model()
 
+        self._optimal_metrics = model.val_best_metric_result.result
+
+        logger.info("Total trained models: {:d}".format(model.count))
         # save features
         self._final_feature_names = model.feature_list
-        self.final_configure_generation()
+        if isinstance(original_dataset.get_dataset().data, pd.DataFrame):
+            self.final_configure_generation()
+        else:
+            assert isinstance(original_dataset.get_dataset().data, np.ndarray)
+            self.multiprocess_final_configure_generation()
+
+    @property
+    def optimal_metrics(self):
+        """
+        Get optimal metrics.
+        :return:
+        """
+        return self._optimal_metrics
 
     @classmethod
     def update_feature_conf(cls, feature_conf, feature_list):
+        """
+        Update feature configure dict.
+        :param feature_conf:
+        :param feature_list:
+        :return:
+        """
         for feature in feature_conf.keys():
             if feature_conf[feature]["index"] not in feature_list:
                 feature_conf[feature]["used"] = False
@@ -239,38 +379,59 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         return feature_conf
 
     def _predict_run(self, **entity):
-        assert self.train_flag is False
-
-        dataset = entity["dataset"]
-        model = entity["model"]
-        feature_config = entity["feature_configure"]
-
-        assert self._model_save_path
-        assert self._final_file_path
-
-        self._result = model.predict(dataset=dataset, feature_conf=feature_config)
+        pass
 
     @property
     def result(self):
+        """
+        Get result.
+        :return:
+        """
         return self._result
 
     def final_configure_generation(self):
-
+        """
+        Write configure file
+        :return:
+        """
         feature_conf = yaml_read(yaml_file=self._feature_configure_path)
+        logger.info("final_feature_names: %s", str(self._final_feature_names))
         for item in feature_conf.keys():
             if item not in self._final_feature_names:
                 feature_conf[item]["used"] = False
 
         yaml_write(yaml_file=self._final_file_path, yaml_dict=feature_conf)
 
+    def multiprocess_final_configure_generation(self):
+        """
+        Write configure file in multiprocess mode.
+        :return:
+        """
+        feature_conf = yaml_read(yaml_file=self._feature_configure_path)
+        logger.info("final_feature_names: %s", str(self._final_feature_names))
+
+        for item in feature_conf.keys():
+            if feature_conf[item]["index"] not in self._final_feature_names:
+                feature_conf[item]["used"] = False
+
+        yaml_write(yaml_file=self._final_file_path, yaml_dict=feature_conf)
+
     @property
     def search_space(self):
+        """
+        Get search space.
+        :return:
+        """
         assert self._search_space is not None
         return self._search_space
 
     def set_search_space(self):
+        """
+        Read search space file.
+        :return:
+        """
         search_space_path = os.path.join(self._selector_config_path, "search_space.json")
-        with open(search_space_path, 'r') as json_file:
+        with open(search_space_path, 'r', encoding="utf-8") as json_file:
             self._search_space = json.load(json_file)
 
     @classmethod
@@ -315,31 +476,49 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         params["n_features"] = len_features(params["n_features"])
 
-        selector = FeatureGradientSelector(order=params["order"],
-                                           n_epochs=params["n_epochs"],
-                                           batch_size=params["batch_size"],
-                                           device=params["device"],
-                                           classification=params["classification"],
-                                           learning_rate=params["learning_rate"],
-                                           n_features=params["n_features"],
-                                           verbose=0)
+        selector = FeatureGradientSelector(
+            order=params["order"],
+            n_epochs=params["n_epochs"],
+            batch_size=params["batch_size"],
+            device=params["device"],
+            classification=params["classification"],
+            learning_rate=params["learning_rate"],
+            n_features=params["n_features"],
+            verbose=0
+        )
         selector.fit(data, target.values.flatten())
         return selector.get_selected_features()
 
     @property
     def default_params(self):
+        """
+        Get default parameters.
+        :return:
+        """
         return self._default_parameters
 
     def set_default_params(self):
-        default_params_path = os.path.join(self._selector_config_path, "default_parameters.json")
-        with open(default_params_path, 'r') as json_file:
+        """
+        Read default parameters.
+        :return: None
+        """
+        default_params_path = os.path.join(
+            self._selector_config_path,
+            "default_parameters.json"
+        )
+
+        with open(default_params_path, 'r', encoding="utf-8") as json_file:
             self._default_parameters = json.load(json_file)
 
     @classmethod
     def check_dataset(cls, dataframe: pd.DataFrame):
-
+        """
+        check dataset and remove irregular columns.
+        :param dataframe:
+        :return: bool
+        """
         indices_to_keep = dataframe.isin([np.nan, np.inf, -np.inf]).any()
-        features = indices_to_keep[indices_to_keep == True].index
+        features = indices_to_keep[indices_to_keep is True].index
         if not list(features):
             return True
 

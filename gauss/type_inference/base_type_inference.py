@@ -4,8 +4,6 @@
 # Authors: Lab
 import abc
 
-import pandas as pd
-
 from gauss.component import Component
 from entity.dataset.base_dataset import BaseDataset
 
@@ -14,6 +12,7 @@ class BaseTypeInference(Component):
     def __init__(self,
                  name: str,
                  train_flag: bool,
+                 task_name: str,
                  source_file_path="null",
                  final_file_path: str = './',
                  final_file_prefix="final"):
@@ -24,7 +23,8 @@ class BaseTypeInference(Component):
         self._update_flag = False
         super(BaseTypeInference, self).__init__(
             name=name,
-            train_flag=train_flag
+            train_flag=train_flag,
+            task_name=task_name
         )
 
     @abc.abstractmethod

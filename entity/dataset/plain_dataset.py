@@ -38,18 +38,18 @@ class PlaintextDataset(BaseDataset):
             2. Pass a `data_pair` wrapped by Bunch to the construct function, `data` and 
         `target` must provided at least. 
     
-        ======    
         :param name: A string to represent module's name.
         :param data_path:  A string or `dict`; if string, it can be directly used by load data 
+
             function, otherwise `train_dataset` and `val_dataset` must be the key of the dict.
         :param data_pair: default is None, must be filled if data_path not applied.
-        :param task_type: A string which is an option between `classification` or `regression`.
+        :param task_name: A string which is an option between `classification` or `regression`.
         :param target_name: A `list` containing label names in string format.
         :param memory_only: a boolean value, true for memory, false for others, default True.
         """
         for item in [
             "name", 
-            "task_type", 
+            "task_name", 
             "data_pair", 
             "data_path", 
             "target_name", 
@@ -64,16 +64,19 @@ class PlaintextDataset(BaseDataset):
         super(PlaintextDataset, self).__init__(
             name=params["name"], 
             data_path=params["data_path"], 
-            task_type=params["task_type"], 
+            task_name=params["task_name"], 
             target_name=params["target_name"], 
             memory_only=params["memory_only"]
         )
         
+
         self._data_pair = params["data_pair"]
 
         self._suffix = None
         self._val_start = None
         self._bunch = None
+        self._val_start = None
+
         self._need_data_clear = False
 
         if isinstance(self._data_path, str):
@@ -83,13 +86,11 @@ class PlaintextDataset(BaseDataset):
                 raise ValueError(
                     "data_path must include `train_dataset` and `val_dataset` when pass a dictionary."
                 )
-            self._bunch = Bunch(
-                train_dataset=self.load_data(data_path=self._data_path["train_dataset"]),
-                val_dataset=self.load_data(data_path=self._data_path["val_dataset"])
-            )
+
+            self._bunch = Bunch(train_dataset=self.load_data(data_path=params["data_path"]["train_dataset"]),
+                                val_dataset=self.load_data(data_path=params["data_path"]["val_dataset"]))
         else:
             self._bunch = self._data_pair
-
 
     def __repr__(self):
         data = self._bunch.data
@@ -97,6 +98,8 @@ class PlaintextDataset(BaseDataset):
         df = pd.concat((data, target), axis=1)
         return str(df.head()) + str(df.info())
 
+    def get_dataset(self):
+        return self._bunch
 
     def load_data(self, data_path=None):
         if data_path is not None:
@@ -258,7 +261,8 @@ class PlaintextDataset(BaseDataset):
 
     def union(self, val_dataset: PlaintextDataset):
         """ Merge train set and validation set in vertical, this procedure will operated on train set.
-
+        
+        ------------
         example:
             trainset = PlaintextDataset(...)
             valset = trainset.split()
@@ -318,8 +322,8 @@ class PlaintextDataset(BaseDataset):
             data_pair.feature_names = bunch.feature_names
 
         return PlaintextDataset(
-            name="train_and_val_set",
-            task_type=self._task_type,
+            name="validation_set",
+            task_name=self._task_name,
             data_pair=data_pair
             )
 

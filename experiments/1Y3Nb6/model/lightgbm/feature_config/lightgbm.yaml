@@ -1,0 +1,103 @@
+features:
+- age
+- balance
+- marital
+- job
+- education
+- housing
+- loan
+- month
+- day
+- campaign
+- duration
+- ABSOLUTE(balance)
+- ABSOLUTE(duration)
+- balance + duration
+- balance + 0
+- duration + 0
+- CUM_MAX(balance)
+- CUM_MAX(duration)
+- CUM_MEAN(balance)
+- CUM_MEAN(duration)
+- CUM_MIN(balance)
+- CUM_MIN(duration)
+- CUM_SUM(balance)
+- CUM_SUM(duration)
+- DIFF(balance)
+- DIFF(duration)
+- 1 / balance
+- 1 / duration
+- balance / duration
+- duration / balance
+- balance / 1
+- duration / 1
+- age = balance
+- age = campaign
+- age = day
+- age = duration
+- age = education
+- age = housing
+- age = job
+- age = loan
+- age = marital
+- age = month
+- balance = campaign
+- balance = day
+- balance = duration
+- balance = education
+- balance = housing
+- balance = job
+- balance = loan
+- balance = marital
+- balance = month
+- campaign = day
+- campaign = duration
+- campaign = education
+- campaign = housing
+- campaign = job
+- campaign = loan
+- campaign = marital
+- campaign = month
+- day = job
+- day = month
+- duration = month
+- education = housing
+- education = job
+- education = marital
+- education = month
+- housing = job
+- housing = marital
+- job = loan
+- job = marital
+- job = month
+- balance > duration
+- duration > balance
+- balance >= duration
+- duration >= balance
+- balance >= 0
+- balance > 0
+- balance < duration
+- duration < balance
+- balance <= duration
+- balance <= 0
+- 1 % balance
+- duration % balance
+- balance * duration
+- balance * 1
+- duration * 1
+- -(balance)
+- -(duration)
+- age != balance
+- age != campaign
+- age != day
+- age != duration
+- age != education
+- age != housing
+- age != job
+- age != loan
+- age != marital
+- age != month
+- balance != campaign
+- balance != day
+- balance != duration
+- balance != education

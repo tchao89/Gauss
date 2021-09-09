@@ -37,7 +37,7 @@ class TFPlainDataset(BaseDataset):
         super(TFPlainDataset, self).__init__(
             name=params["name"],
             data_path=None,
-            task_type=params["task_type"],
+            task_name=params["task_name"],
             target_name=params["target_name"] \
                 if params.get("target_name") else None,
             memory_only=params["memory_only"] \

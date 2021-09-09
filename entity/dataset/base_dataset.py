@@ -18,7 +18,7 @@ class BaseDataset(Entity):
     def __init__(self,
                  name: str,
                  data_path: str,
-                 task_type: str,
+                 task_name: str,
                  target_name=None,
                  memory_only=True):
 
@@ -33,14 +33,17 @@ class BaseDataset(Entity):
         self._memory_only = memory_only
         self._column_size = 0
         self._row_size = 0
-        self._task_type = task_type
+        self._default_print_size = 5
+        self._task_name = task_name
 
-    def get_dataset(self):
-        """return loaded data."""
-        pass
-
+    @abc.abstractmethod
     def load_data(self):
         """load data from file provided."""
+        pass
+
+    @abc.abstractmethod
+    def get_dataset(self):
+        """return loaded data."""
         pass
 
     @property
@@ -74,4 +77,7 @@ class BaseDataset(Entity):
     def union(self, dataset: BaseDataset):
         pass
 
-
+    @abc.abstractmethod
+    def feature_choose(self, feature_list):
+        """eliminate features which are not selected."""
+        pass

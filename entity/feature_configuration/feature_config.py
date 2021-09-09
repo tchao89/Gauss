@@ -204,7 +204,7 @@ class FeatureConf(Entity):
             features[item_conf.name] = item_dict
         yaml_write(yaml_dict=features, yaml_file=save_path)
 
-    def feature_selector(self, feature_list=None):
+    def feature_select(self, feature_list=None):
 
         for feature in self._feature_dict.keys():
             if feature_list is None:
