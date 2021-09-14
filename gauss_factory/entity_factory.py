@@ -50,7 +50,7 @@ class EntityFactory(AbstractGauss):
         return None
 
 # This class will be used in inner gauss
-class MetricsFactory(AbstractGauss):
+class MetricFactory(AbstractGauss):
     def get_entity(self, entity_name: str, **params):
         if entity_name.lower() == "auc":
             # parameters: name: str, label_name: str

@@ -35,7 +35,7 @@ try:
         _in_file = open(3, 'rb')
         _out_file = open(4, 'wb')
 except OSError:
-    _logger.debug('IPC pipeline not exists')
+    _logger.debug('IPC local_pipeline not exists')
 
 
 def send(command, data):

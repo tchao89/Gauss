@@ -70,7 +70,7 @@ class ModelWrapper(Entity):
         self._best_feature_list = None
 
         # recording all metric results.
-        self.metrics_history = []
+        self.metric_history = []
 
         super().__init__(
             name=params["name"],
@@ -83,10 +83,6 @@ class ModelWrapper(Entity):
         :return: MetricResult
         """
         return self._best_val_metrics_result
-
-    @abc.abstractmethod
-    def _generate_sub_dataset(self, dataset: BaseDataset):
-        pass
 
     @abc.abstractmethod
     def _initialize_model(self):
@@ -125,7 +121,7 @@ class ModelWrapper(Entity):
             self._best_feature_list = self._feature_list
 
         # this value is used for test program.
-        self.metrics_history.append(self._val_metrics_result.result)
+        self.metric_history.append(self._val_metrics_result.result)
         if self._best_val_metrics_result.__cmp__(self._val_metrics_result) < 0:
             self._best_model = self._model
             self._best_model_params = self._model_params

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+from abc import ABC
 
 from typing import List
 
@@ -20,7 +21,7 @@ from utils.Logger import logger
 
 
 # This class is used to train model.
-class AutoModelingGraph(BaseModelingGraph):
+class AutoModelingGraph(BaseModelingGraph, ABC):
     def __init__(self, name: str, work_root: str, task_type: str, metric_name: str, train_data_path: str,
                  val_data_path: str = None, feature_configure_path: str = None, target_names: List[str] = None,
                  dataset_type: str = "plain", type_inference: str = "plain", data_clear: str = "plain",

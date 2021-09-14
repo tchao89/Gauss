@@ -81,7 +81,7 @@ STATUS_STRINGS = (
 # These values are used to communicate between an Experiment
 # and a worker process. Consider moving them to mongoexp.
 
-# -- named constants for job execution pipeline
+# -- named constants for job execution local_pipeline
 JOB_STATE_NEW = 0
 JOB_STATE_RUNNING = 1
 JOB_STATE_DONE = 2

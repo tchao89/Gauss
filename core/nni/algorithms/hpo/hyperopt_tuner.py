@@ -470,7 +470,6 @@ class HyperoptTuner(Tuner):
             new_trials = hp.rand.suggest(new_ids, rval.domain, trials,
                                          random_state)
         else:
-            # type: list[dict]
             new_trials = algorithm(new_ids, rval.domain, trials, random_state)
         rval.trials.refresh()
         vals = new_trials[0]['misc']['vals']

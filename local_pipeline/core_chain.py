@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
-from gauss_factory.entity_factory import MetricsFactory
+from gauss_factory.entity_factory import MetricFactory
 
 from utils.yaml_exec import yaml_read
 from utils.yaml_exec import yaml_write
@@ -22,7 +22,6 @@ class CoreRoute(Component):
     """
     CoreRoute object.
     """
-
     def __init__(self, **params):
 
         super().__init__(
@@ -39,12 +38,12 @@ class CoreRoute(Component):
         self.auto_ml_name = params.get("auto_ml_name")
 
         self._task_name = params["task_name"]
-        self._metrics_name = params["metrics_name"]
+        self._metric_name = params["metric_name"]
         self._feature_selector_flag = params["supervised_feature_selector_flag"]
 
         self._opt_model_names = params.get("opt_model_names")
 
-        self._feature_config_path = params["pre_feature_configure_path"]
+        self.__feature_configure_path = params["pre_feature_configure_path"]
 
         self._final_file_path = params["target_feature_configure_path"]
 
@@ -55,14 +54,14 @@ class CoreRoute(Component):
             **feature_conf_params
         )
 
-        # create metrics and set optimize_mode
-        metrics_factory = MetricsFactory()
-        metrics_params = Bunch(name=self._metrics_name)
-        self.metrics = metrics_factory.get_entity(
-            entity_name=self._metrics_name,
-            **metrics_params
+        # create metric and set optimize_mode
+        metric_factory = MetricFactory()
+        metric_params = Bunch(name=self._metric_name)
+        self.metric = metric_factory.get_entity(
+            entity_name=self._metric_name,
+            **metric_params
         )
-        self._optimize_mode = self.metrics.optimize_mode
+        self._optimize_mode = self.metric.optimize_mode
 
         # create model
         model_params = Bunch(
@@ -74,11 +73,12 @@ class CoreRoute(Component):
 
         self.model = self.create_entity(entity_name=self._model_name, **model_params)
 
-        self._best_metrics = None
+        self._best_metric = None
 
         if self._train_flag:
-            self._auto_ml_path = params["auto_ml_path"]
-            self.selector_config_path = params["selector_config_path"]
+            print(params.keys())
+            self.__auto_ml_path = params["auto_ml_path"]
+            self.__selector_configure_path = params["selector_configure_path"]
 
             tuner_params = Bunch(
                 name=self.auto_ml_name,
@@ -88,7 +88,7 @@ class CoreRoute(Component):
                 auto_ml_trial_num=params["auto_ml_trial_num"],
                 opt_model_names=self._opt_model_names,
                 optimize_mode=self._optimize_mode,
-                auto_ml_path=self._auto_ml_path
+                auto_ml_path=self.__auto_ml_path
             )
 
             self.auto_ml = self.create_component(
@@ -97,19 +97,19 @@ class CoreRoute(Component):
             )
 
             if self._feature_selector_flag is True:
-                # auto_ml_path and selector_config_path are fixed configuration files.
+                # auto_ml_path and selector_configure_path are fixed configuration files.
                 s_params = Bunch(
                     name=params["supervised_selector_name"],
                     train_flag=self._train_flag,
                     enable=self.enable,
-                    metrics_name=self._metrics_name,
+                    metric_name=self._metric_name,
                     task_name=params["task_name"],
                     model_root_path=params["model_root_path"],
-                    feature_config_path=params["pre_feature_configure_path"],
+                    feature_configure_path=params["pre_feature_configure_path"],
                     final_file_path=params["target_feature_configure_path"],
                     feature_selector_model_names=params["feature_selector_model_names"],
                     selector_trial_num=params["selector_trial_num"],
-                    selector_config_path=self.selector_config_path,
+                    selector_configure_path=self.__selector_configure_path,
                     model_name=self._model_name,
                     auto_ml_path=params["auto_ml_path"],
                 )
@@ -127,7 +127,7 @@ class CoreRoute(Component):
         assert "val_dataset" in entity.keys()
 
         entity["model"] = self.model
-        entity["metrics"] = self.metrics
+        entity["metric"] = self.metric
         entity["auto_ml"] = self.auto_ml
 
         if self._feature_selector_flag is True:
@@ -137,10 +137,10 @@ class CoreRoute(Component):
 
         else:
             train_dataset = entity["train_dataset"]
-            self.metrics.label_name = train_dataset.get_dataset().target_names[0]
+            self.metric.label_name = train_dataset.get_dataset().target_names[0]
 
-            feature_conf = yaml_read(self._feature_config_path)
-            self.feature_conf.file_path = self._feature_config_path
+            feature_conf = yaml_read(self.__feature_configure_path)
+            self.feature_conf.file_path = self.__feature_configure_path
             self.feature_conf.parse(method="system")
             # if feature_list is None, all feature's used will be set true.
             self.feature_conf.feature_select(feature_list=None)
@@ -158,8 +158,8 @@ class CoreRoute(Component):
 
             yaml_write(yaml_dict=feature_conf, yaml_file=self._final_file_path)
 
-        # self._best_metrics is a MetricsResult object.
-        self._best_metrics = entity["model"].val_best_metric_result
+        # self._best_metric is a MetricResult object.
+        self._best_metric = entity["model"].val_best_metric_result
 
         logger.info(
             "Using %s, num of running auto machine learning train methods is : %s",
@@ -178,16 +178,16 @@ class CoreRoute(Component):
 
         logger.info(
             "Using %s, all training model metric results are : %s",
-            self._model_name, entity["model"].metrics_history
+            self._model_name, entity["model"].metric_history
         )
 
         logger.info("Using {}, best metric result is : {:.10f}".format(
-            self._model_name, max(entity["model"].metrics_history)
+            self._model_name, max(entity["model"].metric_history)
         )
         )
 
         logger.info("Using {}, num of total models is {:d}".format(
-            self._model_name, len(entity["model"].metrics_history)
+            self._model_name, len(entity["model"].metric_history)
         )
         )
         entity["model"].model_save()
@@ -218,14 +218,14 @@ class CoreRoute(Component):
             self._result = self.model.predict(infer_dataset=entity.get("infer_dataset"))
 
     @property
-    def optimal_metrics(self):
+    def optimal_metric(self):
         """
         Best metric for this graph
         :return: MetricResult
         """
         assert self._train_flag
-        assert self._best_metrics is not None
-        return self._best_metrics
+        assert self._best_metric is not None
+        return self._best_metric
 
     @property
     def result(self):

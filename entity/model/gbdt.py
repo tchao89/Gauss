@@ -14,9 +14,10 @@ import os.path
 
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
+import core.lightgbm as lgb
 
 from entity.model.single_process_model import SingleProcessModelWrapper
+from entity.model.single_process_model import choose_features
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 
@@ -32,6 +33,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
     """
     # This flag is bool values, if true,
     # dataset must use data clear component when training this model.
+    # map
     need_data_clear = False
 
     def __init__(self, **params):
@@ -51,17 +53,20 @@ class GaussLightgbm(SingleProcessModelWrapper):
     def __repr__(self):
         pass
 
-    def __load_data(self, dataset: BaseDataset):
+    @choose_features
+    def __load_data(self, **kwargs):
         """
-        :param dataset: BaseDataset
+        :param dataset:
         :return: lgb.Dataset
         """
 
+        dataset = kwargs.get("dataset")
+        train_flag = kwargs.get("train_flag")
         # dataset is a BaseDataset object, you can use get_dataset() method to get a Bunch object,
         # including data, target, feature_names, target_names, generated_feature_names.
-        dataset = self._generate_sub_dataset(dataset=dataset)
 
-        if self._train_flag:
+        assert isinstance(train_flag, bool)
+        if train_flag is True:
             lgb_data = lgb.Dataset(
                 data=dataset.get("data"),
                 label=dataset.get("target"),
@@ -76,7 +81,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
             )
             return lgb_data
 
-        self._check_bunch(dataset=dataset)
         return dataset.get("data")
 
     def _initialize_model(self):
@@ -95,7 +99,11 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 get_current_memory_gb()["memory_usage"]
             )
         )
-        lgb_train = self.__load_data(dataset=train_dataset)
+        lgb_train = self.__load_data(
+            dataset=train_dataset,
+            check_bunch=self._check_bunch,
+            feature_list=self._feature_list,
+            train_flag=self._train_flag)
 
         assert isinstance(lgb_train, lgb.Dataset)
         logger.info(
@@ -104,7 +112,12 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 get_current_memory_gb()["memory_usage"]
             )
         )
-        lgb_eval = self.__load_data(dataset=val_dataset).set_reference(lgb_train)
+        lgb_eval = self.__load_data(
+            dataset=val_dataset,
+            check_bunch=self._check_bunch,
+            feature_list=self._feature_list,
+            train_flag=self._train_flag
+        ).set_reference(lgb_train)
 
         logger.info(
             "Set preprocessing parameters for lightgbm, "
@@ -156,7 +169,11 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 ):
         assert self._train_flag is False
 
-        lgb_test = self.__load_data(dataset=infer_dataset)
+        lgb_test = self.__load_data(
+            dataset=infer_dataset,
+            check_bunch=self._check_bunch,
+            feature_list=self._feature_list,
+            train_flag=self._train_flag)
         assert os.path.isfile(self._model_save_root + "/" + self.__model_file_name)
 
         self._model = lgb.Booster(
@@ -266,7 +283,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
                    yaml_file=os.path.join(
                        self._model_config_root,
                        self.__model_config_file_name
-                        )
+                   )
                    )
 
         yaml_write(yaml_dict={"features": self._feature_list},

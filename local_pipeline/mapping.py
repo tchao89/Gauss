@@ -51,7 +51,10 @@ class EnvironmentConfigure:
         feature_dict.supervised_feature = "supervised_feature.yaml"
         feature_dict.label_encoding_path = "label_encoding_models"
         feature_dict.impute_path = "impute_models"
-        feature_dict.final_feature_config = "final_feature_config.yaml"
+        feature_dict.final_feature_configure = "final_feature_configure.yaml"
         feature_dict.label_encoder_feature = "label_encoder_feature.yaml"
+        feature_dict.train_user_configure = "train_user_config.yaml"
+        feature_dict.pipeline_configure = "pipeline_configure.yaml"
+        feature_dict.inference_configure = "inference_configure.yaml"
 
         return feature_dict

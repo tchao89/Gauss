@@ -6,7 +6,7 @@ import warnings
 from enum import Enum
 from itertools import zip_longest
 
-from tqdm import tqdm
+from core.tqdm import tqdm
 
 logger = logging.getLogger('featuretools.utils')
 
