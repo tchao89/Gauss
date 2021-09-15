@@ -1,0 +1,17 @@
+data_clear_flag: false
+data_file_type: libsvm
+dataset_name: plaindataset
+feature_configure_path: /home/liangqian/Gauss/test_dataset/feature_conf.yaml
+feature_generator_flag: false
+metric_name: auc
+mode: udf
+model_zoo:
+- lightgbm
+supervised_feature_selector_flag: false
+target_names:
+- deposit
+task_name: classification
+train_data_path: "/home/liangqian/\u6587\u6863/\u516C\u5F00\u6570\u636E\u96C6/epsilon/epsilon_normalized.libsvm"
+unsupervised_feature_selector_flag: false
+val_data_path: "/home/liangqian/\u6587\u6863/\u516C\u5F00\u6570\u636E\u96C6/epsilon/epsilon_normalized.t.libsvm"
+work_root: /home/liangqian/Gauss/experiments/Pl4Kk0
