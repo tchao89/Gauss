@@ -154,7 +154,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
     def _train_run(self, **entity):
         """
         feature_select
-        :param entity: input dataset, metrics
+        :param entity: input dataset, metric
         :return: None
         """
         logger.info(
@@ -180,8 +180,8 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         feature_configure = entity["feature_configure"]
 
-        metrics = entity["metric"]
-        self._optimize_mode = metrics.optimize_mode
+        metric = entity["metric"]
+        self._optimize_mode = metric.optimize_mode
 
         # 创建自动机器学习对象
         model_tuner = entity["auto_ml"]
@@ -257,7 +257,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                     )
                 )
 
-                metrics.label_name = original_dataset.get_dataset().target_names[0]
+                metric.label_name = original_dataset.get_dataset().target_names[0]
 
                 logger.info(
                     "Parse feature configure and generate feature configure object, "
@@ -271,14 +271,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 feature_configure.feature_select(feature_list=feature_list)
 
                 logger.info(
-                    "Update hyperparameters of model, "
-                    "with current memory usage: {:.2f} GiB".format(
-                        get_current_memory_gb()["memory_usage"]
-                    )
-                )
-                model.update_feature_conf(feature_conf=feature_configure)
-
-                logger.info(
                     "Auto model training starts, with current memory usage: {:.2f} GiB".format(
                         get_current_memory_gb()["memory_usage"]
                     )
@@ -288,11 +280,12 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                     model=model,
                     train_dataset=original_dataset,
                     val_dataset=original_val_dataset,
-                    metrics=metrics
+                    metric=metric,
+                    feature_configure=feature_configure
                 )
 
-                assert isinstance(model.val_metrics, MetricResult)
-                local_optimal_metrics = model_tuner.local_best
+                assert isinstance(model.val_metric, MetricResult)
+                local_optimal_metric = model_tuner.local_best
 
                 logger.info(
                     "Receive supervised selectors training trial result, "
@@ -303,13 +296,13 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 selector_tuner.receive_trial_result(
                     trial,
                     receive_params,
-                    local_optimal_metrics.result
+                    local_optimal_metric.result
                 )
 
         if model_tuner.is_final_set is False:
             model.set_best_model()
 
-        self._optimal_metrics = model.val_best_metric_result.result
+        self._optimal_metric = model.val_best_metric_result.result
 
         # save features
         self._final_feature_names = model.feature_list
@@ -320,12 +313,12 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
             self.multiprocess_final_configure_generation()
 
     @property
-    def optimal_metrics(self):
+    def optimal_metric(self):
         """
-        Get optimal metrics.
+        Get optimal metric.
         :return:
         """
-        return self._optimal_metrics
+        return self._optimal_metric
 
     @classmethod
     def update_feature_conf(cls, feature_conf, feature_list):

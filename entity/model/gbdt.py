@@ -59,13 +59,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
         :param dataset:
         :return: lgb.Dataset
         """
-
         dataset = kwargs.get("dataset")
         train_flag = kwargs.get("train_flag")
         # dataset is a BaseDataset object, you can use get_dataset() method to get a Bunch object,
         # including data, target, feature_names, target_names, generated_feature_names.
 
         assert isinstance(train_flag, bool)
+        assert isinstance(dataset.get("data"), pd.DataFrame)
+
         if train_flag is True:
             lgb_data = lgb.Dataset(
                 data=dataset.get("data"),
@@ -99,10 +100,12 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 get_current_memory_gb()["memory_usage"]
             )
         )
+
         lgb_train = self.__load_data(
             dataset=train_dataset,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
+            categorical_list=self._categorical_list,
             train_flag=self._train_flag)
 
         assert isinstance(lgb_train, lgb.Dataset)
@@ -116,6 +119,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
             dataset=val_dataset,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
+            categorical_list=self._categorical_list,
             train_flag=self._train_flag
         ).set_reference(lgb_train)
 
@@ -143,12 +147,16 @@ class GaussLightgbm(SingleProcessModelWrapper):
                     get_current_memory_gb()["memory_usage"]
                 )
             )
+
+            num_boost_round = params.pop("num_boost_round")
+            early_stopping_rounds = params.pop("early_stopping_rounds")
+
             self._model = lgb.train(
                 params=params,
                 train_set=lgb_train,
-                num_boost_round=200,
+                num_boost_round=num_boost_round,
                 valid_sets=lgb_eval,
-                early_stopping_rounds=2,
+                early_stopping_rounds=early_stopping_rounds,
                 verbose_eval=False
             )
 
@@ -172,6 +180,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_test = self.__load_data(
             dataset=infer_dataset,
             check_bunch=self._check_bunch,
+            categorical_list=self._categorical_list,
             feature_list=self._feature_list,
             train_flag=self._train_flag)
         assert os.path.isfile(self._model_save_root + "/" + self.__model_file_name)
@@ -196,14 +205,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
     def eval(self,
              train_dataset: BaseDataset,
              val_dataset: BaseDataset,
-             metrics: BaseMetric,
+             metric: BaseMetric,
              **entity
              ):
         """
 
         :param train_dataset: BaseDataset object, used to get training metric and loss.
         :param val_dataset: BaseDataset object, used to get validation metric and loss.
-        :param metrics: BaseMetric object, used to calculate metrics.
+        :param metric: BaseMetric object, used to calculate metric.
         :param entity: dict object, including other entity.
         :return: None
         """
@@ -226,13 +235,13 @@ class GaussLightgbm(SingleProcessModelWrapper):
         train_label = dataset.get("target")
         eval_label = val_dataset.get("target")
 
-        # 默认生成的为预测值的概率值，传入metrics之后再处理.
+        # 默认生成的为预测值的概率值，传入metric之后再处理.
         logger.info(
             "Starting predicting, with current memory usage: {:.2f} GiB".format(
                 get_current_memory_gb()["memory_usage"]
             )
         )
-        # 默认生成的为预测值的概率值，传入metrics之后再处理.
+        # 默认生成的为预测值的概率值，传入metric之后再处理.
         val_y_pred = self._model.predict(
             eval_data,
             num_iteration=self._model.best_iteration
@@ -245,21 +254,21 @@ class GaussLightgbm(SingleProcessModelWrapper):
         assert isinstance(eval_label, np.ndarray)
         assert isinstance(train_label, np.ndarray)
 
-        metrics.evaluate(predict=val_y_pred, labels_map=eval_label)
-        val_metrics_result = metrics.metrics_result
+        metric.evaluate(predict=val_y_pred, labels_map=eval_label)
+        val_metric_result = metric.metric_result
 
-        metrics.evaluate(predict=train_y_pred, labels_map=train_label)
-        train_metrics_result = metrics.metrics_result
+        metric.evaluate(predict=train_y_pred, labels_map=train_label)
+        train_metric_result = metric.metric_result
 
-        assert isinstance(val_metrics_result, MetricResult)
-        assert isinstance(train_metrics_result, MetricResult)
+        assert isinstance(val_metric_result, MetricResult)
+        assert isinstance(train_metric_result, MetricResult)
 
-        self._val_metrics_result = val_metrics_result
-        self._train_metrics_result = train_metrics_result
+        self._val_metric_result = val_metric_result
+        self._train_metric_result = train_metric_result
 
-        logger.info("train_metric: %s, val_metrics: %s",
-                    self._train_metrics_result.result,
-                    self._val_metrics_result.result
+        logger.info("train_metric: %s, val_metric: %s",
+                    self._train_metric_result.result,
+                    self._val_metric_result.result
                     )
 
     def model_save(self):
@@ -293,10 +302,10 @@ class GaussLightgbm(SingleProcessModelWrapper):
                    )
                    )
 
-    def set_weight(self):
+    def set_weight(self, **entity):
         """
         This method can set weight for different label.
-        :return: None
+        :return: list
         """
 
     def update_best(self):

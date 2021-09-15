@@ -19,7 +19,7 @@ class AUC(BaseMetric):
     def __init__(self, **params):
         super().__init__(name=params["name"], optimize_mode="maximize")
         self._label_name = params.get("label_name")
-        self._metrics_result = None
+        self._metric_result = None
 
     def __repr__(self):
         print("go")
@@ -39,19 +39,19 @@ class AUC(BaseMetric):
         :return: MetricResult object
         """
         if np.sum(labels_map) == 0 or np.sum(labels_map) == labels_map.shape[0]:
-            self._metrics_result = MetricResult(name=self.name, result=float('nan'), optimize_mode=self._optimize_mode)
+            self._metric_result = MetricResult(name=self.name, result=float('nan'), optimize_mode=self._optimize_mode)
         else:
             auc = roc_auc_score(y_true=labels_map, y_score=predict)
-            self._metrics_result = MetricResult(name=self.name, result=auc, meta={'#': predict.size},
+            self._metric_result = MetricResult(name=self.name, result=auc, meta={'#': predict.size},
                                                 optimize_mode=self._optimize_mode)
 
-        return self._metrics_result
+        return self._metric_result
 
     @property
     def required_label_names(self):
         return [self._label_name]
 
     @property
-    def metrics_result(self):
-        assert self._metrics_result is not None
-        return self._metrics_result
+    def metric_result(self):
+        assert self._metric_result is not None
+        return self._metric_result

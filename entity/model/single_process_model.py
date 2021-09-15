@@ -9,6 +9,8 @@ from __future__ import annotations
 import copy
 from abc import ABC
 
+import pandas as pd
+
 from entity.dataset.base_dataset import BaseDataset
 from entity.model.model import ModelWrapper
 
@@ -16,6 +18,7 @@ from utils.Logger import logger
 from utils.base import get_current_memory_gb
 from utils.bunch import Bunch
 from utils.feature_name_exec import feature_list_generator
+from utils.feature_name_exec import categorical_name_generator
 
 
 class SingleProcessModelWrapper(ModelWrapper, ABC):
@@ -40,6 +43,7 @@ class SingleProcessModelWrapper(ModelWrapper, ABC):
         if feature_conf is not None:
             self._feature_conf = feature_conf
             self._feature_list = feature_list_generator(feature_conf=self._feature_conf)
+            self._categorical_list = categorical_name_generator(feature_conf=self._feature_conf)
             assert self._feature_list is not None
             return self._feature_list
 
@@ -102,6 +106,13 @@ class choose_features:
         check_bunch = kwargs.get("check_bunch")
         feature_list = kwargs.get("feature_list")
         train_flag = kwargs.get("train_flag")
+        categorical_list = kwargs.get("categorical_list")
+
+        data = dataset.get_dataset().data
+        assert isinstance(data, pd.DataFrame)
+        for feature in data.columns:
+            if feature in categorical_list:
+                data[feature] = data[feature].astype("category")
 
         if feature_list is not None:
             data = dataset.feature_choose(feature_list)
@@ -140,9 +151,11 @@ class choose_features:
         if train_flag:
             return self.__load_dataset(
                 self,
-                dataset={"data": dataset.data.values,
-                         "target": dataset.target.values.flatten()},
-                train_flag=train_flag)
+                dataset={"data": dataset.data,
+                         "target": dataset.target},
+                train_flag=train_flag,
+                categorical_list=categorical_list
+            )
 
         return self.__load_dataset(
             self,

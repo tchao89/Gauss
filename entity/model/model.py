@@ -15,6 +15,7 @@ from entity.metrics.base_metric import BaseMetric
 from entity.metrics.base_metric import MetricResult
 
 from utils.bunch import Bunch
+from utils.constant_values import ConstantValues
 
 
 class ModelWrapper(Entity):
@@ -26,7 +27,7 @@ class ModelWrapper(Entity):
         self._model_root_path = params["model_root_path"]
         self._feature_config_root = os.path.join(
             params["model_root_path"],
-            "feature_config"
+            ConstantValues.feature_configure
         )
 
         self._model_config_root = os.path.join(
@@ -50,8 +51,8 @@ class ModelWrapper(Entity):
         self._model = None
 
         # MetricResult object.
-        self._val_metrics_result = None
-        self._train_metrics_result = None
+        self._val_metric_result = None
+        self._train_metric_result = None
 
         self._val_loss_result = None
         self._train_loss_result = None
@@ -62,10 +63,11 @@ class ModelWrapper(Entity):
         self._feature_conf = None
         # feature list
         self._feature_list = None
+        self._categorical_list = None
 
         # Update best model and parameters.
         self._best_model = None
-        self._best_val_metrics_result = None
+        self._best_val_metric_result = None
         self._best_model_params = None
         self._best_feature_list = None
 
@@ -82,7 +84,7 @@ class ModelWrapper(Entity):
         Get best metric result in validation set.
         :return: MetricResult
         """
-        return self._best_val_metrics_result
+        return self._best_val_metric_result
 
     @abc.abstractmethod
     def _initialize_model(self):
@@ -110,25 +112,25 @@ class ModelWrapper(Entity):
         if self._best_model_params is None:
             self._best_model_params = self._model_params
 
-        if self._best_val_metrics_result is None:
-            self._best_val_metrics_result = MetricResult(
-                name=self._val_metrics_result.name,
-                result=self._val_metrics_result.result,
-                optimize_mode=self._val_metrics_result.optimize_mode
+        if self._best_val_metric_result is None:
+            self._best_val_metric_result = MetricResult(
+                name=self._val_metric_result.name,
+                result=self._val_metric_result.result,
+                optimize_mode=self._val_metric_result.optimize_mode
             )
 
         if self._best_feature_list is None:
             self._best_feature_list = self._feature_list
 
         # this value is used for test program.
-        self.metric_history.append(self._val_metrics_result.result)
-        if self._best_val_metrics_result.__cmp__(self._val_metrics_result) < 0:
+        self.metric_history.append(self._val_metric_result.result)
+        if self._best_val_metric_result.__cmp__(self._val_metric_result) < 0:
             self._best_model = self._model
             self._best_model_params = self._model_params
-            self._best_val_metrics_result = MetricResult(
-                name=self._val_metrics_result.name,
-                result=self._val_metrics_result.result,
-                optimize_mode=self._val_metrics_result.optimize_mode
+            self._best_val_metric_result = MetricResult(
+                name=self._val_metric_result.name,
+                result=self._val_metric_result.result,
+                optimize_mode=self._val_metric_result.optimize_mode
             )
             self._best_feature_list = self._feature_list
 
@@ -164,13 +166,13 @@ class ModelWrapper(Entity):
     def eval(self,
              train_dataset: BaseDataset,
              val_dataset: BaseDataset,
-             metrics: BaseMetric,
+             metric: BaseMetric,
              **entity):
         """
         Evaluate after each training.
         :param train_dataset: BaseDataset object
         :param val_dataset: BaseDataset object
-        :param metrics: BaseMetric object
+        :param metric: BaseMetric object
         :param entity: dict object, including other entity object.
         :return: None
         """
@@ -200,12 +202,12 @@ class ModelWrapper(Entity):
         return self._val_loss_result
 
     @property
-    def val_metrics(self):
+    def val_metric(self):
         """
-        Get validation metrics.
+        Get validation metric.
         :return: MetricResult
         """
-        return self._val_metrics_result
+        return self._val_metric_result
 
     @property
     def feature_list(self):
