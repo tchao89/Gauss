@@ -13,6 +13,7 @@ import os.path
 from utils.bunch import Bunch
 from utils.exception import PipeLineLogicError
 from utils.Logger import logger
+from utils.constant_values import ConstantValues
 
 from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
@@ -44,8 +45,9 @@ class PreprocessRoute(Component):
         :param unsupervised_feature_selector_flag: bool value, if true, feature
         selector will be used(unsupervised).
         """
-        assert isinstance(params["train_flag"], bool)
-        assert params["task_name"] in ["classification", "regression"]
+        assert isinstance(params[ConstantValues.train_flag], bool)
+        assert params[ConstantValues.task_name] in [ConstantValues.classification,
+                                                    ConstantValues.regression]
 
         super().__init__(
             name=params["name"],
@@ -54,17 +56,17 @@ class PreprocessRoute(Component):
         )
 
         # 用户提供的特征说明文件
-        assert "user_feature" in params["feature_path_dict"]
+        assert ConstantValues.user_feature_path in params[ConstantValues.feature_path_dict]
         # 类型推导生成的特征说明文件
-        assert "type_inference_feature" in params["feature_path_dict"]
+        assert ConstantValues.type_inference_feature_path in params[ConstantValues.feature_path_dict]
         # 数据清洗的特征说明文件
-        assert "data_clear_feature" in params["feature_path_dict"]
+        assert ConstantValues.data_clear_feature_path in params[ConstantValues.feature_path_dict]
         # 特征生成的特征说明文件
-        assert "feature_generator_feature" in params["feature_path_dict"]
+        assert ConstantValues.feature_generator_feature_path in params[ConstantValues.feature_path_dict]
         # 无监督特征选择的特征说明文件
-        assert "unsupervised_feature" in params["feature_path_dict"]
+        assert ConstantValues.unsupervised_feature_path in params[ConstantValues.feature_path_dict]
         # label encoding file path, .db文件
-        assert "label_encoding_path" in params["feature_path_dict"]
+        assert ConstantValues.label_encoding_models_path in params[ConstantValues.feature_path_dict]
 
         self._entity_dict = None
 
@@ -85,8 +87,8 @@ class PreprocessRoute(Component):
                 name=params["type_inference_name"],
                 task_name=params["task_name"],
                 train_flag=self._train_flag,
-                source_file_path=params["feature_path_dict"]["user_feature"],
-                final_file_path=params["feature_path_dict"]["type_inference_feature"],
+                source_file_path=params["feature_path_dict"][ConstantValues.user_feature_path],
+                final_file_path=params["feature_path_dict"][ConstantValues.type_inference_feature_path],
                 final_file_prefix="final"
             )
         )
@@ -99,9 +101,9 @@ class PreprocessRoute(Component):
                 train_flag=self._train_flag,
                 enable=params["data_clear_flag"],
                 task_name=params["task_name"],
-                feature_configure_path=params["feature_path_dict"]["type_inference_feature"],
-                data_clear_configure_path=params["feature_path_dict"]["impute_path"],
-                final_file_path=params["feature_path_dict"]["data_clear_feature"],
+                feature_configure_path=params["feature_path_dict"][ConstantValues.type_inference_feature_path],
+                data_clear_configure_path=params["feature_path_dict"][ConstantValues.impute_models_path],
+                final_file_path=params["feature_path_dict"][ConstantValues.data_clear_feature_path],
                 strategy_dict=None
             )
         )
@@ -114,9 +116,9 @@ class PreprocessRoute(Component):
                 train_flag=self._train_flag,
                 enable=params["label_encoder_flag"],
                 task_name=params["task_name"],
-                feature_config_path=params["feature_path_dict"]["data_clear_feature"],
-                final_file_path=params["feature_path_dict"]["label_encoder_feature"],
-                label_encoding_configure_path=params["feature_path_dict"]["label_encoding_path"],
+                feature_config_path=params["feature_path_dict"][ConstantValues.data_clear_feature_path],
+                final_file_path=params["feature_path_dict"][ConstantValues.label_encoder_feature_path],
+                label_encoding_configure_path=params["feature_path_dict"][ConstantValues.label_encoding_models_path],
             )
         )
 
@@ -128,8 +130,8 @@ class PreprocessRoute(Component):
                 train_flag=self._train_flag,
                 enable=params["feature_generator_flag"],
                 task_name=params["task_name"],
-                feature_config_path=params["feature_path_dict"]["label_encoder_feature"],
-                final_file_path=params["feature_path_dict"]["feature_generator_feature"]
+                feature_config_path=params["feature_path_dict"][ConstantValues.label_encoder_feature_path],
+                final_file_path=params["feature_path_dict"][ConstantValues.feature_generator_feature_path]
             )
         )
 
@@ -141,9 +143,8 @@ class PreprocessRoute(Component):
                 train_flag=self._train_flag,
                 enable=params["unsupervised_feature_selector_flag"],
                 task_name=params["task_name"],
-                label_encoding_configure_path=params["feature_path_dict"]["label_encoding_path"],
-                feature_config_path=params["feature_path_dict"]["feature_generator_feature"],
-                final_file_path=params["feature_path_dict"]["unsupervised_feature"]
+                feature_config_path=params["feature_path_dict"][ConstantValues.feature_generator_feature_path],
+                final_file_path=params["feature_path_dict"][ConstantValues.unsupervised_feature_path]
             )
         )
 

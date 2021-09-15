@@ -13,7 +13,7 @@ import os.path
 
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
+import core.lightgbm as lgb
 
 from entity.model.multiprocess_model import MultiprocessModelWrapper
 from entity.dataset.base_dataset import BaseDataset

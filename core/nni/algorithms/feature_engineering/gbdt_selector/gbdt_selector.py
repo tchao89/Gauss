@@ -25,7 +25,7 @@ gbdt_selector.py including:
 
 import random
 from sklearn.model_selection import train_test_split
-import lightgbm as lgb
+import core.lightgbm as lgb
 
 from core.nni.feature_engineering.feature_selector import FeatureSelector
 

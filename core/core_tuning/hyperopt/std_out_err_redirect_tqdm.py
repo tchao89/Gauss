@@ -5,7 +5,7 @@ See here: https://github.com/tqdm/tqdm#redirecting-writing
 
 import contextlib
 import sys
-from tqdm import tqdm
+from core.tqdm import tqdm
 
 class DummyTqdmFile(object):
     """Dummy file-like that will write to tqdm."""

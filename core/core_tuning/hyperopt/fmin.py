@@ -9,7 +9,7 @@ import logging
 import os
 import sys
 import time
-from tqdm import tqdm
+from core.tqdm import tqdm
 
 import numpy as np
 

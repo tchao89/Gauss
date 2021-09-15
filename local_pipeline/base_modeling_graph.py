@@ -39,7 +39,7 @@ class BaseModelingGraph:
         :param auto_ml_name:
         :param opt_model_names:
         :param auto_ml_path:
-        :param selector_config_path:
+        :param selector_configure_path:
         """
         assert params["opt_model_names"] is not None
 
@@ -55,7 +55,7 @@ class BaseModelingGraph:
             val_data_path=params["val_data_path"],
             feature_configure_path=params["feature_configure_path"],
             auto_ml_path=params["auto_ml_path"],
-            selector_config_path=params["selector_config_path"],
+            selector_configure_path=params["selector_configure_path"],
         )
 
         self._entity_names = Bunch(
@@ -79,6 +79,14 @@ class BaseModelingGraph:
             auto_ml_trial_num=params["auto_ml_trial_num"],
             opt_model_names=params["opt_model_names"],
             supervised_selector_model_names=params["supervised_selector_model_names"]
+        )
+
+        self._flag_dict = Bunch(
+            data_clear_flag=params["data_clear_flag"],
+            label_encoder_flag=params["label_encoder_flag"],
+            feature_generator_flag=params["feature_generator_flag"],
+            unsupervised_feature_selector_flag=params["unsupervised_feature_selector_flag"],
+            supervised_feature_selector_flag=params["supervised_feature_selector_flag"]
         )
 
         self._already_data_clear = None

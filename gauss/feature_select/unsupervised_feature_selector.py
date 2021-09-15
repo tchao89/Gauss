@@ -38,7 +38,6 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
                                                           feature_configure_path=params["feature_config_path"])
 
         self.feature_list = []
-        self._label_encoding_configure_path = params["label_encoding_configure_path"]
         self._final_file_path = params["final_file_path"]
 
         self._feature_conf = None

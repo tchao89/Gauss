@@ -7,17 +7,47 @@ import argparse
 from local_pipeline.auto_modeling_graph import AutoModelingGraph
 from local_pipeline.udf_modeling_graph import UdfModelingGraph
 from local_pipeline.multiprocess_udf_graph import MultiprocessUdfModelingGraph
-from utils.common_component import yaml_read
+from utils.yaml_exec import yaml_read
+
+# --------------- this block just for test ---------------
+from local_pipeline.mapping import EnvironmentConfigure
+from utils.bunch import Bunch
+from utils.yaml_exec import yaml_write
+from utils.Logger import logger
+
+user_feature = "/home/liangqian/PycharmProjects/Gauss/test_dataset/feature_conf.yaml"
+environ_configure = EnvironmentConfigure(work_root="/home/liangqian/PycharmProjects/Gauss/experiments",
+                                         user_feature="/home/liangqian/PycharmProjects/Gauss/test_dataset/feature_conf.yaml")
+
+pipeline_dict = Bunch()
+# ["udf", "auto", "multi_udf"]
+pipeline_dict.mode = "udf"
+pipeline_dict.work_root = environ_configure.work_root
+pipeline_dict.task_name = "classification"
+pipeline_dict.metric_name = "auc"
+pipeline_dict.train_data_path = "/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical_train_realdata.csv"
+pipeline_dict.val_data_path = "/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical_val_realdata.csv"
+pipeline_dict.target_names = ["deposit"]
+pipeline_dict.feature_configure_path = environ_configure.user_feature_path
+pipeline_dict.dataset_name = "plaindataset"
+pipeline_dict.model_zoo = ["lightgbm"]
+pipeline_dict.data_clear_flag = True
+pipeline_dict.feature_generator_flag = True
+pipeline_dict.unsupervised_feature_selector_flag = True
+pipeline_dict.supervised_feature_selector_flag = True
+config_path = environ_configure.work_root + "/train_user_config.yaml"
+yaml_write(yaml_dict=dict(pipeline_dict), yaml_file=config_path)
+# --------------- test block end ---------------
 
 
 def main(config=config_path):
     pipeline_configure = yaml_read(config)
     pipeline_configure = Bunch(**pipeline_configure)
 
-    pipeline_configure.system_config_root = "/home/liangqian/PycharmProjects/Gauss/configure_files"
-    pipeline_configure.auto_ml_path = pipeline_configure.system_config_root + "/" + "automl_params"
-    pipeline_configure.selector_config_path = pipeline_configure.system_config_root + "/" + "selector_params"
-    system_config = yaml_read(pipeline_configure.system_config_root + "/" + "system_config/system_config.yaml")
+    pipeline_configure.system_configure_root = "/home/liangqian/PycharmProjects/Gauss/configure_files"
+    pipeline_configure.auto_ml_path = pipeline_configure.system_configure_root + "/" + "automl_params"
+    pipeline_configure.selector_configure_path = pipeline_configure.system_configure_root + "/" + "selector_params"
+    system_config = yaml_read(pipeline_configure.system_configure_root + "/" + "system_config/system_config.yaml")
     system_config = Bunch(**system_config)
 
     pipeline_configure.update(system_config)
@@ -40,7 +70,7 @@ def main(config=config_path):
                                         auto_ml_name=pipeline_configure.tabular_auto_ml,
                                         opt_model_names=pipeline_configure.opt_model_names,
                                         auto_ml_path=pipeline_configure.auto_ml_path,
-                                        selector_config_path=pipeline_configure.selector_config_path)
+                                        selector_configure_path=pipeline_configure.selector_config_path)
 
         model_graph.run()
 
@@ -53,6 +83,7 @@ def main(config=config_path):
 
         pipeline_configure.dataset_name = "multiprocess_" + pipeline_dict.dataset_name
         pipeline_configure.model_zoo = ["multiprocess_" + model_name for model_name in pipeline_configure.model_zoo]
+
         model_graph = MultiprocessUdfModelingGraph(name="udf", **pipeline_configure)
 
         model_graph.run()

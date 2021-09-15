@@ -51,18 +51,18 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         """
         assert ConstantValues.model_name in params
         assert ConstantValues.auto_ml_path in params
-        assert ConstantValues.metrics_name in params
+        assert ConstantValues.metric_name in params
 
         super().__init__(
             name=params[ConstantValues.name],
             train_flag=params[ConstantValues.train_flag],
             enable=params[ConstantValues.enable],
             task_name=params[ConstantValues.task_name],
-            feature_configure_path=params[ConstantValues.feature_config_path]
+            feature_configure_path=params[ConstantValues.feature_configure_path]
         )
 
-        self._metrics_name = params[ConstantValues.metrics_name]
-        self._selector_config_path = params[ConstantValues.selector_config_path]
+        self._metrics_name = params[ConstantValues.metric_name]
+        self._selector_config_path = params[ConstantValues.selector_configure_path]
         self._model_name = params[ConstantValues.model_name]
         self._auto_ml_path = params[ConstantValues.auto_ml_path]
         self._model_root_path = params[ConstantValues.model_root_path]
@@ -165,7 +165,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         assert "train_dataset" in entity.keys()
         assert "val_dataset" in entity.keys()
         assert "model" in entity.keys()
-        assert "metrics" in entity.keys()
+        assert "metric" in entity.keys()
         assert "auto_ml" in entity.keys()
         assert "feature_configure" in entity.keys()
 
@@ -180,7 +180,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         feature_configure = entity["feature_configure"]
 
-        metrics = entity["metrics"]
+        metrics = entity["metric"]
         self._optimize_mode = metrics.optimize_mode
 
         # 创建自动机器学习对象

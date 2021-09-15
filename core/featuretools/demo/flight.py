@@ -2,7 +2,7 @@ import math
 import re
 
 import pandas as pd
-from tqdm import tqdm
+from core.tqdm import tqdm
 
 from core import featuretools as ft
 import core.featuretools.variable_types as vtypes
