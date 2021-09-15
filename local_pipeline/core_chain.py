@@ -76,7 +76,6 @@ class CoreRoute(Component):
         self._best_metric = None
 
         if self._train_flag:
-            print(params.keys())
             self.__auto_ml_path = params["auto_ml_path"]
             self.__selector_configure_path = params["selector_configure_path"]
 
@@ -129,9 +128,9 @@ class CoreRoute(Component):
         entity["model"] = self.model
         entity["metric"] = self.metric
         entity["auto_ml"] = self.auto_ml
+        entity["feature_configure"] = self.feature_conf
 
         if self._feature_selector_flag is True:
-            entity["feature_configure"] = self.feature_conf
 
             self.feature_selector.run(**entity)
 

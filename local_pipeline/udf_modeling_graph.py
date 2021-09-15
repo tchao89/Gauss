@@ -147,16 +147,6 @@ class UdfModelingGraph(BaseModelingGraph):
         work_feature_root = join(self._work_paths[ConstantValues.work_root], ConstantValues.feature)
         feature_dict = EnvironmentConfigure.feature_dict()
 
-        work_model_root = join(
-            join(self._work_paths[ConstantValues.work_root], ConstantValues.model),
-            params.get(ConstantValues.model_name)
-        )
-        feature_configure_root = join(work_model_root, ConstantValues.feature_configure)
-        feature_dict[ConstantValues.final_feature_configure] = join(
-            feature_configure_root,
-            EnvironmentConfigure.feature_dict().final_feature_configure
-        )
-
         feature_dict = \
             {ConstantValues.user_feature_path: self._work_paths[ConstantValues.feature_configure_path],
              ConstantValues.type_inference_feature_path: join(
@@ -191,6 +181,16 @@ class UdfModelingGraph(BaseModelingGraph):
                  work_feature_root,
                  feature_dict.label_encoder_feature)
              }
+
+        work_model_root = join(
+            join(self._work_paths[ConstantValues.work_root], ConstantValues.model),
+            params.get(ConstantValues.model_name)
+        )
+        feature_configure_root = join(work_model_root, ConstantValues.feature_configure)
+        feature_dict[ConstantValues.final_feature_configure] = join(
+            feature_configure_root,
+            EnvironmentConfigure.feature_dict().final_feature_configure
+        )
 
         preprocess_chain = PreprocessRoute(
             name="PreprocessRoute",

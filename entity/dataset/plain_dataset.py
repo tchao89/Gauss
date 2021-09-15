@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import csv
+import string
 
 import pandas as pd
 import numpy as np
@@ -138,6 +139,12 @@ class PlaintextDataset(BaseDataset):
                 target=target
             )
 
+            self._bunch.target_names = ["target_" + string.ascii_uppercase[index]
+                                        for index, _ in enumerate(target)]
+            self._bunch.feature_names = ["feature_" + str(index) for index, _ in enumerate(data)]
+            data.columns = self._bunch.feature_names
+            target.columns = self._bunch.target_names
+
         elif self.type_doc == 'txt':
             data, target = self.load_txt()
             _, data, target = self._convert_data_dataframe(data=data,
@@ -146,6 +153,13 @@ class PlaintextDataset(BaseDataset):
                 data=data,
                 target=target
             )
+
+            self._bunch.target_names = ["target_" + string.ascii_uppercase[index]
+                                        for index, _ in enumerate(target)]
+            self._bunch.feature_names = ["feature_" + str(index) for index, _ in enumerate(data)]
+            data.columns = self._bunch.feature_names
+            target.columns = self._bunch.target_names
+
         else:
             raise TypeError("File type can not be accepted.")
         return self._bunch
@@ -291,8 +305,9 @@ class PlaintextDataset(BaseDataset):
         :return: Plaindataset
         """
         self._val_start = self._bunch.target.shape[0]
+        if self._bunch.data.shape[1] != val_dataset.get_dataset().data.shape[1]:
+            pass
 
-        assert self._bunch.data.shape[1] == val_dataset.get_dataset().data.shape[1]
         self._bunch.data = pd.concat([self._bunch.data, val_dataset.get_dataset().data], axis=0)
 
         assert self._bunch.target.shape[1] == val_dataset.get_dataset().target.shape[1]

@@ -1,7 +1,9 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic Inc. All rights reserved.
-# Authors: Lab
+"""
+-*- coding: utf-8 -*-
+
+Copyright (c) 2020, Citic Inc. All rights reserved.
+Authors: Lab
+"""
 import re
 import copy
 
@@ -13,6 +15,7 @@ from gauss.type_inference.base_type_inference import BaseTypeInference
 from entity.feature_configuration.feature_config import FeatureItemConf, FeatureConf
 
 from utils.Logger import logger
+from utils.constant_values import ConstantValues
 from utils.yaml_exec import yaml_read
 from utils.yaml_exec import yaml_write
 
@@ -207,11 +210,13 @@ class PlainTypeInference(BaseTypeInference):
         # check if target columns is illegal.
         for label_index, label in enumerate(target):
 
-            if self._task_name == 'regression':
+            if self._task_name == ConstantValues.regression:
                 assert "float" in str(target[label].dtypes) and target[label].isna().sum() == 0
 
-            if self._task_name == 'classification':
-                assert "int" in str(target[label].dtypes)
+            if self._task_name == ConstantValues.classification:
+                if "float" in str(target[label].dtypes):
+                    target[label] = target[label].astype("int64")
+                assert "int" in str(target[label].dtypes) or "object" in str(target[label].dtypes)
 
     def _check_init_final_conf(self):
         assert self.init_feature_configure is not None

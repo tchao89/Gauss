@@ -114,7 +114,7 @@ class BaseMetric(Entity, ABC):
         pass
 
     @abc.abstractmethod
-    def metrics_result(self):
+    def metric_result(self):
         """
 
         :return: MetricResult object for this BaseMetric object.

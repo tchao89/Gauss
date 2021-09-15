@@ -159,6 +159,7 @@ class FeatureConf(Entity):
                         item_configure.ftype = "datetime"
                         self._feature_dict[item] = item_configure
         else:
+            self._feature_dict = Bunch()
             feature_dict = yaml_read(yaml_file=self._file_path)
 
             for key in feature_dict.keys():

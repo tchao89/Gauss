@@ -4,6 +4,10 @@
 
   "num_class": 1,
 
+  "early_stopping_rounds": 5,
+
+  "num_boost_round": 100,
+
   "metric": ["auc", "l2"],
 
   "num_leaves": 32,
