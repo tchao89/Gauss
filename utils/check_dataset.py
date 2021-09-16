@@ -1,17 +1,20 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic-Lab. All rights reserved.
-# Authors: citic-lab
-from gauss_factory.gauss_factory_producer import GaussFactoryProducer
+"""
+-*- coding: utf-8 -*-
 
+Copyright (c) 2020, Citic-Lab. All rights reserved.
+Authors: citic-lab
+"""
 
-def check_data(already_data_clear, model_name):
-    assert isinstance(already_data_clear, bool)
-    assert isinstance(model_name, str)
+def check_data(already_data_clear, model_need_clear_flag):
+    assert isinstance(already_data_clear, bool), \
+        "Value: already_data_clear must be bool type, " \
+        "but get {}".format(type(already_data_clear))
 
-    if already_data_clear is not True:
-        static_entity = create_static_entity(model_name)
-        assert static_entity is not None
-        if static_entity.need_data_clear is True:
+    assert isinstance(model_need_clear_flag,  bool), \
+        "An effective value: model_need_clear_flag can not found " \
+        "in system by model name supplied by used"
+
+    if already_data_clear is False:
+        if model_need_clear_flag is True:
             return False
     return True

@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2021, Citic-Lab. All rights reserved.
-# Authors: Lab
 """
+-*- coding: utf-8 -*-
+
+Copyright (c) 2021, Citic-Lab. All rights reserved.
+Authors: Lab
 Abstract object for pipelines.
 """
 from __future__ import annotations
@@ -75,6 +75,7 @@ class BaseModelingGraph:
         )
 
         self._global_values = Bunch(
+            data_file_type=params["data_file_type"],
             selector_trial_num=params["selector_trial_num"],
             auto_ml_trial_num=params["auto_ml_trial_num"],
             opt_model_names=params["opt_model_names"],
@@ -90,6 +91,7 @@ class BaseModelingGraph:
         )
 
         self._already_data_clear = None
+        self._model_need_clear_flag = params["model_need_clear_flag"]
         self._pipeline_configure = None
 
     @abc.abstractmethod

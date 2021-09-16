@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from os.path import join
 
-from local_pipeline.core_chain import CoreRoute
-from local_pipeline.preprocess_chain import PreprocessRoute
-from local_pipeline.mapping import EnvironmentConfigure
+from local_pipeline.sub_pipeline.core_chain import CoreRoute
+from local_pipeline.sub_pipeline.preprocess_chain import PreprocessRoute
+from local_pipeline.pipeline_utils.mapping import EnvironmentConfigure
 from local_pipeline.base_modeling_graph import BaseModelingGraph
 
 from utils.check_dataset import check_data
@@ -30,7 +30,7 @@ class UdfModelingGraph(BaseModelingGraph):
     def __init__(self, name: str, **params):
         """
         :param name: string project, pipeline name
-        :param work_root:
+        :param work_root: project work root
         :param task_name:
         :param metric_name:
         :param train_data_path:
@@ -54,15 +54,16 @@ class UdfModelingGraph(BaseModelingGraph):
         :param auto_ml_path:
         :param selector_configure_path:
         """
-        print(params.keys())
         super().__init__(
             name=name,
+            data_file_type=params[ConstantValues.data_file_type],
             work_root=params[ConstantValues.work_root],
             task_name=params[ConstantValues.task_name],
             metric_name=params[ConstantValues.metric_name],
             train_data_path=params[ConstantValues.train_data_path],
             val_data_path=params[ConstantValues.val_data_path],
             target_names=params[ConstantValues.target_names],
+            model_need_clear_flag=params[ConstantValues.model_need_clear_flag],
             feature_configure_path=params[ConstantValues.feature_configure_path],
             feature_configure_name=params[ConstantValues.feature_configure_name],
             dataset_name=params[ConstantValues.dataset_name],
@@ -193,8 +194,9 @@ class UdfModelingGraph(BaseModelingGraph):
         )
 
         preprocess_chain = PreprocessRoute(
-            name="PreprocessRoute",
+            name=ConstantValues.PreprocessRoute,
             feature_path_dict=feature_dict,
+            data_file_type=self._global_values[ConstantValues.data_file_type],
             task_name=self._attributes_names[ConstantValues.task_name],
             train_flag=True,
             train_data_path=self._work_paths[ConstantValues.train_data_path],
@@ -224,8 +226,9 @@ class UdfModelingGraph(BaseModelingGraph):
 
         assert params.get(ConstantValues.model_name) is not None
         # 如果未进行数据清洗, 并且模型需要数据清洗, 则返回None.
+        model_name = (params.get(ConstantValues.model_name))
         if check_data(already_data_clear=self._already_data_clear,
-                      model_name=params.get(ConstantValues.model_name)) is not True:
+                      model_need_clear_flag=self._model_need_clear_flag.get(model_name)) is not True:
             return None
 
         assert ConstantValues.train_dataset in entity_dict and ConstantValues.val_dataset in entity_dict

@@ -17,6 +17,8 @@ auto_ml_trial_num: 15
 max_exec_duration: 36000
 type_inference_name: plain_type_inference
 unsupervised_feature_selector_name: unsupervised_feature_selector
-model_need_clear_flag: {
-
-}
+model_need_clear_flag:
+  "lightgbm": False
+  "multiprocess_lightgbm": False
+  "lr": True
+  "multiprocess_lr": True

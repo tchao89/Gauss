@@ -31,11 +31,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
     """
     lightgbm object.
     """
-    # This flag is bool values, if true,
-    # dataset must use data clear component when training this model.
-    # map
-    need_data_clear = False
-
     def __init__(self, **params):
         super().__init__(
             name=params["name"],
@@ -61,6 +56,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         """
         dataset = kwargs.get("dataset")
         train_flag = kwargs.get("train_flag")
+        categorical_list = kwargs.get("categorical_list")
         # dataset is a BaseDataset object, you can use get_dataset() method to get a Bunch object,
         # including data, target, feature_names, target_names, generated_feature_names.
 
@@ -71,6 +67,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
             lgb_data = lgb.Dataset(
                 data=dataset.get("data"),
                 label=dataset.get("target"),
+                categorical_feature=categorical_list,
                 free_raw_data=False,
                 silent=True
             )
@@ -121,7 +118,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
             train_flag=self._train_flag
-        ).set_reference(lgb_train)
+        )
 
         logger.info(
             "Set preprocessing parameters for lightgbm, "
@@ -156,6 +153,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 train_set=lgb_train,
                 num_boost_round=num_boost_round,
                 valid_sets=lgb_eval,
+                categorical_feature=self._categorical_list,
                 early_stopping_rounds=early_stopping_rounds,
                 verbose_eval=False
             )

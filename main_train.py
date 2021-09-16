@@ -4,13 +4,13 @@
 # Authors: Lab
 import argparse
 
-from local_pipeline.auto_modeling_graph import AutoModelingGraph
-from local_pipeline.udf_modeling_graph import UdfModelingGraph
-from local_pipeline.multiprocess_udf_graph import MultiprocessUdfModelingGraph
+from local_pipeline.singleprocess.auto_modeling_graph import AutoModelingGraph
+from local_pipeline.singleprocess.udf_modeling_graph import UdfModelingGraph
+from local_pipeline.multiprocess.multiprocess_udf_graph import MultiprocessUdfModelingGraph
 from utils.yaml_exec import yaml_read
 
 # --------------- this block just for test ---------------
-from local_pipeline.mapping import EnvironmentConfigure
+from local_pipeline.pipeline_utils.mapping import EnvironmentConfigure
 from utils.bunch import Bunch
 from utils.yaml_exec import yaml_write
 from utils.Logger import logger
@@ -24,14 +24,18 @@ pipeline_dict = Bunch()
 pipeline_dict.mode = "udf"
 pipeline_dict.work_root = environ_configure.work_root
 pipeline_dict.task_name = "classification"
+# optional: ["auc", "f1"]
 pipeline_dict.metric_name = "auc"
-pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/a9a/a9a.libsvm"
-pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/a9a/a9a.t.libsvm"
+# optional: ["libsvm", "txt", "csv"]
+pipeline_dict.data_file_type = "libsvm"
+pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/w8a/w8a"
+pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/w8a/w8a.t"
+# pipeline do not need to get target names in libsvm and txt file.
 pipeline_dict.target_names = ["deposit"]
 pipeline_dict.feature_configure_path = environ_configure.user_feature_path
 pipeline_dict.dataset_name = "plaindataset"
 pipeline_dict.model_zoo = ["lightgbm"]
-pipeline_dict.data_clear_flag = True
+pipeline_dict.data_clear_flag = False
 pipeline_dict.feature_generator_flag = False
 pipeline_dict.unsupervised_feature_selector_flag = True
 pipeline_dict.supervised_feature_selector_flag = False
