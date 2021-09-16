@@ -1,0 +1,17 @@
+data_clear_flag: false
+data_file_type: libsvm
+dataset_name: plaindataset
+feature_configure_path: /home/liangqian/Gauss/test_dataset/feature_conf.yaml
+feature_generator_flag: false
+metric_name: f1
+mode: udf
+model_zoo:
+- lightgbm
+supervised_feature_selector_flag: false
+target_names:
+- deposit
+task_name: classification
+train_data_path: /home/liangqian/Gauss/test_dataset/bank_numerical.csv
+unsupervised_feature_selector_flag: true
+val_data_path: /home/liangqian/Gauss/test_dataset/bank_numerical.csv
+work_root: /home/liangqian/Gauss/experiments/ZPpHPf

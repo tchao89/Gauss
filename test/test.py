@@ -1,6 +1,1 @@
-import string
-
-for w in string.ascii_uppercase:
-    print(w)
-
-print(string.ascii_uppercase[5])
+print(all([0, 2, 3]))

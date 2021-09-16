@@ -1,0 +1,16 @@
+ModelParameters:
+  bagging_fraction: 0.7989783624654264
+  bagging_freq: 10
+  feature_fraction: 0.946208113830205
+  lambda_l2: 0.78523703368338
+  learning_rate: 0.01
+  max_depth: 3
+  nthread: -1
+  num_class: 1
+  num_leaves: 20
+  objective: binary
+  verbose: -1
+Name: lightgbm
+Normalization: false
+OnehotEncoding: false
+Standardization: false
