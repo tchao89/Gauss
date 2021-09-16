@@ -178,8 +178,8 @@ class CoreRoute(Component):
             self._model_name, entity["model"].metric_history
         )
 
-        logger.info("Using {}, best metric result is : {:.10f}".format(
-            self._model_name, max(entity["model"].metric_history)
+        logger.info("Using {}, metric: {}, best metric result is : {:.10f}".format(
+            self._model_name, self._metric_name, max(entity["model"].metric_history)
         )
         )
 

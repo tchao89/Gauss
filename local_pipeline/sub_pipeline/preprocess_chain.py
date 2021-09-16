@@ -76,6 +76,7 @@ class PreprocessRoute(Component):
         self._val_data_path = params["val_data_path"]
         self._train_data_path = params["train_data_path"]
         self._test_data_path = params["test_data_path"]
+        self._data_file_type = params.get("data_file_type")
         self._target_names = params.get("target_names")
         self._dataset_name = params["dataset_name"]
 
@@ -191,6 +192,7 @@ class PreprocessRoute(Component):
             task_name=self._task_name,
             data_pair=None,
             data_path=self._train_data_path,
+            data_file_type=self._data_file_type,
             target_name=self._target_names,
             memory_only=True
         )
@@ -205,6 +207,7 @@ class PreprocessRoute(Component):
                 task_name=self._task_name,
                 data_pair=None,
                 data_path=self._val_data_path,
+                data_file_type=self._data_file_type,
                 target_name=self._target_names,
                 memory_only=True
             )

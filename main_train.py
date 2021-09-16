@@ -24,11 +24,12 @@ pipeline_dict = Bunch()
 pipeline_dict.mode = "udf"
 pipeline_dict.work_root = environ_configure.work_root
 pipeline_dict.task_name = "classification"
+# optional: ["auc", "f1"]
 pipeline_dict.metric_name = "auc"
 # optional: ["libsvm", "txt", "csv"]
 pipeline_dict.data_file_type = "libsvm"
-pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/w1a/w1a.libsvm"
-pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/w1a/w1a.t.libsvm"
+pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/w8a/w8a"
+pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/w8a/w8a.t"
 # pipeline do not need to get target names in libsvm and txt file.
 pipeline_dict.target_names = ["deposit"]
 pipeline_dict.feature_configure_path = environ_configure.user_feature_path
@@ -36,7 +37,7 @@ pipeline_dict.dataset_name = "plaindataset"
 pipeline_dict.model_zoo = ["lightgbm"]
 pipeline_dict.data_clear_flag = False
 pipeline_dict.feature_generator_flag = False
-pipeline_dict.unsupervised_feature_selector_flag = False
+pipeline_dict.unsupervised_feature_selector_flag = True
 pipeline_dict.supervised_feature_selector_flag = False
 config_path = environ_configure.work_root + "/train_user_config.yaml"
 yaml_write(yaml_dict=dict(pipeline_dict), yaml_file=config_path)

@@ -56,6 +56,7 @@ class UdfModelingGraph(BaseModelingGraph):
         """
         super().__init__(
             name=name,
+            data_file_type=params[ConstantValues.data_file_type],
             work_root=params[ConstantValues.work_root],
             task_name=params[ConstantValues.task_name],
             metric_name=params[ConstantValues.metric_name],
@@ -193,8 +194,9 @@ class UdfModelingGraph(BaseModelingGraph):
         )
 
         preprocess_chain = PreprocessRoute(
-            name="PreprocessRoute",
+            name=ConstantValues.PreprocessRoute,
             feature_path_dict=feature_dict,
+            data_file_type=self._global_values[ConstantValues.data_file_type],
             task_name=self._attributes_names[ConstantValues.task_name],
             train_flag=True,
             train_data_path=self._work_paths[ConstantValues.train_data_path],

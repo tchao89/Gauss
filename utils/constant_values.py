@@ -12,6 +12,7 @@ class ConstantValues:
     enable = "enable"
     task_name = "task_name"
     target_names = "target_names"
+    data_file_type = "data_file_type"
     supervised_selector_model_names = "supervised_selector_model_names"
     selector_trial_num = "selector_trial_num"
     auto_ml_trial_num = "auto_ml_trial_num"

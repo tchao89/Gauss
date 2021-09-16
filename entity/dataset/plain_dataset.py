@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import os
-import csv
 import string
 
 import pandas as pd
@@ -47,7 +46,7 @@ class PlaintextDataset(BaseDataset):
         :param target_name: A `list` containing label names in string format.
         :param memory_only: a boolean value, true for memory, false for others, default True.
         """
-        for item in ["name", "task_type", "data_pair", "data_path", "target_name", "memory_only"]:
+        for item in ["name", "task_type", "data_pair", "data_path", "target_name", "memory_only", "data_file_type"]:
             if params.get(item) is None:
                 params[item] = None
 
@@ -58,7 +57,7 @@ class PlaintextDataset(BaseDataset):
             raise AttributeError("data_path or data_pair must provided.")
 
         self._data_pair = params["data_pair"]
-        self.type_doc = None
+        self.__type_doc = params["data_file_type"]
         # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
         # by the length of validation dataset.
@@ -104,12 +103,13 @@ class PlaintextDataset(BaseDataset):
             raise TypeError("<{path}> is not a valid file.".format(
                 path=self._data_path
             ))
+        if self.__type_doc is None:
+            self.__type_doc = self._data_path.split(".")[-1]
 
-        self.type_doc = self._data_path.split(".")[-1]
-
-        if self.type_doc not in ["csv", "libsvm", "txt"]:
+        if self.__type_doc not in ["csv", "libsvm", "txt"]:
             raise TypeError(
-                "Unsupported file, excepted option in `csv`, `libsvm`, `txt`, <{type_doc}> received.".format(type_doc=self.type_doc)
+                "Unsupported file, excepted option in `csv`, `libsvm`, "
+                "`txt`, {} received.".format(self.__type_doc)
             )
 
         data = None
@@ -117,11 +117,13 @@ class PlaintextDataset(BaseDataset):
         feature_names = None
         target_name = None
 
-        if self.type_doc == "csv":
+        if self.__type_doc == "csv":
             try:
-                data, target, feature_names, target_name = self.load_mixed_csv()
+                data, target, feature_names, target_name = self.load_csv()
             except IOError:
                 logger.info("File path does not exist.")
+            except KeyError:
+                raise KeyError("Dataset file type is not correct, and it's not a csv file.")
             finally:
                 logger.info(".csv file has been converted to Bunch object.")
 
@@ -130,8 +132,14 @@ class PlaintextDataset(BaseDataset):
                                 target_names=target_name,
                                 feature_names=feature_names)
 
-        elif self.type_doc == 'libsvm':
-            data, target = self.load_libsvm()
+        elif self.__type_doc == 'libsvm':
+            try:
+                data, target = self.load_libsvm()
+            except ValueError:
+                raise ValueError("Dataset file type is not correct, and it's not a libsvm file.")
+            finally:
+                logger.info(".csv file has been converted to Bunch object.")
+
             _, data, target = self._convert_data_dataframe(data=data,
                                                            target=target)
             self._bunch = Bunch(
@@ -145,8 +153,14 @@ class PlaintextDataset(BaseDataset):
             data.columns = self._bunch.feature_names
             target.columns = self._bunch.target_names
 
-        elif self.type_doc == 'txt':
-            data, target = self.load_txt()
+        elif self.__type_doc == 'txt':
+            try:
+                data, target = self.load_txt()
+            except ValueError:
+                raise ValueError("Dataset file type is not correct, and it's not a txt file.")
+            finally:
+                logger.info(".csv file has been converted to Bunch object.")
+
             _, data, target = self._convert_data_dataframe(data=data,
                                                            target=target)
             self._bunch = Bunch(
@@ -164,7 +178,7 @@ class PlaintextDataset(BaseDataset):
             raise TypeError("File type can not be accepted.")
         return self._bunch
 
-    def load_mixed_csv(self):
+    def load_csv(self):
         target = None
         target_name = None
 
@@ -180,49 +194,6 @@ class PlaintextDataset(BaseDataset):
             target_name = self._target_name
             self._column_size = data.shape[1] + target.shape[1]
         return data, target, feature_names, target_name
-
-    def load_csv(self):
-        """Loads data from csv_file_name.
-
-        Returns
-        -------
-        data : Numpy array
-            A 2D array with each row representing one sample and each column
-            representing the features of a given sample.
-
-        target : Numpy array
-            A 1D array holding target variables for all the samples in `data.
-            For example target[0] is the target variable for data[0].
-
-        target_names : Numpy array
-            A 1D array containing the names of the classifications. For example
-            target_names[0] is the name of the target[0] class.
-        """
-        with open(self._data_path, 'r') as csv_file:
-
-            data_file = csv.reader(csv_file)
-            feature_names = next(data_file)
-            target_location = -1
-
-            try:
-                target_location = feature_names.index(self._target_name)
-                target_name = feature_names.pop(target_location)
-            except IndexError:
-                logger.info("Label is not exist.")
-            assert target_name == self._target_name
-
-            self._row_size = n_samples = self.wc_count() - 1
-            self._column_size = n_features = len(feature_names)
-
-            data = np.empty((n_samples, n_features))
-            target = np.empty((n_samples,), dtype=int)
-
-            for index, row in enumerate(data_file):
-                label = row.pop(target_location)
-                data[index] = np.asarray(row, dtype=np.float64)
-                target[index] = np.asarray(label, dtype=int)
-
-        return data, target, feature_names, self._target_name
 
     def load_libsvm(self):
         data, target = load_svmlight_file(self._data_path)

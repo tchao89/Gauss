@@ -1,7 +1,11 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2021, Citic Inc. All rights reserved.
-# Authors: Lab
+"""
+-*- coding: utf-8 -*-
+
+Copyright (c) 2021, Citic Inc. All rights reserved.
+Authors: Lab
+This file contains user-defined metric entities,
+and these entities is only used for binary classification task.
+"""
 
 from __future__ import absolute_import
 from __future__ import division
