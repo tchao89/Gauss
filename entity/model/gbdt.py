@@ -155,7 +155,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 valid_sets=lgb_eval,
                 categorical_feature=self._categorical_list,
                 early_stopping_rounds=early_stopping_rounds,
-                verbose_eval=False
+                verbose_eval=False,
             )
 
             logger.info(
@@ -317,3 +317,4 @@ class GaussLightgbm(SingleProcessModelWrapper):
         Do not need to operate.
         :return:
         """
+

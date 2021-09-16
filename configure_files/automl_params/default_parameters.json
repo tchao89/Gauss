@@ -8,8 +8,6 @@
 
   "num_boost_round": 100,
 
-  "metric": ["auc", "l2"],
-
   "num_leaves": 32,
 
   "learning_rate": 0.01,
@@ -32,8 +30,6 @@
   "objective": "binary",
 
   "num_class": 1,
-
-  "metric": ["auc", "l2"],
 
   "num_leaves": 32,
 
