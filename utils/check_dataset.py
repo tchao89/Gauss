@@ -1,8 +1,10 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic-Lab. All rights reserved.
-# Authors: citic-lab
-from gauss_factory.gauss_factory_producer import GaussFactoryProducer
+"""
+-*- coding: utf-8 -*-
+
+Copyright (c) 2020, Citic-Lab. All rights reserved.
+Authors: citic-lab
+"""
+from utils.create_static_entity import create_static_entity
 
 
 def check_data(already_data_clear, model_name):

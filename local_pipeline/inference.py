@@ -11,9 +11,9 @@ from os.path import join
 
 import pandas as pd
 
-from local_pipeline.core_chain import CoreRoute
-from local_pipeline.mapping import EnvironmentConfigure
-from local_pipeline.preprocess_chain import PreprocessRoute
+from local_pipeline.sub_pipeline.core_chain import CoreRoute
+from local_pipeline.pipeline_utils.mapping import EnvironmentConfigure
+from local_pipeline.sub_pipeline.preprocess_chain import PreprocessRoute
 from utils.bunch import Bunch
 
 

@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from os.path import join
 
-from local_pipeline.core_chain import CoreRoute
-from local_pipeline.preprocess_chain import PreprocessRoute
-from local_pipeline.mapping import EnvironmentConfigure
+from local_pipeline.sub_pipeline.core_chain import CoreRoute
+from local_pipeline.sub_pipeline.preprocess_chain import PreprocessRoute
+from local_pipeline.pipeline_utils.mapping import EnvironmentConfigure
 from local_pipeline.base_modeling_graph import BaseModelingGraph
 
 from utils.check_dataset import check_data
@@ -30,7 +30,7 @@ class UdfModelingGraph(BaseModelingGraph):
     def __init__(self, name: str, **params):
         """
         :param name: string project, pipeline name
-        :param work_root:
+        :param work_root: project work root
         :param task_name:
         :param metric_name:
         :param train_data_path:
@@ -54,7 +54,6 @@ class UdfModelingGraph(BaseModelingGraph):
         :param auto_ml_path:
         :param selector_configure_path:
         """
-        print(params.keys())
         super().__init__(
             name=name,
             work_root=params[ConstantValues.work_root],

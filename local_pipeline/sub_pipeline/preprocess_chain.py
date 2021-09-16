@@ -184,6 +184,7 @@ class PreprocessRoute(Component):
         assert self._train_data_path is not None
         assert os.path.isfile(self._train_data_path)
         assert self._train_flag is True
+
         # 拼接数据
         dataset_params = Bunch(
             name=self._dataset_name,

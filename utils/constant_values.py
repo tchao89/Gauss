@@ -5,7 +5,6 @@ Copyright (c) 2020, Citic-Lab. All rights reserved.
 Authors: citic-lab
 """
 
-
 class ConstantValues:
     # system name
     name = "name"
@@ -19,7 +18,11 @@ class ConstantValues:
     opt_model_names = "opt_model_names"
     model_zoo = "model_zoo"
     feature_path_dict = "feature_path_dict"
-    # task name
+    # train_flag:
+    training = "training"
+    incremental = "incremental"
+    inference = "inference"
+    # task_name
     classification = "classification"
     regression = "regression"
     # selector name

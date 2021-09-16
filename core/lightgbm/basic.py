@@ -1242,7 +1242,7 @@ class Dataset:
             if categorical_indices:
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     if cat_alias in params:
-                        _log_warning('{} in param dict is overridden.'.format(cat_alias))
+                        # _log_warning('{} in param dict is overridden.'.format(cat_alias))
                         params.pop(cat_alias, None)
                 params['categorical_column'] = sorted(categorical_indices)
 
@@ -1430,7 +1430,7 @@ class Dataset:
             if self.reference is not None:
                 reference_params = self.reference.get_params()
                 if self.get_params() != reference_params:
-                    _log_warning('Overriding the parameters from Reference Dataset.')
+                    # _log_warning('Overriding the parameters from Reference Dataset.')
                     self._update_params(reference_params)
                 if self.used_indices is None:
                     # create valid

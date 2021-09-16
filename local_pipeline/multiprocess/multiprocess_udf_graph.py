@@ -14,9 +14,9 @@ from multiprocessing import Pool, shared_memory, cpu_count
 import numpy as np
 
 from entity.dataset.multiprocess_plain_dataset import MultiprocessPlaintextDataset
-from local_pipeline.core_chain import CoreRoute
-from local_pipeline.preprocess_chain import PreprocessRoute
-from local_pipeline.mapping import EnvironmentConfigure
+from local_pipeline.sub_pipeline.core_chain import CoreRoute
+from local_pipeline.sub_pipeline.preprocess_chain import PreprocessRoute
+from local_pipeline.pipeline_utils.mapping import EnvironmentConfigure
 from local_pipeline.base_modeling_graph import BaseModelingGraph
 from utils.yaml_exec import yaml_write
 
