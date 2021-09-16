@@ -62,6 +62,7 @@ class UdfModelingGraph(BaseModelingGraph):
             train_data_path=params[ConstantValues.train_data_path],
             val_data_path=params[ConstantValues.val_data_path],
             target_names=params[ConstantValues.target_names],
+            model_need_clear_flag=params[ConstantValues.model_need_clear_flag],
             feature_configure_path=params[ConstantValues.feature_configure_path],
             feature_configure_name=params[ConstantValues.feature_configure_name],
             dataset_name=params[ConstantValues.dataset_name],
@@ -223,8 +224,9 @@ class UdfModelingGraph(BaseModelingGraph):
 
         assert params.get(ConstantValues.model_name) is not None
         # 如果未进行数据清洗, 并且模型需要数据清洗, 则返回None.
+        model_name = (params.get(ConstantValues.model_name))
         if check_data(already_data_clear=self._already_data_clear,
-                      model_name=params.get(ConstantValues.model_name)) is not True:
+                      model_need_clear_flag=self._model_need_clear_flag.get(model_name)) is not True:
             return None
 
         assert ConstantValues.train_dataset in entity_dict and ConstantValues.val_dataset in entity_dict

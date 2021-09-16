@@ -90,6 +90,7 @@ class BaseModelingGraph:
         )
 
         self._already_data_clear = None
+        self._model_need_clear_flag = params["model_need_clear_flag"]
         self._pipeline_configure = None
 
     @abc.abstractmethod

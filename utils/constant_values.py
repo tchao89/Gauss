@@ -18,6 +18,7 @@ class ConstantValues:
     opt_model_names = "opt_model_names"
     model_zoo = "model_zoo"
     feature_path_dict = "feature_path_dict"
+    model_need_clear_flag = "model_need_clear_flag"
     # train_flag:
     training = "training"
     incremental = "incremental"

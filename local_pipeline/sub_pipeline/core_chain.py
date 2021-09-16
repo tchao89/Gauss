@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
-from gauss_factory.entity_factory import MetricFactory
 
 from utils.yaml_exec import yaml_read
 from utils.yaml_exec import yaml_write
@@ -55,9 +54,8 @@ class CoreRoute(Component):
         )
 
         # create metric and set optimize_mode
-        metric_factory = MetricFactory()
         metric_params = Bunch(name=self._metric_name)
-        self.metric = metric_factory.get_entity(
+        self.metric = self.create_entity(
             entity_name=self._metric_name,
             **metric_params
         )

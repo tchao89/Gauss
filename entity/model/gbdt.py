@@ -31,11 +31,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
     """
     lightgbm object.
     """
-    # This flag is bool values, if true,
-    # dataset must use data clear component when training this model.
-    # map
-    need_data_clear = False
-
     def __init__(self, **params):
         super().__init__(
             name=params["name"],
