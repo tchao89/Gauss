@@ -126,7 +126,7 @@ class SequenceLabelEncode(BaseLabelEncode):
                     # blank for handle oov features.
                     data[fea_name] = encoder.transform(data[fea_name])
 
-    def _label_encode(self, label, label_name, encoders=None):
+    def _label_encode(self, label, label_name: str, encoders=None):
         if self._train_flag:
             if self._task_name == self.CLS:
                 encoder = LabelEncoder().fit(label)

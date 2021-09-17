@@ -20,8 +20,9 @@ from utils.common_component import (
 )
 
 class SequenceTypeInference(BaseTypeInference):
-    """
-    TODO: fill api doc.
+    """Inference sequence dataset data types and feature types.
+
+    Features data type can be inferencied by it's statistic information. 
     """
     EPSILON = 0.00001
     THRESHOLD = 0.95
@@ -124,6 +125,9 @@ class SequenceTypeInference(BaseTypeInference):
             self._string_column_selector(col_name)
 
     def _is_int(self, series):
+        """Return True if error between original and force converted
+        less than EPSILON, else False.
+        """
         int_counter = 0
         for item in series:
             if (not np.isnan(item)) and (abs(item-int(item)<self.EPSILON)):
@@ -198,7 +202,8 @@ class SequenceTypeInference(BaseTypeInference):
                         ftype = self.DATE
 
 
-    # def target_check(self, dataset: BaseDataset):
+    def target_check(self, dataset: BaseDataset):
+        pass
     #     for label_name in dataset.get_dataset().target_names:
             # label = dataset.get_dataset().labels.loc[:, label_name]
             # # self._target_dtype_check(dataset, label)
