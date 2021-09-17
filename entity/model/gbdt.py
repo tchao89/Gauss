@@ -11,15 +11,19 @@ from __future__ import print_function
 from __future__ import annotations
 
 import os.path
+import operator
 
 import numpy as np
 import pandas as pd
+from scipy import special
+
 import core.lightgbm as lgb
 
 from entity.model.single_process_model import SingleProcessModelWrapper
 from entity.model.single_process_model import choose_features
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
+from entity.losses.base_loss import LossResult
 
 from utils.base import get_current_memory_gb
 from utils.base import mkdir
@@ -42,6 +46,9 @@ class GaussLightgbm(SingleProcessModelWrapper):
         self.__model_file_name = self.name + ".txt"
         self.__model_config_file_name = self.name + ".yaml"
         self.__feature_config_file_name = self.name + ".yaml"
+
+        self._loss_function = None
+        self._eval_function = None
 
         self.count = 0
 
@@ -87,9 +94,29 @@ class GaussLightgbm(SingleProcessModelWrapper):
     def train(self,
               train_dataset: BaseDataset,
               val_dataset: BaseDataset,
-              **entity
-              ):
+              **entity):
         assert self._train_flag is True
+
+        if entity["loss"] is not None:
+            self._loss_function = entity["loss"].loss_fn
+            obj_function = self._loss_func
+        else:
+            obj_function = None
+
+        train_target_names = train_dataset.get_dataset().target_names
+        eval_target_names = val_dataset.get_dataset().target_names
+
+        assert operator.eq(train_target_names, eval_target_names), \
+            "Value: target_names is different between train_dataset and validation dataset."
+
+        self._target_names = list(set(train_target_names).union(set(eval_target_names)))[0]
+
+        if entity["metric"] is not None:
+            entity["metric"].label_name = self._target_names
+            self._eval_function = entity["metric"].evaluate
+            eval_function = self._eval_func
+        else:
+            eval_function = None
 
         logger.info(
             "Construct lightgbm training dataset, "
@@ -155,6 +182,8 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 valid_sets=lgb_eval,
                 categorical_feature=self._categorical_list,
                 early_stopping_rounds=early_stopping_rounds,
+                fobj=obj_function,
+                feval=eval_function,
                 verbose_eval=False,
             )
 
@@ -224,14 +253,22 @@ class GaussLightgbm(SingleProcessModelWrapper):
         assert "data" in train_dataset.get_dataset() and "target" in train_dataset.get_dataset()
         assert "data" in val_dataset.get_dataset() and "target" in val_dataset.get_dataset()
 
-        dataset = self._generate_sub_dataset(dataset=train_dataset)
+        train_dataset = self._generate_sub_dataset(dataset=train_dataset)
         val_dataset = self._generate_sub_dataset(dataset=val_dataset)
 
-        train_data = dataset.get("data")
+        train_data = train_dataset.get("data")
         eval_data = val_dataset.get("data")
 
-        train_label = dataset.get("target")
+        train_label = train_dataset.get("target")
         eval_label = val_dataset.get("target")
+
+        train_target_names = train_dataset.get("target_names")
+        eval_target_names = val_dataset.get("target_names")
+
+        assert operator.eq(train_target_names, eval_target_names), \
+            "Value: target_names is different between train_dataset and validation dataset."
+
+        self._target_names = list(set(train_target_names).union(set(eval_target_names)))[0]
 
         # 默认生成的为预测值的概率值，传入metric之后再处理.
         logger.info(
@@ -249,9 +286,16 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
         assert isinstance(val_y_pred, np.ndarray)
         assert isinstance(train_y_pred, np.ndarray)
-        assert isinstance(eval_label, np.ndarray)
-        assert isinstance(train_label, np.ndarray)
 
+        train_label = self.__generate_labels_map(
+            target=train_label,
+            target_names=train_target_names)
+
+        eval_label = self.__generate_labels_map(
+            target=eval_label,
+            target_names=eval_target_names)
+
+        metric.label_name = self._target_names
         metric.evaluate(predict=val_y_pred, labels_map=eval_label)
         val_metric_result = metric.metric_result
 
@@ -266,8 +310,17 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
         logger.info("train_metric: %s, val_metric: %s",
                     self._train_metric_result.result,
-                    self._val_metric_result.result
-                    )
+                    self._val_metric_result.result)
+
+    @classmethod
+    def __generate_labels_map(cls, target, target_names):
+        assert isinstance(target, pd.DataFrame)
+        assert isinstance(target_names, list)
+
+        labels_map = {}
+        for feature in target_names:
+            labels_map[feature] = target[feature]
+        return labels_map
 
     def model_save(self):
         assert self._model_save_root is not None
@@ -309,12 +362,33 @@ class GaussLightgbm(SingleProcessModelWrapper):
     def update_best(self):
         """
         Do not need to operate.
-        :return:
+        :return: None
         """
 
     def set_best(self):
         """
         Do not need to operate.
-        :return:
+        :return: None
         """
 
+    def _loss_func(self, preds, train_data):
+        assert self._loss_function is not None
+
+        preds = special.expit(preds)
+        loss = self._loss_function
+        label = train_data.get_label()
+        loss_result = loss(score=preds, label=label)
+
+        assert isinstance(loss_result, LossResult)
+        return loss_result.grad, loss_result.hess
+
+    def _eval_func(self, preds, train_data):
+        assert self._eval_function is not None
+        preds = special.expit(preds)
+        label_map = {self._target_names: train_data.get_label()}
+        metric_result = self._eval_function(predict=preds, labels_map=label_map)
+
+        assert isinstance(metric_result, MetricResult)
+        assert metric_result.optimize_mode in ["maximize", "minimize"]
+        is_higher_better = True if metric_result.optimize_mode == "maximize" else False
+        return metric_result.metric_name, metric_result.result, is_higher_better

@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic-Lab. All rights reserved.
-# Authors: luoqing
 """
+-*- coding: utf-8 -*-
+
+Copyright (c) 2020, Citic-Lab. All rights reserved.
+Authors: citic-Lab
 Model training pipeline.
 """
 from __future__ import annotations
@@ -38,6 +38,7 @@ class CoreRoute(Component):
 
         self._task_name = params["task_name"]
         self._metric_name = params["metric_name"]
+        self._loss_name = params["loss_name"]
         self._feature_selector_flag = params["supervised_feature_selector_flag"]
 
         self._opt_model_names = params.get("opt_model_names")
@@ -52,6 +53,17 @@ class CoreRoute(Component):
             entity_name=params["feature_configure_name"],
             **feature_conf_params
         )
+
+        if self._loss_name is not None:
+            loss_params = Bunch(
+                name=self._loss_name
+            )
+            self.loss = self.create_entity(
+                entity_name=self._loss_name,
+                **loss_params
+            )
+        else:
+            self.loss = None
 
         # create metric and set optimize_mode
         metric_params = Bunch(name=self._metric_name)
@@ -127,6 +139,7 @@ class CoreRoute(Component):
         entity["metric"] = self.metric
         entity["auto_ml"] = self.auto_ml
         entity["feature_configure"] = self.feature_conf
+        entity["loss"] = self.loss
 
         if self._feature_selector_flag is True:
 

@@ -55,7 +55,7 @@ class PlainTypeInference(BaseTypeInference):
         self.dtype_threshold = 0.95
         self.categorical_threshold = 0.01
 
-        if params["source_file_path"] != "null":
+        if params["source_file_path"] is not None:
             self.init_feature_configure = FeatureConf(name="source feature path", file_path=params["source_file_path"])
             self.init_feature_configure.parse(method="user")
         else:
@@ -219,7 +219,8 @@ class PlainTypeInference(BaseTypeInference):
                 assert "int" in str(target[label].dtypes) or "object" in str(target[label].dtypes)
 
     def _check_init_final_conf(self):
-        assert self.init_feature_configure is not None
+        if self.init_feature_configure is None:
+            return
 
         for item in self.init_feature_configure.feature_dict.items():
             if self.final_feature_configure.feature_dict.get(item[0]):

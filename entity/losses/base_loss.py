@@ -64,8 +64,11 @@ class BaseLoss(Entity):
 
     All subclasses of BaseLoss must override `loss_fn` method.
     """
-    def __init__(self, name: str):
+    def __init__(self, name: str, task_name: str, label_name: str = None):
         super().__init__(name=name)
+        self._task_name = task_name
+        self._label_name = label_name
+        assert self._task_name is not None, "Task name value must be set."
 
     @abc.abstractmethod
     def loss_fn(self, logits: np.ndarray, examples: np.ndarray) -> LossResult:
@@ -75,3 +78,15 @@ class BaseLoss(Entity):
         :param examples: The input `tf.Example` from which to obtain
             all required data fields.
         :return: A loss `np.ndarray`. """
+
+    @property
+    def task_name(self):
+        return self._task_name
+
+    @property
+    def label_name(self):
+        return self._label_name
+
+    @label_name.setter
+    def label_name(self, label_name: str):
+        self._label_name = label_name
