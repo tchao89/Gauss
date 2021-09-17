@@ -4,6 +4,6 @@
 **/__pycache__/
 **/*.log
 **/*.pyc
-./test_dataset/
-./test/
-./experiments/
+test_dataset/
+test/
+experiment/
