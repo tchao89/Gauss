@@ -28,6 +28,21 @@ class SequenceDataClear(BaseDataClear):
         Strategy options: 'mean', 'median', 'most_frequent' and 'constant'.
         There are two ways to define the strategy,
         one is by feature type:
+        
+        Parameters:
+        ---------------
+        feature_config_path: str; To be loaded config file path.
+        
+        save_config_path: str; Path for saving processed config. 
+        
+        save_imputer_path: str; Path for saving serialized imputer.
+        
+        strategy_dict: dict; Strategy for handle missing values.
+        
+        missing_values: int, float, str(default); Value for replace missing value. 
+
+        Examples:
+        ---------------
         >>> {
                 "model": {"name": "ftype"}, 
                 "category": {"name": 'most_frequent'}, 
@@ -43,6 +58,7 @@ class SequenceDataClear(BaseDataClear):
                 "fill_value": 0}
             }
         """
+
         FLOAT = "float"
         FLOAT64 = "float64"
         INT = "int"
@@ -55,11 +71,17 @@ class SequenceDataClear(BaseDataClear):
 
         def __init__(self, **params):
             """
-            :param feature_config_path: str; To be loaded config file path.
-            :param save_config_path: str; Path for saving processed config. 
-            :param save_imputer_path: str; Path for saving serialized imputer.
-            :param strategy_dict: dict; Strategy for handle missing values.
-            :param missing_values: int, float, str(default); Value for replace missing value. 
+            Parameters:
+            ----------------
+            feature_config_path: str; To be loaded config file path.
+            
+            save_config_path: str; Path for saving processed config. 
+            
+            save_imputer_path: str; Path for saving serialized imputer.
+            
+            strategy_dict: dict; Strategy for handle missing values.
+            
+            missing_values: int, float, str(default); Value for replace missing value. 
             """
 
             super(SequenceDataClear, self).__init__(
@@ -142,14 +164,16 @@ class SequenceDataClear(BaseDataClear):
                         imputer = SimpleImputer(
                             missing_values=self._missing_values,
                             strategy=self._strategy_dict[fea_config["ftype"]]["name"],
-                            fill_value=self._strategy_dict[fea_config["ftype"]].get("fill_value"),
+                            fill_value=self._strategy_dict[fea_config["ftype"]].\
+                                get("fill_value"),
                             add_indicator=True
                         )
                     elif self._strategy_dict["model"]["name"] == "feature":
                         imputer = SimpleImputer(
                             missing_values=self._missing_values,
                             strategy=self._strategy_dict[fea_name]["name"],
-                            fill_value=self._strategy_dict[fea_name].get("fill_value"),
+                            fill_value=self._strategy_dict[fea_name].\
+                                get("fill_value"),
                             add_indicator=True
                         )
                 else:

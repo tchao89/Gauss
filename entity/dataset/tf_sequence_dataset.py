@@ -5,6 +5,7 @@
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 
 from utils.bunch import Bunch
 from entity.dataset.base_dataset import BaseDataset
@@ -46,7 +47,7 @@ class SequenceDataset(BaseDataset):
     Attributes:
     -----------
 
-    dataset_type : many-to-many, or many-to-one.
+    label_mapping : many-to-many, or many-to-one.
 
     task_name : current dataset label type , `classification` or 
         `regression`.
@@ -88,10 +89,14 @@ class SequenceDataset(BaseDataset):
             if params.get("label_seq") else "\t"
         self._has_feature_name = params["has_feature_name"] \
             if params.get("has_feature_name") else False
-        
+        # self._target_name = params["target_name"]
+
+        self._label_mapping = None
         self._miss_label = False
+        self._label_mask = None
         self._val_start = None
         self.need_data_clear = False
+        self._label_type = self._label_type()
 
         if not params.get("data_pair"):
             self._bunch = Bunch()
@@ -101,35 +106,43 @@ class SequenceDataset(BaseDataset):
     def __repr__(self):
         return str(self._bunch)
      
+    def update_features(self, features: list, cate_fea):
+        """update private attribute selected_features, which are actually
+        needed features in current trail.
+        """
+        if self._target_name:
+            self._selected_features = features + self._target_name
+        else:
+            self._selected_features = features
+        self._categorical_features = cate_fea
 
-    def build_dataset(self):
+    def load_dataset(self):
         """Read .txt file to SequenceDataset."""
-
         file = open(self._filepath)
-        self._read_from_file(file)
+        self._read_from_txt(file)
         file.close()
 
-    def _read_from_file(self, file):
+    def _read_from_txt(self, file):
         line = file.readline()
         data = []
         labels = []
-        label_index = []
         time_steps = []
-        label_name = ["label"]
-        stepper = 0
+        mask = []
+        label_name = "label"
 
         if self._has_feature_name:
             fea_names, label_name = self._strip_and_split(line, self._label_sep)
             fea_names = self._strip_and_split(fea_names, self._fea_sep)
-            label_name = [label_name.strip()]
+            label_name = label_name.strip()
             line = file.readline()
 
         while line:
             period_data, period_labels = self._feature_label_split(line)
             step_length = len(period_data)
+            counter = 0
             flag = True
 
-            for step_data in period_data:
+            for idx, step_data in enumerate(period_data):
                 if not self._has_feature_name and flag:                    
                     fea_names = [str(i) for i in range(len(step_data))]
                     flag = False
@@ -138,25 +151,37 @@ class SequenceDataset(BaseDataset):
                 else:
                     data.append(step_data)
 
-            if self._dataset_type == self.MUL:
-                for idx, step_label in period_labels:
-                    labels.append(step_label)
-                    cur_idx = int(idx + np.array(time_steps[:stepper]).sum())
-                    label_index.append(cur_idx)
-                    stepper += 1
-            elif self._dataset_type == self.UNI:
-                labels += period_labels
-
+                if self._label_mapping == self.MUL:
+                    if self._miss_label:
+                        try:
+                            step_label_idx = period_labels[idx-counter][0]
+                        except Exception:
+                            step_label_idx = period_labels[-1][0]
+                        
+                        if step_label_idx == idx:
+                            labels.append(period_labels[idx-counter][1])
+                        else:
+                            counter += 1
+                            labels.append(np.nan)
+                    else:
+                        labels.append(period_labels[idx][1])
+                elif self._label_mapping == self.UNI:
+                    labels += period_labels
+            
             time_steps.append(step_length)
             line = file.readline()
 
+        labels = np.array(labels)
+        if self._label_mapping == self.MUL:
+            self._label_mask = (~np.isnan(labels)).astype(np.int32)
+        np.nan_to_num(labels, nan=0, copy=False)
+
         self._bunch.data = pd.DataFrame(data=data, columns=fea_names)
-        self._bunch.target = pd.DataFrame(data=labels, columns=label_name)
-        self._bunch.steps = pd.DataFrame(data=time_steps, columns=["steps"])
-        self._bunch.feature_names = self._bunch.data.columns
+        self._bunch.target = pd.Series(data=labels, name=label_name)
+        self._bunch.steps = pd.Series(data=time_steps, name="steps")
+        self._bunch.feature_names = self._bunch.data.columns.tolist()
         self._bunch.target_names = label_name
-        if self._dataset_type == self.MUL:
-            self._bunch.indies = pd.DataFrame(data=label_index, columns=["label_index"])
+        
 
     def _feature_label_split(self, line):
         """Split feature columns and label columns to separete contents.
@@ -171,18 +196,18 @@ class SequenceDataset(BaseDataset):
         in a period, that will clarified by the attribute `miss_label`.
         """
         data, label = self._strip_and_split(line, self._label_sep)
-        self._dataset_type = self.MUL if self._fea_sep in label else self.UNI
+        self._label_mapping = self.MUL if self._fea_sep in label else self.UNI
         self._multi_fea = True if self._fea_sep in data else False
 
         data = self._strip_and_split(data, self._period_sep)
         label = self._strip_and_split(label, self._period_sep)
-        if self._dataset_type == self.MUL:
+        if self._label_mapping == self.MUL:
             self._miss_label = True if len(label) != len(data) else False
             label = [self._strip_and_split(x, self._fea_sep) for x in label]
             if self._task_name == self.REG:
-                label = [(int(value[0]), float(value[1])) for value in label]
+                label = [(int(idx), float(value)) for idx, value in label]
             else:
-                label = [(int(value[0]), value[1]) for value in label]
+                label = [(int(idx), value) for idx, value in label]
         return data, label
 
     def _strip_and_split(self, sample, delimiter=None):
@@ -198,7 +223,7 @@ class SequenceDataset(BaseDataset):
         valset = bunch.data.iloc[-count:, :]
         bunch.data = bunch.data.iloc[:-count, :]
         
-        if self._dataset_type == "multi":
+        if self._label_mapping == "multi":
             valset_target = bunch.target.iloc[-count:, :]
             bunch.target = bunch.target.iloc[:-count, :]
         else:
@@ -235,6 +260,38 @@ class SequenceDataset(BaseDataset):
         bunch.data.reset_index(drop=True, inplace=True)
         bunch.target.reset_index(drop=True, inplace=True)
         bunch.steps.reset_index(drop=True, inplace=True)
+
+    def _reset_index(self, args):
+        for arg in args:
+            arg.reset_index(drop=True, inplace=True)
+
+
+    def build_tf_dataset(self, ) -> tf.data.Dataset:
+        """Dataset for tf operations, like embedding, statistic calculation, etc.."""
+
+        data = self._bunch.data
+        
+        pass 
+
+    def _v_stack(self, dataset) -> pd.DataFrame:
+        X = dataset.get_dataset().data
+        y = dataset.get_dataset().target
+        dataset = pd.concat((X, y), axis=1)
+        return dataset
+    
+    # def _seq_dataset_gen(self):
+    #     """Convert pd.DF to tf.Dataset."""
+    #     bunch = self._bunch
+    #     start_idx = 0
+    #     end_idx = 0
+    #     for step in bunch.steps.values:
+    #         end_idx += step
+    #         period_data = bunch.data.iloc[start_idx:end_idx,:].values
+    #         period_label = bunch.target[start_idx:end_idx].values
+    #         start_idx = end_idx
+    #         yield period_data, period_label
+
+
     
     def load_data(self):
         self.build_dataset()
@@ -245,14 +302,20 @@ class SequenceDataset(BaseDataset):
     def feature_choose(self, feature_list):
         pass
 
-    def _reset_index(self, args):
-        for arg in args:
-            arg.reset_index(drop=True, inplace=True)
-
+    def _label_type(self):
+        if self._task_name == self.REG:
+            return tf.float32
+        elif self._task_name == self.CLS:
+            return tf.int32
+            
 
     @property
-    def dataset_type(self):
-        return self._dataset_type
+    def label_mapping(self):
+        return self._label_mapping
+
+    @property
+    def label_mask(self):
+        return self._label_mask
 
     @property
     def task_name(self):

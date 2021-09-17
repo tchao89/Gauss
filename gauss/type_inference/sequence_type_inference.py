@@ -47,6 +47,7 @@ class SequenceTypeInference(BaseTypeInference):
         super(SequenceTypeInference, self).__init__(
             name=params["name"],
             train_flag=params["train_flag"],
+            task_name=params["task_name"],
             source_file_path=params["source_file_path"],
             final_file_path=params["final_file_path"]
         )
@@ -69,7 +70,7 @@ class SequenceTypeInference(BaseTypeInference):
     def _train_run(self, **entity):
         self.dtype_inference(dataset=entity["dataset"])
         self.ftype_inference(dataset=entity["dataset"])
-        self.target_check(dataset=entity["dataset"])
+        # self.target_check(dataset=entity["dataset"])
         self._check_init_final_conf()
         self.save_config()
 
@@ -99,12 +100,15 @@ class SequenceTypeInference(BaseTypeInference):
                     feature_item_config.dtype = self.FLOAT64
 
             elif data_types[idx] == self.OBJ or self.CATE:
-                float_counter, str_idx = self._count_and_index(data.loc[:,col_name])
+                float_counter, str_idx = self._count_and_index(
+                    series=data.loc[:,col_name]
+                    )
 
                 if float_counter/data.shape[0] > self.THRESHOLD:
                     feature_item_config.dtype = self.FLOAT64
                     series = data.loc[:,col_name].copy()
-                    series.iloc[str_idx] = series.iloc[str_idx].apply(lambda x: np.nan)
+                    series.iloc[str_idx] = series.iloc[str_idx].\
+                        apply(lambda x: np.nan)
                     series = pd.to_numeric(series)
 
                     if self._is_int(series):
@@ -141,11 +145,13 @@ class SequenceTypeInference(BaseTypeInference):
         return float_counter, string_idx
 
     def _string_column_selector(self, fea_name: str):
-        if self.init_feature_config is not None \
-            and self.init_feature_config.feature_dict.get(fea_name) \
-            and self.init_feature_config.feature_dict.get(fea_name).dtype == self.STRING:
+        init = self.init_feature_config
+        if init is not None \
+            and init.feature_dict.get(fea_name) \
+            and init.feature_dict.get(fea_name).dtype == self.STRING:
 
-            self.final_feature_config.feature_dict[fea_name].dtype = self.STRING
+            self.final_feature_config.feature_dict[fea_name].\
+                dtype = self.STRING
 
 
     def ftype_inference(self, dataset: BaseDataset):
@@ -167,7 +173,11 @@ class SequenceTypeInference(BaseTypeInference):
                     final_config.ftype = self.NUM 
         self._datetime_column_selector(feature_name=col_name, dataset=data)
 
-    def _datetime_column_selector(self, feature_name: str, dataset: pd.DataFrame):
+    def _datetime_column_selector(
+        self, 
+        feature_name: str, 
+        dataset: pd.DataFrame
+        ):
 
         def _is_datetime(x):
             if re.search(r"(\d{4}.\d{1,2}.\d{1,2})", str(x)):
@@ -184,14 +194,14 @@ class SequenceTypeInference(BaseTypeInference):
 
                 column_unique = list(set(dataset[feature_name]))
                 if all(map(_is_datetime, column_unique)):
-                    self.final_feature_config.feature_dict[feature_name].ftype = self.DATE
+                    self.final_feature_config.feature_dict[feature_name].\
+                        ftype = self.DATE
 
 
-    def target_check(self, dataset: BaseDataset):
-        for label_name in dataset.labels:
-            label = dataset.labels.loc[:, label_name]
-            # self._target_dtype_check(dataset, label)
-            self._target_count_check(dataset, label)
+    # def target_check(self, dataset: BaseDataset):
+    #     for label_name in dataset.get_dataset().target_names:
+            # label = dataset.get_dataset().labels.loc[:, label_name]
+            # # self._target_dtype_check(dataset, label)
     
     def _target_dtype_check(self, dataset, label):
         if dataset.task_type == self.REG:
@@ -211,37 +221,6 @@ class SequenceTypeInference(BaseTypeInference):
                     )
                 )
 
-    def _target_count_check(self, dataset, label):
-        if dataset.dataset_type == self.MUL:
-                if len(dataset.data) != len(label):
-                    raise ValueError(
-                        "In current many-to-many task, count of data and labels didn't match."
-                        """data: `{data_len}`
-                        label: `{label_len}`""".format(
-                            data_len=len(dataset.data),
-                            label_len=len(label)
-                        )
-                    )
-        elif dataset.dataset_type == self.UNI:
-            if (len(label) != len(dataset.steps)):
-                raise ValueError(
-                    "In current many-to-one task, count of labels and periods didn't match"
-                    """label: `{label_len}`
-                    steps: `{period_len}`""".format(
-                        label_len=len(label),
-                        period_len=len(dataset.steps)
-                    )
-                )
-            elif (dataset.steps.sum().values != len(dataset.data)):
-                raise ValueError(
-                    "In current many-to-one task, count of data and total steps didn't match"
-                    """data: `{data_len}`
-                    total steps: `{steps}`""".format(
-                        data_len=len(dataset.data),
-                        steps=dataset.steps.sum().values
-                    )
-                )
-
     def _check_init_final_conf(self):
         if self.init_feature_config is not None: 
             final_feature_dict = self.final_feature_config.feature_dict
@@ -250,27 +229,35 @@ class SequenceTypeInference(BaseTypeInference):
                 if self.final_feature_config.feature_dict.get(fea_name):
                     exception = False
 
-                    if fea_info.name and fea_info.name != final_feature_dict[fea_name].name:
+                    if fea_info.name and \
+                        fea_info.name != final_feature_dict[fea_name].name:
                         logger.info(
-                            fea_name + " feature's name is different between yaml file and type inference."
+                            fea_name + " feature's name is different between yaml \
+                                file and type inference."
                         )
                         exception = True
 
-                    if fea_info.index and fea_info.index != final_feature_dict[fea_name].index:
+                    if fea_info.index and \
+                        fea_info.index != final_feature_dict[fea_name].index:
                         logger.info(
-                            fea_name + " feature's index is different between yaml file and type inference."
+                            fea_name + " feature's index is different between yaml \
+                                file and type inference."
                         )
                         exception = True
 
-                    if fea_info.dtype and fea_info.dtype != final_feature_dict[fea_name].dtype:
+                    if fea_info.dtype and \
+                        fea_info.dtype != final_feature_dict[fea_name].dtype:
                         logger.info(
-                            fea_name + " feature's dtype is different between yaml file and type inference."
+                            fea_name + " feature's dtype is different between yaml \
+                                file and type inference."
                         )
                         exception = True
 
-                    if fea_info.ftype and fea_info.ftype != final_feature_dict[fea_name].ftype:
+                    if fea_info.ftype and \
+                        fea_info.ftype != final_feature_dict[fea_name].ftype:
                         logger.info(
-                            fea_name + " feature's ftype is different between yaml file and type inference."
+                            fea_name + " feature's ftype is different between yaml \
+                                file and type inference."
                         )
                         exception = True
 

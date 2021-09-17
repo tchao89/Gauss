@@ -61,7 +61,7 @@ class SequenceLabelEncode(BaseLabelEncode):
         super(SequenceLabelEncode, self).__init__(
             name=params["name"],
             train_flag=params["train_flag"]\
-                if params.get["train_flag"] else True,
+                if params.get("train_flag") else True,
             enable=params["enable"]\
                 if params.get("enable") else True,
             task_name=params["task_name"],
