@@ -200,3 +200,12 @@ class TFPlainDataset(BaseDataset):
         dataset = dataset.to_dict("list")
         dataset = {k: np.array(v).reshape(-1, 1) for k, v in dataset.items()}
         return dataset
+
+    def feature_choose(self):
+        pass
+    
+    def get_dataset(self):
+        pass
+
+    def load_data(self):
+        pass

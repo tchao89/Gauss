@@ -13,7 +13,6 @@ from core.tfdnn.trainers.trainer import Trainer
 from core.tfdnn.evaluators.evaluator import Evaluator
 from core.tfdnn.evaluators.predictor import Predictor
 from core.tfdnn.networks.mlp_network import MlpNetwork
-from core.tfdnn.model_savers.model_saver import ModelSaver
 from entity.dataset.tf_plain_dataset import TFPlainDataset
 from core.tfdnn.transforms.numerical_transform import NumericalTransform
 from core.tfdnn.transforms.categorical_transform import CategoricalTransform
@@ -37,10 +36,11 @@ class GaussNN(ModelWrapper):
             model_path=params["model_path"],
             model_config_root=params["model_config_root"],
             feature_config_root=params["feature_config_root"],
-            task_type=params["task_type"],
-            train_flag=params["train_flag"]
+            task_name=params["task_name"],
+            train_flag=params["train_flag"],
             )
 
+        self._loss_name=params["loss_name"]
         self._model_root = params["model_root"]
         self.model_file_name = params["model_root"] + "/" + self.name + ".txt"
         self.model_config_file_name = self._model_config_root + "/" + self.name + ".model_conf.yaml"
@@ -57,6 +57,7 @@ class GaussNN(ModelWrapper):
         self._best_categorical_features = None
         self._numerical_features = None
         self._best_numerical_features = None
+        self._best_metrics_result = None
 
         self._statistics_gen = None
         self._statistics = None
@@ -119,11 +120,9 @@ class GaussNN(ModelWrapper):
             metrics: Metrics, judgement scores for evaluate a model.
         """
         self._reset_tf_graph()
-
-        assert(entity.get("dataset") and entity.get("val_dataset") and entity.get("metrics"))   
         
         # Phase 1. Load and transform Dataset -----------------------
-        train_dataset = self.preprocess(entity["dataset"])
+        train_dataset = self.preprocess(entity["train_dataset"])
         val_dataset = self.preprocess(entity["val_dataset"])
 
         train_dataset.update_features(self._feature_list, self._categorical_features)
@@ -150,7 +149,7 @@ class GaussNN(ModelWrapper):
             statistics=self._statistics,
             feature_names=self._numerical_features
         )
-        Loss = LossFunctionFactory.get_loss_function(task_type=self._task_type)
+        Loss = LossFunctionFactory.get_loss_function(func_name=self._loss_name)
         self._network = MlpNetwork(
             categorical_features=self._categorical_features,
             numerical_features=self._numerical_features,
@@ -270,7 +269,7 @@ class GaussNN(ModelWrapper):
         dataset = TFPlainDataset(
             name="tf_dataset",
             dataset=dataset,
-            task_type=dataset.task_type,
+            task_name=self._task_name,
             target_name=dataset.target_name
         )
         return dataset
@@ -347,4 +346,10 @@ class GaussNN(ModelWrapper):
         pass
 
     def update_best(self):
+        pass
+
+    def _generate_sub_dataset(self):
+        pass
+
+    def _initialize_model(self):
         pass

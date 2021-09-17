@@ -18,7 +18,7 @@ class CategoricalTransform(BaseTransform):
                  feature_names,
                  embed_size=128,
                  embed_shards=1,
-                 default_num_oov_buckets=1,
+                 default_num_oov_buckets=20,
                  map_num_oov_buckets={},
                  map_top_k_to_select:dict={},
                  map_shared_embedding:dict={},
