@@ -25,6 +25,8 @@ class ConstantValues:
     incremental = "incremental"
     inference = "inference"
     # task_name
+    binary_classification = "binary_classification"
+    multiclass_classification = "multiclass_classification"
     classification = "classification"
     regression = "regression"
     # selector name
@@ -36,6 +38,7 @@ class ConstantValues:
     train_dataset = "train_dataset"
     val_dataset = "val_dataset"
     metric_name = "metric_name"
+    loss_name = "loss_name"
     metric_result = "metric_result"
     feature_configure_name = "feature_configure_name"
     # component name

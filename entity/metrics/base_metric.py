@@ -18,13 +18,19 @@ from entity.entity import Entity
 class MetricResult(Entity):
     """Class for metric result."""
 
-    def __init__(self, name: str, result: float, optimize_mode: str, meta=None):
+    def __init__(self,
+                 name: str,
+                 metric_name: str,
+                 result: float,
+                 optimize_mode: str,
+                 meta=None):
         """Construct a metric result.
         :param result: The metric's result.
         :param meta: A map of other meta metarmation.
         """
         assert optimize_mode is not None
 
+        self._metric_name = metric_name
         self._optimize_mode = optimize_mode
         if meta is None:
             meta = {}
@@ -34,6 +40,10 @@ class MetricResult(Entity):
         super(MetricResult, self).__init__(
             name=name,
         )
+
+    @property
+    def metric_name(self):
+        return self._metric_name
 
     @property
     def optimize_mode(self):
@@ -70,7 +80,7 @@ class BaseMetric(Entity, ABC):
     to conduct the metric evaluation and provide names of required data fields.
     """
 
-    def __init__(self, name: str, optimize_mode, meta=None):
+    def __init__(self, name: str, optimize_mode: str, label_name: str = None, meta=None):
         """Construct a metric result.
         :param meta: A map of other meta metarmation.
         """
@@ -82,6 +92,7 @@ class BaseMetric(Entity, ABC):
         self._optimize_mode = optimize_mode
 
         self._meta = meta
+        self._label_name = label_name
         super(BaseMetric, self).__init__(
             name=name,
         )
@@ -93,7 +104,7 @@ class BaseMetric(Entity, ABC):
     @abc.abstractmethod
     def evaluate(self,
                  predict: np.ndarray,
-                 labels_map: np.ndarray) -> MetricResult:
+                 labels_map: dict) -> MetricResult:
         """Evaluate the metric.
 
         :param self:
@@ -120,3 +131,11 @@ class BaseMetric(Entity, ABC):
         :return: MetricResult object for this BaseMetric object.
         """
         pass
+
+    @property
+    def label_name(self):
+        return self._label_name
+
+    @label_name.setter
+    def label_name(self, label_name: str):
+        self._label_name = label_name

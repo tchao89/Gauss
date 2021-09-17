@@ -168,6 +168,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         assert "metric" in entity.keys()
         assert "auto_ml" in entity.keys()
         assert "feature_configure" in entity.keys()
+        assert "loss" in entity.keys()
 
         original_dataset = entity["train_dataset"]
         original_val_dataset = entity["val_dataset"]
@@ -181,6 +182,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         feature_configure = entity["feature_configure"]
 
         metric = entity["metric"]
+        loss = entity["loss"]
         self._optimize_mode = metric.optimize_mode
 
         # 创建自动机器学习对象
@@ -281,6 +283,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                     train_dataset=original_dataset,
                     val_dataset=original_val_dataset,
                     metric=metric,
+                    loss=loss,
                     feature_configure=feature_configure
                 )
 

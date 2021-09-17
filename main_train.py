@@ -17,7 +17,7 @@ from utils.Logger import logger
 
 user_feature = "/home/liangqian/Gauss/test_dataset/feature_conf.yaml"
 environ_configure = EnvironmentConfigure(work_root="/home/liangqian/Gauss/experiments",
-                                         user_feature="/home/liangqian/Gauss/test_dataset/feature_conf.yaml")
+                                         user_feature=None)
 
 pipeline_dict = Bunch()
 # ["udf", "auto", "multi_udf"]
@@ -25,7 +25,12 @@ pipeline_dict.mode = "udf"
 pipeline_dict.work_root = environ_configure.work_root
 pipeline_dict.task_name = "classification"
 # optional: ["auc", "f1"]
-pipeline_dict.metric_name = "auc"
+# This value will decided the way auto ml component chooses the best model.
+pipeline_dict.metric_name = "binary_f1"
+# optional: ["mse", "binary_logloss", "None"]
+# This value will customize the loss function of model, and it can be set None.
+# if None, default loss will be chosen.
+pipeline_dict.loss_name = None
 # optional: ["libsvm", "txt", "csv"]
 pipeline_dict.data_file_type = "libsvm"
 pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/w8a/w8a"

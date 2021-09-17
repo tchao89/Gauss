@@ -5,10 +5,10 @@ Copyright (c) 2021, Citic-Lab. All rights reserved.
 Authors: citic-lab
 """
 import numpy as np
-from scipy import special
 
 from entity.losses.base_loss import BaseLoss
 from entity.losses.base_loss import LossResult
+from utils.constant_values import ConstantValues
 
 
 # regression loss
@@ -24,7 +24,8 @@ class MSELoss(BaseLoss):
         assert "name" in params, "Key: name must be in params."
         assert "label_name" in params, "Key: label_name must be in params"
 
-        super(MSELoss, self).__init__(name=params["name"])
+        super(MSELoss, self).__init__(name=params["name"],
+                                      task_name=ConstantValues.regression)
         self._label_name = params.get("label_name")
 
     def loss_fn(self,
@@ -47,7 +48,7 @@ class MSELoss(BaseLoss):
         return loss, grad, hess
 
 # binary classification loss
-class LogLoss(BaseLoss):
+class BinaryLogLoss(BaseLoss):
     """
     mse loss class, user can get loss, grad and hess by loss_fn method,
     and this object can be used in regression
@@ -57,14 +58,18 @@ class LogLoss(BaseLoss):
 
     def __init__(self, **params):
         assert "name" in params, "Key: name must be in params."
-        assert "label_name" in params, "Key: label_name must be in params"
+        super(BinaryLogLoss, self).__init__(name=params["name"],
+                                            task_name=ConstantValues.binary_classification)
 
-        super(LogLoss, self).__init__(name=params["name"])
         self._label_name = params.get("label_name")
+        self._task_name = ConstantValues.binary_classification
 
     def loss_fn(self,
                 score: np.ndarray,
                 label: np.ndarray) -> LossResult:
+        assert score.ndim == 1, "Numpy array: score must be the shape: (n, )."
+        assert label.ndim == 1, "Numpy array: label must be the shape: (n, )."
+
         assert len(label) and len(label) == len(score)
         loss, grad, hess = self._log_loss(score=score, label=label)
 

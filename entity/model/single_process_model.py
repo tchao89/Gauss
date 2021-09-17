@@ -90,10 +90,12 @@ class SingleProcessModelWrapper(ModelWrapper, ABC):
         )
 
         if self._train_flag:
-            return {"data": dataset.data.values,
-                    "target": dataset.target.values.flatten()}
+            return {"data": dataset.data,
+                    "target": dataset.target,
+                    "target_names": dataset.target_names}
 
-        return {"data": dataset.data.values}
+        return {"data": dataset.data.values,
+                "target_names": dataset.target_names}
 
 
 class choose_features:

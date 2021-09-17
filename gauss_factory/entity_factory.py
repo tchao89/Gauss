@@ -14,7 +14,9 @@ from entity.model.gbdt import GaussLightgbm
 from entity.model.multiprocess_gbdt import MultiprocessGaussLightgbm
 from entity.model.linear_models import GaussLinearModels
 from entity.metrics.udf_metric import AUC
-from entity.metrics.udf_metric import F1
+from entity.metrics.udf_metric import BinaryF1
+from entity.losses.udf_loss import MSELoss
+from entity.losses.udf_loss import BinaryLogLoss
 
 """
 This class will be used in local_pipeline
@@ -35,9 +37,13 @@ class EntityFactory(AbstractGauss):
         elif entity_name.lower() == "auc":
             # parameters: name: str, label_name: str
             return AUC(**params)
-        elif entity_name.lower() == "f1":
+        elif entity_name.lower() == "binary_f1":
             # parameters: name: str, label_name: str
-            return F1(**params)
+            return BinaryF1(**params)
+        elif entity_name.lower() == "mse_loss":
+            return MSELoss(**params)
+        elif entity_name.lower() == "binary_logloss":
+            return BinaryLogLoss(**params)
         elif entity_name.lower() == "lightgbm":
             # parameters: name: str, label_name: str
             return GaussLightgbm(**params)
