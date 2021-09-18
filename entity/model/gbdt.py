@@ -117,6 +117,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
             eval_function = self._eval_func
         else:
             eval_function = None
+        eval_function = None
 
         logger.info(
             "Construct lightgbm training dataset, "
@@ -139,6 +140,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 get_current_memory_gb()["memory_usage"]
             )
         )
+
         lgb_eval = self.__load_data(
             dataset=val_dataset,
             check_bunch=self._check_bunch,
@@ -373,7 +375,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
     def _loss_func(self, preds, train_data):
         assert self._loss_function is not None
-
         preds = special.expit(preds)
         loss = self._loss_function
         label = train_data.get_label()
@@ -384,11 +385,10 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
     def _eval_func(self, preds, train_data):
         assert self._eval_function is not None
-        preds = special.expit(preds)
         label_map = {self._target_names: train_data.get_label()}
         metric_result = self._eval_function(predict=preds, labels_map=label_map)
 
         assert isinstance(metric_result, MetricResult)
         assert metric_result.optimize_mode in ["maximize", "minimize"]
         is_higher_better = True if metric_result.optimize_mode == "maximize" else False
-        return metric_result.metric_name, metric_result.result, is_higher_better
+        return metric_result.metric_name, float(metric_result.result), is_higher_better

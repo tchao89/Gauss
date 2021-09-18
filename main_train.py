@@ -24,7 +24,7 @@ pipeline_dict = Bunch()
 pipeline_dict.mode = "udf"
 pipeline_dict.work_root = environ_configure.work_root
 pipeline_dict.task_name = "classification"
-# optional: ["auc", "f1"]
+# optional: ["auc", "binary_f1"]
 # This value will decided the way auto ml component chooses the best model.
 pipeline_dict.metric_name = "binary_f1"
 # optional: ["mse", "binary_logloss", "None"]
