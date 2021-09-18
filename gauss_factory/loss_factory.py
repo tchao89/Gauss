@@ -9,5 +9,6 @@ class LossFunctionFactory():
         # TODO: handle Multiclass and Regression tasks. 
         if func_name == "BinaryCrossEntropy":
             return CrossEntropyLoss
-        else:
+        elif func_name == "mse":
+            # TODO: fill the correct loss after determin.
             return None
