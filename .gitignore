@@ -1,3 +1,6 @@
 venv
 .idea
 */__pycache__
+./test/
+./test_dataset/
+./experiments/
