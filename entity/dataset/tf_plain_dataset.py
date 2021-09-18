@@ -209,3 +209,12 @@ class TFPlainDataset(BaseDataset):
 
     def load_data(self):
         pass
+
+    def set_dataset(self):
+        pass
+
+    def split(self):
+        pass
+
+    def union(self):
+        pass

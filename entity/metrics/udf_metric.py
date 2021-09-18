@@ -132,3 +132,6 @@ class NNAUC(BaseMetric):
     def metrics_result(self):
         assert self._metrics_result is not None
         return self._metrics_result
+
+    def metric_result(self):
+        pass

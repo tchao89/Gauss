@@ -18,8 +18,8 @@ from core.tfdnn.transforms.numerical_transform import NumericalTransform
 from core.tfdnn.transforms.categorical_transform import CategoricalTransform
 from core.tfdnn.statistics_gens.dataset_statistics_gen import DatasetStatisticsGen
 from core.tfdnn.statistics_gens.external_statistics_gen import ExternalStatisticsGen
-from utils.common_component import mkdir
-from utils.common_component import feature_list_generator
+from utils.base import mkdir
+from utils.feature_name_exec import feature_list_generator
 from gauss_factory.loss_factory import LossFunctionFactory
 
 
@@ -33,16 +33,15 @@ class GaussNN(ModelWrapper):
         """"""
         super(GaussNN, self).__init__(
             name=params["name"],
-            model_path=params["model_path"],
-            model_config_root=params["model_config_root"],
-            feature_config_root=params["feature_config_root"],
+            model_root_path=params["model_root_path"],
+            # TODO: replace below file or folders name and path by model_root_path.
             task_name=params["task_name"],
             train_flag=params["train_flag"],
             )
 
         self._loss_name=params["loss_name"]
-        self._model_root = params["model_root"]
-        self.model_file_name = params["model_root"] + "/" + self.name + ".txt"
+        self._model_root = params["model_root_path"]
+        self.model_file_name = self._model_root + "/" + self.name + ".txt"
         self.model_config_file_name = self._model_config_root + "/" + self.name + ".model_conf.yaml"
         self.feature_config_file_name = self._feature_config_root + "/" + self.name + ".final.yaml"
 
