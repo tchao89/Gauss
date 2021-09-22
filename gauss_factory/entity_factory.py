@@ -16,6 +16,7 @@ from entity.model.linear_models import GaussLinearModels
 from entity.metrics.udf_metric import AUC
 from entity.metrics.udf_metric import BinaryF1
 from entity.metrics.udf_metric import MulticlassF1
+from entity.metrics.udf_metric import MSE
 from entity.losses.udf_loss import MSELoss
 from entity.losses.udf_loss import BinaryLogLoss
 
@@ -43,6 +44,8 @@ class EntityFactory(AbstractGauss):
             return BinaryF1(**params)
         elif entity_name.lower() == "multiclass_f1":
             return MulticlassF1(**params)
+        elif entity_name.lower() == "mse":
+            return MSE(**params)
         elif entity_name.lower() == "mse_loss":
             return MSELoss(**params)
         elif entity_name.lower() == "binary_logloss":
