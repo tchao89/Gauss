@@ -157,6 +157,16 @@ class ModelWrapper(Entity):
         """
 
     @abc.abstractmethod
+    def binary_train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
+        """
+        Training model, and this method doesn't contain evaluation.
+        :param train_dataset: BaseDataset object, training dataset.
+        :param val_dataset: BaseDataset object, validation dataset.
+        :param entity: dict object, including other entity, such as Metric... etc.
+        :return:
+        """
+
+    @abc.abstractmethod
     def predict(self, infer_dataset: BaseDataset, **entity):
         """
         Predicting and get inference result.

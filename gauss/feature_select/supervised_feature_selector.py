@@ -34,7 +34,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
     """
     SupervisedFeatureSelector object.
     """
-
     def __init__(self, **params):
         """
         :param name: Name of this operator.
@@ -314,6 +313,9 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         else:
             assert isinstance(original_dataset.get_dataset().data, np.ndarray)
             self.multiprocess_final_configure_generation()
+
+    def _increment_run(self, **entity):
+        self._train_run(**entity)
 
     @property
     def optimal_metric(self):

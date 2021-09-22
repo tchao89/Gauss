@@ -21,13 +21,12 @@ class ConstantValues:
     feature_path_dict = "feature_path_dict"
     model_need_clear_flag = "model_need_clear_flag"
     # train_flag:
-    training = "training"
-    incremental = "incremental"
+    train = "train"
+    increment = "increment"
     inference = "inference"
     # task_name
     binary_classification = "binary_classification"
     multiclass_classification = "multiclass_classification"
-    classification = "classification"
     regression = "regression"
     # selector name
     GBDTSelector = "GBDTSelector"

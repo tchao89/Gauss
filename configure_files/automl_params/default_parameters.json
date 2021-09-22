@@ -1,7 +1,5 @@
 {
   "lightgbm": {
-  "objective": "binary",
-
   "num_class": 1,
 
   "early_stopping_rounds": 5,

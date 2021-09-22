@@ -15,3 +15,6 @@ class BaseFeatureGenerator(Component):
 
     def _predict_run(self, **entity):
         pass
+
+    def _increment_run(self, **entity):
+        pass

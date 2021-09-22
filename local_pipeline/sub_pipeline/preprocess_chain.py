@@ -45,8 +45,9 @@ class PreprocessRoute(Component):
         :param unsupervised_feature_selector_flag: bool value, if true, feature
         selector will be used(unsupervised).
         """
-        assert isinstance(params[ConstantValues.train_flag], bool)
-        assert params[ConstantValues.task_name] in [ConstantValues.classification,
+        assert isinstance(params[ConstantValues.train_flag], str)
+        assert params[ConstantValues.task_name] in [ConstantValues.binary_classification,
+                                                    ConstantValues.multiclass_classification,
                                                     ConstantValues.regression]
 
         super().__init__(
@@ -184,7 +185,7 @@ class PreprocessRoute(Component):
 
         assert self._train_data_path is not None
         assert os.path.isfile(self._train_data_path)
-        assert self._train_flag is True
+        assert self._train_flag is ConstantValues.train
 
         # 拼接数据
         dataset_params = Bunch(
@@ -248,12 +249,15 @@ class PreprocessRoute(Component):
         self._entity_dict = entity_dict
         logger.info("Dataset preprocessing has finished.")
 
+    def _increment_run(self, **entity):
+        pass
+
     def _predict_run(self, **entity):
         entity_dict = {}
 
         assert self._test_data_path is not None
         assert os.path.isfile(self._test_data_path)
-        assert self._train_flag is False
+        assert self._train_flag is ConstantValues.inference
 
         dataset_params = Bunch(
             name="test",

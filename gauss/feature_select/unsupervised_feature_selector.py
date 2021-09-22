@@ -72,6 +72,9 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         dataset.get_dataset().generated_feature_names = list(data.columns)
         self.final_configure_generation(dataset=dataset)
 
+    def _increment_run(self, **entity):
+        self._predict_run(**entity)
+
     def _predict_run(self, **entity):
         assert "infer_dataset" in entity.keys()
 

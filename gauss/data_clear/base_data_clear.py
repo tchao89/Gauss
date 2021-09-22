@@ -24,3 +24,7 @@ class BaseDataClear(Component):
     @abc.abstractmethod
     def _predict_run(self, **entity):
         pass
+
+    @abc.abstractmethod
+    def _increment_run(self, **entity):
+        pass

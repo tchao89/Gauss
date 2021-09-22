@@ -20,6 +20,9 @@ from entity.metrics.base_metric import MetricResult
 
 
 class AUC(BaseMetric):
+    """
+    Binary classification task.
+    """
     def __init__(self, **params):
         super().__init__(name=params["name"],
                          optimize_mode="maximize")
@@ -68,6 +71,9 @@ class AUC(BaseMetric):
 
 
 class BinaryF1(BaseMetric):
+    """
+    Binary classification task.
+    """
     def __init__(self, **params):
         super().__init__(name=params["name"],
                          optimize_mode="maximize")
@@ -98,7 +104,7 @@ class BinaryF1(BaseMetric):
                 result=float('nan'),
                 optimize_mode=self._optimize_mode)
         else:
-            predict_label = [1 if item > self._threshold else 0 for item in predict]
+            predict_label = np.round(predict)
             f1 = f1_score(y_true=label, y_pred=predict_label)
             self._metric_result = MetricResult(
                 name=self._name,

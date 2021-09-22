@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from gauss.component import Component
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
+from utils.constant_values import ConstantValues
 
 from utils.yaml_exec import yaml_read
 from utils.yaml_exec import yaml_write
@@ -29,7 +30,9 @@ class CoreRoute(Component):
             task_name=params["task_name"]
         )
 
-        assert params["task_name"] in ["classification", "regression"]
+        assert params[ConstantValues.task_name] in [ConstantValues.binary_classification,
+                                                    ConstantValues.multiclass_classification,
+                                                    ConstantValues.regression]
 
         # name of model, which will be used to create entity
         self._model_name = params["model_name"]
@@ -201,6 +204,9 @@ class CoreRoute(Component):
         )
         )
         entity["model"].model_save()
+
+    def _increment_run(self, **entity):
+        pass
 
     def _predict_run(self, **entity):
         """

@@ -5,6 +5,7 @@ Copyright (c) 2021, Citic-Lab. All rights reserved.
 Authors: citic-lab
 """
 import numpy as np
+from scipy import special
 
 from entity.losses.base_loss import BaseLoss
 from entity.losses.base_loss import LossResult
@@ -79,9 +80,8 @@ class BinaryLogLoss(BaseLoss):
         return LossResult(name="loss_result", result=loss_dict)
 
     @classmethod
-    def _log_loss(cls, score, label):
-        epsilon = 1e-15
-        prob = np.clip(score, epsilon, 1 - epsilon)
+    def _log_loss(cls, prob, label):
+        prob = special.expit(prob)
         loss = np.sum(- label * np.log(prob) - (1 - label) * np.log(1 - prob))
         grad = prob - label
         hess = prob * (1 - prob)

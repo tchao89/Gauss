@@ -45,7 +45,9 @@ class PlainTypeInference(BaseTypeInference):
             final_file_prefix=params["final_file_prefix"]
         )
 
-        assert params["task_name"] in ["regression", "classification"]
+        assert params[ConstantValues.task_name] in [ConstantValues.binary_classification,
+                                                    ConstantValues.multiclass_classification,
+                                                    ConstantValues.regression]
 
         self._task_name = params["task_name"]
         self.ftype_list = []
@@ -74,7 +76,9 @@ class PlainTypeInference(BaseTypeInference):
 
         self._check_init_final_conf()
         self.final_configure_generation()
-        return self.final_feature_configure
+
+    def _increment_run(self, **entity):
+        self._predict_run(**entity)
 
     def _predict_run(self, **entity):
         # just detect error in test dataset.
@@ -213,7 +217,7 @@ class PlainTypeInference(BaseTypeInference):
             if self._task_name == ConstantValues.regression:
                 assert "float" in str(target[label].dtypes) and target[label].isna().sum() == 0
 
-            if self._task_name == ConstantValues.classification:
+            if self._task_name == ConstantValues.binary_classification:
                 if "float" in str(target[label].dtypes):
                     target[label] = target[label].astype("int64")
                 assert "int" in str(target[label].dtypes) or "object" in str(target[label].dtypes)

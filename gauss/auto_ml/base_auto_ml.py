@@ -37,6 +37,10 @@ class BaseAutoML(Component):
     def _predict_run(self, **entity):
         pass
 
+    @abc.abstractmethod
+    def _increment_run(self, **entity):
+        pass
+
     @property
     def train_method_count(self):
         return self._train_method_count
