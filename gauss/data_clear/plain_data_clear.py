@@ -79,6 +79,9 @@ class PlainDataClear(BaseDataClear):
         logger.info("Data clear has finished, " + "with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])
 
+    def _increment_run(self, **entity):
+        self._predict_run(**entity)
+
     def _predict_run(self, **entity):
         assert "infer_dataset" in entity.keys()
         dataset = entity["infer_dataset"]

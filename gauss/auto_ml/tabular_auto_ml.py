@@ -6,7 +6,6 @@ Authors: citic-lab
 """
 import os
 import json
-from typing import Any
 
 from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
 from core.nni.algorithms.hpo.evolution_tuner import EvolutionTuner
@@ -204,6 +203,9 @@ class TabularAutoML(BaseAutoML):
         if self.__is_final_set is True:
             self.__model.set_best_model()
         self.__best_metric = self.__model.val_best_metric_result.result
+
+    def _increment_run(self, **entity):
+        self._train_run(**entity)
 
     def _predict_run(self, **entity):
         pass

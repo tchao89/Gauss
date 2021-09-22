@@ -60,39 +60,50 @@ class GaussLightgbm(SingleProcessModelWrapper):
     def run(self, **entity):
         if self._train_flag == ConstantValues.train:
             self.train(**entity)
-        if self._train_flag == ConstantValues.inference:
+        elif self._train_flag == ConstantValues.inference:
             self.inference(**entity)
-        if self._train_flag == ConstantValues.increment:
+        elif self._train_flag == ConstantValues.increment:
             self.increment(**entity)
-        raise ValueError("Value: train flag is invalid.")
+        else:
+            raise ValueError("Value: train flag is invalid.")
 
     def train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
         dataset = train_dataset.get_dataset()
         self._check_bunch(dataset=dataset)
 
-        if self._task_name == ConstantValues.classification:
-            pass
-        if self._task_name == ConstantValues.regression:
-            pass
-        raise ValueError("Value: (train) task name is invalid.")
+        if self._task_name == ConstantValues.binary_classification:
+            self.binary_train(train_dataset=train_dataset, val_dataset=val_dataset, **entity)
+        elif self._task_name == ConstantValues.multiclass_classification:
+            self.multiclass_train(train_dataset=train_dataset, val_dataset=val_dataset, **entity)
+        elif self._task_name == ConstantValues.regression:
+            self.regression_train(train_dataset=train_dataset, val_dataset=val_dataset, **entity)
+        else:
+            print(self._task_name)
+            raise ValueError("Value: (train) task name is invalid.")
 
     def inference(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
         dataset = train_dataset.get_dataset()
         self._check_bunch(dataset=dataset)
-        if self._task_name == ConstantValues.classification:
+        if self._task_name == ConstantValues.binary_classification:
             pass
-        if self._task_name == ConstantValues.regression:
+        elif self._task_name == ConstantValues.multiclass_classification:
             pass
-        raise ValueError("Value: (inference) task name is invalid.")
+        elif self._task_name == ConstantValues.regression:
+            pass
+        else:
+            raise ValueError("Value: (inference) task name is invalid.")
 
     def increment(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
         dataset = train_dataset.get_dataset()
         self._check_bunch(dataset=dataset)
-        if self._task_name == ConstantValues.classification:
+        if self._task_name == ConstantValues.binary_classification:
             pass
-        if self._task_name == ConstantValues.regression:
+        elif self._task_name == ConstantValues.multiclass_classification:
             pass
-        raise ValueError("Value: (increment) task name is invalid.")
+        elif self._task_name == ConstantValues.regression:
+            pass
+        else:
+            raise ValueError("Value: (increment) task name is invalid.")
 
     @choose_features
     def __load_data(self, **kwargs):
@@ -105,11 +116,9 @@ class GaussLightgbm(SingleProcessModelWrapper):
         categorical_list = kwargs.get("categorical_list")
         # dataset is a BaseDataset object, you can use get_dataset() method to get a Bunch object,
         # including data, target, feature_names, target_names, generated_feature_names.
-
-        assert isinstance(train_flag, bool)
         assert isinstance(dataset.get("data"), pd.DataFrame)
 
-        if train_flag is True:
+        if train_flag == ConstantValues.train:
             lgb_data = lgb.Dataset(
                 data=dataset.get("data"),
                 label=dataset.get("target"),
@@ -134,7 +143,8 @@ class GaussLightgbm(SingleProcessModelWrapper):
                      train_dataset: BaseDataset,
                      val_dataset: BaseDataset,
                      **entity):
-        assert self._train_flag is True
+        assert self._train_flag == ConstantValues.train
+        assert self._task_name == ConstantValues.binary_classification
 
         if entity["loss"] is not None:
             self._loss_function = entity["loss"].loss_fn
@@ -464,7 +474,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 infer_dataset: BaseDataset,
                 **entity
                 ):
-        assert self._train_flag is False
+        assert self._train_flag == ConstantValues.inference
 
         lgb_test = self.__load_data(
             dataset=infer_dataset,

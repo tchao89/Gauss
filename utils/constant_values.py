@@ -25,7 +25,8 @@ class ConstantValues:
     increment = "increment"
     inference = "inference"
     # task_name
-    classification = "classification"
+    binary_classification = "binary_classification"
+    multiclass_classification = "multiclass_classification"
     regression = "regression"
     # selector name
     GBDTSelector = "GBDTSelector"
