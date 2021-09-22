@@ -20,6 +20,9 @@ from entity.metrics.base_metric import MetricResult
 
 
 class AUC(BaseMetric):
+    """
+    Binary classification task.
+    """
     def __init__(self, **params):
         super().__init__(name=params["name"],
                          optimize_mode="maximize")
@@ -68,6 +71,9 @@ class AUC(BaseMetric):
 
 
 class BinaryF1(BaseMetric):
+    """
+    Binary classification task.
+    """
     def __init__(self, **params):
         super().__init__(name=params["name"],
                          optimize_mode="maximize")

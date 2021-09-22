@@ -27,6 +27,7 @@ from entity.losses.base_loss import LossResult
 
 from utils.base import get_current_memory_gb
 from utils.base import mkdir
+from utils.constant_values import ConstantValues
 from utils.yaml_exec import yaml_write
 from utils.Logger import logger
 
@@ -35,6 +36,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
     """
     lightgbm object.
     """
+
     def __init__(self, **params):
         super().__init__(
             name=params["name"],
@@ -54,6 +56,43 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
     def __repr__(self):
         pass
+
+    def run(self, **entity):
+        if self._train_flag == ConstantValues.train:
+            self.train(**entity)
+        if self._train_flag == ConstantValues.inference:
+            self.inference(**entity)
+        if self._train_flag == ConstantValues.increment:
+            self.increment(**entity)
+        raise ValueError("Value: train flag is invalid.")
+
+    def train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
+        dataset = train_dataset.get_dataset()
+        self._check_bunch(dataset=dataset)
+
+        if self._task_name == ConstantValues.classification:
+            pass
+        if self._task_name == ConstantValues.regression:
+            pass
+        raise ValueError("Value: (train) task name is invalid.")
+
+    def inference(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
+        dataset = train_dataset.get_dataset()
+        self._check_bunch(dataset=dataset)
+        if self._task_name == ConstantValues.classification:
+            pass
+        if self._task_name == ConstantValues.regression:
+            pass
+        raise ValueError("Value: (inference) task name is invalid.")
+
+    def increment(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
+        dataset = train_dataset.get_dataset()
+        self._check_bunch(dataset=dataset)
+        if self._task_name == ConstantValues.classification:
+            pass
+        if self._task_name == ConstantValues.regression:
+            pass
+        raise ValueError("Value: (increment) task name is invalid.")
 
     @choose_features
     def __load_data(self, **kwargs):
@@ -91,10 +130,10 @@ class GaussLightgbm(SingleProcessModelWrapper):
     def _initialize_model(self):
         pass
 
-    def train(self,
-              train_dataset: BaseDataset,
-              val_dataset: BaseDataset,
-              **entity):
+    def binary_train(self,
+                     train_dataset: BaseDataset,
+                     val_dataset: BaseDataset,
+                     **entity):
         assert self._train_flag is True
 
         if entity["loss"] is not None:
@@ -117,7 +156,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
             eval_function = self._eval_func
         else:
             eval_function = None
-        eval_function = None
 
         logger.info(
             "Construct lightgbm training dataset, "
@@ -167,6 +205,228 @@ class GaussLightgbm(SingleProcessModelWrapper):
             }
 
             params = self._model_params
+            params["objective"] = "binary"
+            params["metric"] = "binary_logloss"
+            logger.info(
+                "Start training lightgbm model, "
+                "with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
+
+            num_boost_round = params.pop("num_boost_round")
+            early_stopping_rounds = params.pop("early_stopping_rounds")
+
+            self._model = lgb.train(
+                params=params,
+                train_set=lgb_train,
+                num_boost_round=num_boost_round,
+                valid_sets=lgb_eval,
+                categorical_feature=self._categorical_list,
+                early_stopping_rounds=early_stopping_rounds,
+                fobj=obj_function,
+                feval=eval_function,
+                verbose_eval=False,
+            )
+
+            logger.info(
+                "Training lightgbm model finished, "
+                "with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
+
+        else:
+            raise ValueError("Model parameters is None.")
+        self.count += 1
+
+    def multiclass_train(self,
+                         train_dataset: BaseDataset,
+                         val_dataset: BaseDataset,
+                         **entity):
+        assert self._train_flag is True
+
+        if entity["loss"] is not None:
+            self._loss_function = entity["loss"].loss_fn
+            obj_function = self._loss_func
+        else:
+            obj_function = None
+
+        train_target_names = train_dataset.get_dataset().target_names
+        eval_target_names = val_dataset.get_dataset().target_names
+
+        assert operator.eq(train_target_names, eval_target_names), \
+            "Value: target_names is different between train_dataset and validation dataset."
+
+        self._target_names = list(set(train_target_names).union(set(eval_target_names)))[0]
+
+        if entity["metric"] is not None:
+            entity["metric"].label_name = self._target_names
+            self._eval_function = entity["metric"].evaluate
+            eval_function = self._eval_func
+        else:
+            eval_function = None
+
+        logger.info(
+            "Construct lightgbm training dataset, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+
+        lgb_train = self.__load_data(
+            dataset=train_dataset,
+            check_bunch=self._check_bunch,
+            feature_list=self._feature_list,
+            categorical_list=self._categorical_list,
+            train_flag=self._train_flag)
+
+        assert isinstance(lgb_train, lgb.Dataset)
+        logger.info(
+            "Construct lightgbm validation dataset, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+
+        lgb_eval = self.__load_data(
+            dataset=val_dataset,
+            check_bunch=self._check_bunch,
+            feature_list=self._feature_list,
+            categorical_list=self._categorical_list,
+            train_flag=self._train_flag
+        )
+
+        logger.info(
+            "Set preprocessing parameters for lightgbm, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+
+        if self._model_params is not None:
+
+            self._model_config = {
+                "Name": self.name,
+                "Normalization": False,
+                "Standardization": False,
+                "OnehotEncoding": False,
+                "ModelParameters": self._model_params
+            }
+
+            params = self._model_params
+            params["objective"] = "multiclass"
+            params["metric"] = "multi_logloss"
+            logger.info(
+                "Start training lightgbm model, "
+                "with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
+
+            num_boost_round = params.pop("num_boost_round")
+            early_stopping_rounds = params.pop("early_stopping_rounds")
+
+            self._model = lgb.train(
+                params=params,
+                train_set=lgb_train,
+                num_boost_round=num_boost_round,
+                valid_sets=lgb_eval,
+                categorical_feature=self._categorical_list,
+                early_stopping_rounds=early_stopping_rounds,
+                fobj=obj_function,
+                feval=eval_function,
+                verbose_eval=False,
+            )
+
+            logger.info(
+                "Training lightgbm model finished, "
+                "with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
+
+        else:
+            raise ValueError("Model parameters is None.")
+        self.count += 1
+
+    def regression_train(self,
+                         train_dataset: BaseDataset,
+                         val_dataset: BaseDataset,
+                         **entity):
+        assert self._train_flag is True
+
+        if entity["loss"] is not None:
+            self._loss_function = entity["loss"].loss_fn
+            obj_function = self._loss_func
+        else:
+            obj_function = None
+
+        train_target_names = train_dataset.get_dataset().target_names
+        eval_target_names = val_dataset.get_dataset().target_names
+
+        assert operator.eq(train_target_names, eval_target_names), \
+            "Value: target_names is different between train_dataset and validation dataset."
+
+        self._target_names = list(set(train_target_names).union(set(eval_target_names)))[0]
+
+        if entity["metric"] is not None:
+            entity["metric"].label_name = self._target_names
+            self._eval_function = entity["metric"].evaluate
+            eval_function = self._eval_func
+        else:
+            eval_function = None
+
+        logger.info(
+            "Construct lightgbm training dataset, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+
+        lgb_train = self.__load_data(
+            dataset=train_dataset,
+            check_bunch=self._check_bunch,
+            feature_list=self._feature_list,
+            categorical_list=self._categorical_list,
+            train_flag=self._train_flag)
+
+        assert isinstance(lgb_train, lgb.Dataset)
+        logger.info(
+            "Construct lightgbm validation dataset, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+
+        lgb_eval = self.__load_data(
+            dataset=val_dataset,
+            check_bunch=self._check_bunch,
+            feature_list=self._feature_list,
+            categorical_list=self._categorical_list,
+            train_flag=self._train_flag
+        )
+
+        logger.info(
+            "Set preprocessing parameters for lightgbm, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+
+        if self._model_params is not None:
+
+            self._model_config = {
+                "Name": self.name,
+                "Normalization": False,
+                "Standardization": False,
+                "OnehotEncoding": False,
+                "ModelParameters": self._model_params
+            }
+
+            params = self._model_params
+            params["objective"] = "multiclass"
+            params["metric"] = "multi_logloss"
             logger.info(
                 "Start training lightgbm model, "
                 "with current memory usage: {:.2f} GiB".format(
