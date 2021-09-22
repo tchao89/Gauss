@@ -78,7 +78,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
         elif self._task_name == ConstantValues.regression:
             self.regression_train(train_dataset=train_dataset, val_dataset=val_dataset, **entity)
         else:
-            print(self._task_name)
             raise ValueError("Value: (train) task name is invalid.")
 
     def inference(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
@@ -119,6 +118,11 @@ class GaussLightgbm(SingleProcessModelWrapper):
         assert isinstance(dataset.get("data"), pd.DataFrame)
 
         if train_flag == ConstantValues.train:
+            data_shape = dataset.get("data").shape
+            label_shape = dataset.get("target").shape
+            logger.info("Data shape: {}, label shape: {}".format(data_shape, label_shape))
+            assert data_shape[0] == label_shape[0], "Data shape is inconsistent with label shape."
+
             lgb_data = lgb.Dataset(
                 data=dataset.get("data"),
                 label=dataset.get("target"),
@@ -143,6 +147,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
                      train_dataset: BaseDataset,
                      val_dataset: BaseDataset,
                      **entity):
+        """
+        This method is used to train lightgbm
+        model in binary classification.
+        :param train_dataset:
+        :param val_dataset:
+        :param entity:
+        :return: None
+        """
         assert self._train_flag == ConstantValues.train
         assert self._task_name == ConstantValues.binary_classification
 
@@ -158,7 +170,20 @@ class GaussLightgbm(SingleProcessModelWrapper):
         assert operator.eq(train_target_names, eval_target_names), \
             "Value: target_names is different between train_dataset and validation dataset."
 
+        # One label learning is achieved now, multi_label
+        # learning will be supported in future.
         self._target_names = list(set(train_target_names).union(set(eval_target_names)))[0]
+
+        train_label_set = pd.unique(train_dataset.get_dataset().target[self._target_names])
+        eval_label_set = pd.unique(val_dataset.get_dataset().target[self._target_names])
+        train_label_num = len(train_label_set)
+        eval_label_num = len(eval_label_set)
+
+        assert train_label_num == eval_label_num and train_label_num == 2 and eval_label_num == 2, \
+            "Set of train label is: {}, length: {}, validation label is {}, length is {}, " \
+            "and binary classification can not be used.".format(
+                train_label_set, train_label_num, eval_label_set, eval_label_num
+            )
 
         if entity["metric"] is not None:
             entity["metric"].label_name = self._target_names
@@ -227,6 +252,9 @@ class GaussLightgbm(SingleProcessModelWrapper):
             num_boost_round = params.pop("num_boost_round")
             early_stopping_rounds = params.pop("early_stopping_rounds")
 
+            obj_function = None
+            eval_function = None
+
             self._model = lgb.train(
                 params=params,
                 train_set=lgb_train,
@@ -254,7 +282,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
                          train_dataset: BaseDataset,
                          val_dataset: BaseDataset,
                          **entity):
-        assert self._train_flag is True
+        assert self._train_flag == ConstantValues.train
 
         if entity["loss"] is not None:
             self._loss_function = entity["loss"].loss_fn
@@ -268,7 +296,20 @@ class GaussLightgbm(SingleProcessModelWrapper):
         assert operator.eq(train_target_names, eval_target_names), \
             "Value: target_names is different between train_dataset and validation dataset."
 
+        # One label learning is achieved now, multi_label
+        # learning will be supported in future.
         self._target_names = list(set(train_target_names).union(set(eval_target_names)))[0]
+
+        train_label_set = pd.unique(train_dataset.get_dataset().target[self._target_names])
+        eval_label_set = pd.unique(val_dataset.get_dataset().target[self._target_names])
+        train_label_num = len(train_label_set)
+        eval_label_num = len(eval_label_set)
+
+        assert train_label_num == eval_label_num and train_label_num > 2 and eval_label_num > 2, \
+            "Set of train label is: {}, length: {}, validation label is {}, length is {}, " \
+            "and multiclass classification can not be used.".format(
+                train_label_set, train_label_num, val_dataset, eval_label_num
+            )
 
         if entity["metric"] is not None:
             entity["metric"].label_name = self._target_names
@@ -315,7 +356,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
         )
 
         if self._model_params is not None:
-
             self._model_config = {
                 "Name": self.name,
                 "Normalization": False,
@@ -327,6 +367,10 @@ class GaussLightgbm(SingleProcessModelWrapper):
             params = self._model_params
             params["objective"] = "multiclass"
             params["metric"] = "multi_logloss"
+            params["num_class"] = train_label_num
+            logger.info(
+                "Training lightgbm model with params: {}".format(params)
+            )
             logger.info(
                 "Start training lightgbm model, "
                 "with current memory usage: {:.2f} GiB".format(
@@ -336,6 +380,9 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
             num_boost_round = params.pop("num_boost_round")
             early_stopping_rounds = params.pop("early_stopping_rounds")
+
+            obj_function = None
+            eval_function = None
 
             self._model = lgb.train(
                 params=params,
