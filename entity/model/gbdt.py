@@ -411,7 +411,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
                          train_dataset: BaseDataset,
                          val_dataset: BaseDataset,
                          **entity):
-        assert self._train_flag is True
+        assert self._task_name == ConstantValues.regression
 
         if entity["loss"] is not None:
             self._loss_function = entity["loss"].loss_fn
@@ -493,6 +493,11 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
             num_boost_round = params.pop("num_boost_round")
             early_stopping_rounds = params.pop("early_stopping_rounds")
+            params["objective"] = "regression"
+            params["metric"] = "mse"
+
+            obj_function = None
+            eval_function = None
 
             self._model = lgb.train(
                 params=params,

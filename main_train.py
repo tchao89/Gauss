@@ -1,7 +1,9 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2021, Citic-Lab. All rights reserved.
-# Authors: Lab
+"""
+-*- coding: utf-8 -*-
+
+Copyright (c) 2021, Citic-Lab. All rights reserved.
+Authors: Lab
+"""
 import argparse
 
 from local_pipeline.singleprocess.auto_modeling_graph import AutoModelingGraph
@@ -24,18 +26,18 @@ pipeline_dict = Bunch()
 pipeline_dict.mode = "udf"
 pipeline_dict.work_root = environ_configure.work_root
 # optional: ["binary_classification", "multiclass_classification", "regression"]
-pipeline_dict.task_name = "multiclass_classification"
+pipeline_dict.task_name = "regression"
 # optional: ["auc", "binary_f1", "multiclass_f1"]
 # This value will decided the way auto ml component chooses the best model.
-pipeline_dict.metric_name = "multiclass_f1"
+pipeline_dict.metric_name = "mse"
 # optional: ["mse", "binary_logloss", "None"]
 # This value will customize the loss function of model, and it can be set None.
 # if None, default loss will be chosen.
 pipeline_dict.loss_name = None
 # optional: ["libsvm", "txt", "csv"]
 pipeline_dict.data_file_type = "libsvm"
-pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/dna-3/dna.scale"
-pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/dna-3/dna.scale.t"
+pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/eunite2001/eunite2001"
+pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/eunite2001/eunite2001.t"
 # pipeline do not need to get target names in libsvm and txt file.
 pipeline_dict.target_names = ["deposit"]
 pipeline_dict.feature_configure_path = environ_configure.user_feature_path
