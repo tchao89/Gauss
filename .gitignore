@@ -1,6 +1,9 @@
 venv
 .idea
-*/__pycache__
-./test/
-./test_dataset/
-./experiments/
+.test
+.history
+test/
+test_dataset/
+experiments/
+cache/
+**/__pycache__

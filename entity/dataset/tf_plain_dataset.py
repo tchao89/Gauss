@@ -154,8 +154,8 @@ class TFPlainDataset(BaseDataset):
         return dataset
 
     def _dtype_cast(self, dataset):
-        for fea in self._categorical_features:
-            dataset.loc[:, fea] = dataset.loc[:, fea].apply(lambda x: int(x))
+        for name in self._categorical_features:
+            dataset.loc[:, name] = dataset.loc[:, name].apply(lambda x: int(x))
         return dataset
 
     def _build_raw_dataset(self, dataset) -> tf.data.Dataset:
@@ -194,7 +194,7 @@ class TFPlainDataset(BaseDataset):
 
         transfer python list to numpy array first, then expend scaler dimensions
         to convert them as vectors.
-        :return: python dictionary, keye column name in DataFrame,
+        :return: python dictionary, key column name in DataFrame,
             value is numpy array shaped as (?, 1)
         """
         dataset = dataset.to_dict("list")
