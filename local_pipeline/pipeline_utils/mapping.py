@@ -18,11 +18,16 @@ class EnvironmentConfigure:
     """
     def __init__(self, work_root=None, user_feature=None):
         self.work_root = os.path.join(work_root, self.id_generator())
-        user_feature_root, user_feature_file = os.path.split(user_feature)
 
-        self.user_feature_name = user_feature_file
-        self.user_feature_root = user_feature_root
-        self.user_feature_path = user_feature
+        self.user_feature_name = None
+        self.user_feature_root = None
+        self.user_feature_path = None
+
+        if user_feature is not None:
+            user_feature_root, user_feature_file = os.path.split(user_feature)
+            self.user_feature_name = user_feature_file
+            self.user_feature_root = user_feature_root
+            self.user_feature_path = user_feature
 
     @classmethod
     def id_generator(cls,

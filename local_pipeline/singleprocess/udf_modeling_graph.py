@@ -25,8 +25,9 @@ from utils.constant_values import ConstantValues
 class UdfModelingGraph(BaseModelingGraph):
     """
     UdfModelingGraph object.
+    In this pipeline, value: train_flag will be set "train"
+    between "train", "inference" and "increment".
     """
-
     def __init__(self, name: str, **params):
         """
         :param name: string project, pipeline name
@@ -60,6 +61,7 @@ class UdfModelingGraph(BaseModelingGraph):
             work_root=params[ConstantValues.work_root],
             task_name=params[ConstantValues.task_name],
             metric_name=params[ConstantValues.metric_name],
+            loss_name=params[ConstantValues.loss_name],
             train_data_path=params[ConstantValues.train_data_path],
             val_data_path=params[ConstantValues.val_data_path],
             target_names=params[ConstantValues.target_names],
@@ -139,7 +141,6 @@ class UdfModelingGraph(BaseModelingGraph):
         pass
 
     def _run_route(self, **params):
-
         assert isinstance(self._flag_dict[ConstantValues.data_clear_flag], bool) and \
                isinstance(self._flag_dict[ConstantValues.feature_generator_flag], bool) and \
                isinstance(self._flag_dict[ConstantValues.unsupervised_feature_selector_flag], bool) and \
@@ -198,7 +199,7 @@ class UdfModelingGraph(BaseModelingGraph):
             feature_path_dict=feature_dict,
             data_file_type=self._global_values[ConstantValues.data_file_type],
             task_name=self._attributes_names[ConstantValues.task_name],
-            train_flag=True,
+            train_flag=ConstantValues.train,
             train_data_path=self._work_paths[ConstantValues.train_data_path],
             val_data_path=self._work_paths[ConstantValues.val_data_path],
             test_data_path=None,
@@ -235,7 +236,7 @@ class UdfModelingGraph(BaseModelingGraph):
 
         core_chain = CoreRoute(
             name=ConstantValues.CoreRoute,
-            train_flag=True,
+            train_flag=ConstantValues.train,
             model_root_path=work_model_root,
             target_feature_configure_path=feature_dict[ConstantValues.final_feature_configure],
             pre_feature_configure_path=feature_dict[ConstantValues.unsupervised_feature_path],
@@ -243,6 +244,7 @@ class UdfModelingGraph(BaseModelingGraph):
             feature_configure_name=self._entity_names[ConstantValues.feature_configure_name],
             label_encoding_path=feature_dict[ConstantValues.label_encoding_models_path],
             metric_name=self._entity_names[ConstantValues.metric_name],
+            loss_name=self._entity_names[ConstantValues.loss_name],
             task_name=self._attributes_names[ConstantValues.task_name],
             supervised_selector_name=self._component_names[ConstantValues.supervised_feature_selector_name],
             feature_selector_model_names=self._global_values[ConstantValues.supervised_selector_model_names],

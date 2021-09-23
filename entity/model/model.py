@@ -49,6 +49,7 @@ class ModelWrapper(Entity):
         self._model_config = None
 
         self._model = None
+        self._target_names = None
 
         # MetricResult object.
         self._val_metric_result = None
@@ -115,6 +116,7 @@ class ModelWrapper(Entity):
         if self._best_val_metric_result is None:
             self._best_val_metric_result = MetricResult(
                 name=self._val_metric_result.name,
+                metric_name=self._val_metric_result.metric_name,
                 result=self._val_metric_result.result,
                 optimize_mode=self._val_metric_result.optimize_mode
             )
@@ -129,6 +131,7 @@ class ModelWrapper(Entity):
             self._best_model_params = self._model_params
             self._best_val_metric_result = MetricResult(
                 name=self._val_metric_result.name,
+                metric_name=self._val_metric_result.metric_name,
                 result=self._val_metric_result.result,
                 optimize_mode=self._val_metric_result.optimize_mode
             )
@@ -145,6 +148,16 @@ class ModelWrapper(Entity):
 
     @abc.abstractmethod
     def train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
+        """
+        Training model, and this method doesn't contain evaluation.
+        :param train_dataset: BaseDataset object, training dataset.
+        :param val_dataset: BaseDataset object, validation dataset.
+        :param entity: dict object, including other entity, such as Metric... etc.
+        :return:
+        """
+
+    @abc.abstractmethod
+    def binary_train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
         """
         Training model, and this method doesn't contain evaluation.
         :param train_dataset: BaseDataset object, training dataset.
@@ -301,4 +314,28 @@ class ModelWrapper(Entity):
         """
         Preprocessing in inference.
         :return: None
+        """
+
+    @abc.abstractmethod
+    def _loss_func(self, *params):
+        """
+        This method is used to customize loss function, and the
+        input parameters and return value are decided by model.
+        Usually, these parameters are needed:
+        :param y_prob: np.ndarray, the probabilities of model output.
+        :param y_true: np.ndarray, the ture label of dataset.
+        :return: this value is decided by model, and this value
+        is usually loss value, grad value or hess value.
+        """
+
+    @abc.abstractmethod
+    def _eval_func(self, *params):
+        """
+        This method is used to customize metric function and the
+        input parameters and return value are decided by model.
+        Usually, these parameters are needed:
+        :param y_prob: np.ndarray, the probabilities of model output.
+        :param y_true: np.ndarray, the ture label of dataset.
+        :return: this value is decided by model, and this value
+        is usually loss value, grad value or hess value.
         """

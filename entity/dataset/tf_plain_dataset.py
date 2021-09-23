@@ -112,7 +112,11 @@ class TFPlainDataset(BaseDataset):
         """
         if not hasattr(self, "_iterator"):
             raise AttributeError("dataset has not been iterated, use build() before init().")
-        self._iterator.initializer.run(session=sess, feed_dict={self._batch_size: self._batch_size_param})
+        self._iterator.initializer.run(
+            session=sess, 
+            feed_dict={
+                self._batch_size: self._batch_size_param
+                })
             
     @property 
     def target_name(self):

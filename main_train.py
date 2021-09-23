@@ -17,15 +17,21 @@ from utils.Logger import logger
 
 user_feature = "/home/liangqian/Gauss/test_dataset/feature_conf.yaml"
 environ_configure = EnvironmentConfigure(work_root="/home/liangqian/Gauss/experiments",
-                                         user_feature="/home/liangqian/Gauss/test_dataset/feature_conf.yaml")
+                                         user_feature=None)
 
 pipeline_dict = Bunch()
 # ["udf", "auto", "multi_udf"]
 pipeline_dict.mode = "udf"
 pipeline_dict.work_root = environ_configure.work_root
-pipeline_dict.task_name = "classification"
-# optional: ["auc", "f1"]
-pipeline_dict.metric_name = "auc"
+# optional: ["binary_classification", "multiclass_classification", "regression"]
+pipeline_dict.task_name = "binary_classification"
+# optional: ["auc", "binary_f1"]
+# This value will decided the way auto ml component chooses the best model.
+pipeline_dict.metric_name = "binary_f1"
+# optional: ["mse", "binary_logloss", "None"]
+# This value will customize the loss function of model, and it can be set None.
+# if None, default loss will be chosen.
+pipeline_dict.loss_name = None
 # optional: ["libsvm", "txt", "csv"]
 pipeline_dict.data_file_type = "libsvm"
 pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/w8a/w8a"
@@ -57,24 +63,7 @@ def main(config=config_path):
     pipeline_configure.update(system_config)
 
     if pipeline_configure.mode == "auto":
-        model_graph = AutoModelingGraph(name="auto",
-                                        work_root=pipeline_configure.work_root,
-                                        task_name=pipeline_configure.task_name,
-                                        metric_name=pipeline_configure.metric_name,
-                                        train_data_path=pipeline_configure.train_data_path,
-                                        val_data_path=pipeline_configure.val_data_path,
-                                        feature_configure_path=pipeline_configure.feature_configure_path,
-                                        target_names=pipeline_configure.target_names,
-                                        dataset_name=pipeline_configure.dataset_name,
-                                        type_inference_name=pipeline_configure.type_inference_name,
-                                        data_clear_name=pipeline_configure.data_clear_name,
-                                        feature_generator_name=pipeline_configure.feature_generator_name,
-                                        unsupervised_feature_selector_name=pipeline_configure.unsupervised_feature_selector_name,
-                                        supervised_feature_selector_name=pipeline_configure.supervised_feature_selector_name,
-                                        auto_ml_name=pipeline_configure.tabular_auto_ml,
-                                        opt_model_names=pipeline_configure.opt_model_names,
-                                        auto_ml_path=pipeline_configure.auto_ml_path,
-                                        selector_configure_path=pipeline_configure.selector_config_path)
+        model_graph = AutoModelingGraph(name="auto", **pipeline_configure)
 
         model_graph.run()
 

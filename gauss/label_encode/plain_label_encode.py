@@ -56,6 +56,9 @@ class PlainLabelEncode(BaseLabelEncode):
         self.__serialize_label_encoding()
         self.__generate_final_configure()
 
+    def _increment_run(self, **entity):
+        self._predict_run(**entity)
+
     def _predict_run(self, **entity):
         assert "infer_dataset" in entity.keys()
         dataset = entity['infer_dataset']
@@ -90,7 +93,8 @@ class PlainLabelEncode(BaseLabelEncode):
                     data[col] = le_model.transform(data[col])
 
             for col in target_names:
-                if self._task_name == ConstantValues.classification:
+                if self._task_name == ConstantValues.binary_classification or \
+                        self._task_name == ConstantValues.multiclass_classification:
                     assert le_model_list.get(col)
                     le_model = le_model_list[col]
 
@@ -123,7 +127,8 @@ class PlainLabelEncode(BaseLabelEncode):
 
                 data[feature] = item_label_encoding_model.transform(data[feature])
 
-        if self._task_name == "classification":
+        if self._task_name == ConstantValues.binary_classification \
+                or self._task_name == ConstantValues.multiclass_classification:
             for label in target_names:
                 item_label_encoding = LabelEncoder()
                 item_label_encoding_model = item_label_encoding.fit(target[label])

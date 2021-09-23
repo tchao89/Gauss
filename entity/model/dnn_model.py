@@ -8,6 +8,8 @@ import gc
 import copy
 import shutil
 
+from icecream import ic
+
 from entity.model.model import ModelWrapper
 from entity.dataset.tf_plain_dataset import TFPlainDataset
 from entity.feature_configuration.feature_config import FeatureConf 
@@ -169,6 +171,7 @@ class GaussNN(ModelWrapper):
         self._network = MlpNetwork(
             categorical_features=self._categorical_features,
             numerical_features=self._numerical_features,
+            task_name=self._task_name,
             hidden_sizes=self._model_params["hidden_sizes"],
             loss=Loss(label_name=train_dataset.target_name)
         )
@@ -228,6 +231,7 @@ class GaussNN(ModelWrapper):
         self._network = MlpNetwork(
             categorical_features=self._categorical_features,
             numerical_features=self._numerical_features,
+            task_name=self._task_name,
             hidden_sizes=self._model_params["hidden_sizes"],
         )
         if not self._train_flag:
@@ -363,4 +367,13 @@ class GaussNN(ModelWrapper):
         pass
 
     def _initialize_model(self):
+        pass
+
+    def _eval_func(self):
+        pass
+
+    def _loss_func(self):
+        pass
+
+    def binary_train(self):
         pass

@@ -6,6 +6,7 @@
 from __future__ import division
 from __future__ import absolute_import
 
+from icecream import ic
 from collections import defaultdict
 
 import numpy as np
@@ -26,7 +27,7 @@ class Evaluator(object):
         self._metrics = metrics
         self._restore_checkpoint_path = restore_checkpoint_path
 
-        self._predict, self._labels = self._build_eval_graph()
+        self._predict, self._labels, self._batch = self._build_eval_graph()
 
     def run(self, sess=None):
         self._sess = sess or self._create_session_and_init()
@@ -63,6 +64,7 @@ class Evaluator(object):
             for name, result in zip(sorted(self._labels.keys()), results[1:]):
                 labels[name].append(result)
         predict = np.concatenate(predict, axis=0)
+        ic(results)
         for label_name in labels.keys():
             labels[label_name] = np.concatenate(labels[label_name], axis=0)
 
@@ -77,7 +79,7 @@ class Evaluator(object):
         transform_fn = self._join_pipeline(self._transform_functions)
         output = self._eval_fn(transform_fn(next_batch))
         labels = {name: next_batch[name] for name in self._all_required_label_names()}
-        return output, labels
+        return output, labels, next_batch
 
     def _all_required_label_names(self):
         required = set()

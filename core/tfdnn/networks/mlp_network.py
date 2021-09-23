@@ -17,11 +17,13 @@ class MlpNetwork(BaseNetwork):
     def __init__(self,
                  categorical_features,
                  numerical_features,
+                 task_name,
                  loss=None,
                  hidden_sizes=[1024, 512, 512],
                  scope_name="mlp_network"):
         self._categorical_features = categorical_features
         self._numerical_features = numerical_features
+        self._task_name = task_name
         self._loss = loss
         self._hidden_sizes = hidden_sizes
         self._scope_name = scope_name
@@ -35,7 +37,10 @@ class MlpNetwork(BaseNetwork):
     def _eval_fn(self, example):
         with tf.compat.v1.variable_scope(self._scope_name, reuse=tf.compat.v1.AUTO_REUSE):
             logits = self._build_graph(example)
-            outputs = tf.sigmoid(logits)
+            if self._task_name == "classification":
+                outputs = tf.sigmoid(logits)
+            else:
+                outputs = logits
             return outputs
 
     def _serve_fn(self, example):

@@ -12,6 +12,7 @@ import abc
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 
 from utils.bunch import Bunch
+from utils.constant_values import ConstantValues
 
 
 class BaseModelingGraph:
@@ -61,6 +62,7 @@ class BaseModelingGraph:
         self._entity_names = Bunch(
             dataset_name=params["dataset_name"],
             metric_name=params["metric_name"],
+            loss_name=params[ConstantValues.loss_name],
             feature_configure_name=params["feature_configure_name"]
         )
 

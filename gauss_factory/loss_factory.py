@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from core.tfdnn.losses.cross_entropy_loss import CrossEntropyLoss
+from core.tfdnn.losses.classification_loss import CrossEntropyLoss
+from core.tfdnn.losses.regression_loss import MSELoss
 
 class LossFunctionFactory():
 
@@ -10,5 +11,8 @@ class LossFunctionFactory():
         if func_name == "BinaryCrossEntropy":
             return CrossEntropyLoss
         elif func_name == "mse":
-            # TODO: fill the correct loss after determin.
-            return None
+            return MSELoss
+        else:
+            raise "Loss function `{name}` not supported.".format(
+                name=func_name
+            )
