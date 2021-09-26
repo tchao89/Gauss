@@ -14,7 +14,8 @@ from core.featuretools.variable_types.variable import Discrete, Boolean, Numeric
 from entity.dataset.base_dataset import BaseDataset
 from gauss.feature_generation.base_feature_generation import BaseFeatureGenerator
 from utils.Logger import logger
-from utils.common_component import yaml_read, yaml_write
+from utils.yaml_exec import yaml_read
+from utils.yaml_exec import yaml_write
 from utils.base import get_current_memory_gb
 
 
@@ -60,6 +61,9 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
             "Feature generation's feature configuration is generating, " + "with current memory usage: %.2f GiB",
             get_current_memory_gb()["memory_usage"])
         self.final_configure_generation(dataset=dataset)
+
+    def _increment_run(self, **entity):
+        self._predict_run(**entity)
 
     def _predict_run(self, **entity):
         assert "infer_dataset" in entity.keys()
