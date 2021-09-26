@@ -11,8 +11,10 @@ from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
 from core.nni.algorithms.hpo.evolution_tuner import EvolutionTuner
 from gauss.auto_ml.base_auto_ml import BaseAutoML
 from entity.dataset.base_dataset import BaseDataset
+from entity.feature_configuration.feature_config import FeatureConf
 from entity.model.model import ModelWrapper
 from entity.metrics.base_metric import BaseMetric, MetricResult
+from entity.losses.base_loss import BaseLoss, LossResult
 
 from utils.Logger import logger
 from utils.base import get_current_memory_gb
@@ -109,9 +111,13 @@ class TabularAutoML(BaseAutoML):
         assert "model" in entity and isinstance(entity["model"], ModelWrapper)
         assert "train_dataset" in entity and isinstance(entity["train_dataset"], BaseDataset)
         assert "val_dataset" in entity and isinstance(entity["val_dataset"], BaseDataset)
-        assert "metrics" in entity and isinstance(entity["metrics"], BaseMetric)
+        assert "metric" in entity and isinstance(entity["metric"], BaseMetric)
+        assert "feature_configure" in entity and isinstance(entity["feature_configure"], FeatureConf)
+        assert "loss" in entity
+        assert isinstance(entity["loss"], BaseLoss) if entity["loss"] is not None else True
 
         self.__model = entity["model"]
+        feature_conf = entity["feature_configure"]
 
         self.__local_best = None
 
@@ -151,16 +157,23 @@ class TabularAutoML(BaseAutoML):
                     params.update(receive_params)
 
                     logger.info(
-                        "Send parameters to model object, "
+                        "Send parameters to model object, and update feature configure, "
                         "with current memory usage: {:.2f} GiB".format(
                             get_current_memory_gb()["memory_usage"]
                         )
                     )
                     self.__model.update_params(**params)
+                    self.__model.update_feature_conf(feature_conf=feature_conf)
 
                     logger.info(
                         "Model training, with current memory usage: {:.2f} GiB".format(
                             get_current_memory_gb()["memory_usage"]
+                        )
+                    )
+
+                    logger.info(
+                        "Model training, with current memory usage: {} GiB".format(
+                            params.keys()
                         )
                     )
                     self.__model.train(**entity)
@@ -178,23 +191,26 @@ class TabularAutoML(BaseAutoML):
                         ))
                     self.__model.update_best_model()
 
-                    metrics = self.__model.val_metrics
+                    metric = self.__model.val_metric
 
-                    self.__update_local_best(metrics)
+                    self.__update_local_best(metric)
 
-                    metrics_result = self.__model.val_metrics.result
-                    tuner.receive_trial_result(trial, receive_params, metrics_result)
+                    metric_result = self.__model.val_metric.result
+                    tuner.receive_trial_result(trial, receive_params, metric_result)
                 else:
                     raise ValueError("Default parameters is None.")
 
         if self.__is_final_set is True:
             self.__model.set_best_model()
-        self.__best_metrics = self.__model.val_best_metric_result.result
+        self.__best_metric = self.__model.val_best_metric_result.result
+
+    def _increment_run(self, **entity):
+        self._train_run(**entity)
 
     def _predict_run(self, **entity):
         pass
 
-    def __update_local_best(self, metrics):
+    def __update_local_best(self, metric):
         """
         This method will update model, model parameters and
         validation metric result in each training.
@@ -202,32 +218,34 @@ class TabularAutoML(BaseAutoML):
         """
         if self.__local_best is None:
             self.__local_best = MetricResult(
-                name="local_best",
-                result=metrics.result,
-                optimize_mode=metrics.optimize_mode
+                name=metric.name,
+                metric_name=metric.metric_name,
+                result=metric.result,
+                optimize_mode=metric.optimize_mode
             )
 
-        if self.__local_best.__cmp__(metrics) < 0:
+        if self.__local_best.__cmp__(metric) < 0:
             self.__local_best = MetricResult(
-                name=metrics.name,
-                result=metrics.result,
-                optimize_mode=metrics.optimize_mode
+                name=metric.name,
+                metric_name=metric.metric_name,
+                result=metric.result,
+                optimize_mode=metric.optimize_mode
             )
 
     @property
     def local_best(self):
         """
-        Get best metrics result of single trial in auto machine learning.
+        Get best metric result of single trial in auto machine learning.
         :return: MetricResult
         """
         return self.__local_best
 
     @property
-    def optimal_metrics(self):
+    def optimal_metric(self):
         """
         :return: MetricResult.result
         """
-        return self.__best_metrics
+        return self.__best_metric
 
     @property
     def default_params(self):
