@@ -64,7 +64,6 @@ class Evaluator(object):
             for name, result in zip(sorted(self._labels.keys()), results[1:]):
                 labels[name].append(result)
         predict = np.concatenate(predict, axis=0)
-        ic(results)
         for label_name in labels.keys():
             labels[label_name] = np.concatenate(labels[label_name], axis=0)
 
@@ -84,7 +83,7 @@ class Evaluator(object):
     def _all_required_label_names(self):
         required = set()
         for metric in self._metrics.values():
-            required.update(metric.required_label_names[0])
+            required.update(metric.required_label_names)
         return list(required)
 
     def _join_pipeline(self, map_functions):

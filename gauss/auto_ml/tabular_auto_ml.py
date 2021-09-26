@@ -218,7 +218,7 @@ class TabularAutoML(BaseAutoML):
         """
         if self.__local_best is None:
             self.__local_best = MetricResult(
-                name="local_best",
+                name=metric.name,
                 metric_name=metric.metric_name,
                 result=metric.result,
                 optimize_mode=metric.optimize_mode

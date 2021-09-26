@@ -8,6 +8,7 @@ from __future__ import absolute_import
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
+from icecream import ic
 
 from core.tfdnn.networks.base_network import BaseNetwork
 
@@ -31,8 +32,8 @@ class MlpNetwork(BaseNetwork):
     def _train_fn(self, example):
         with tf.compat.v1.variable_scope(self._scope_name, reuse=tf.compat.v1.AUTO_REUSE):
             logits = self._build_graph(example)
-            loss = self._loss.loss_fn(logits, example)
-            return loss
+            loss, labels = self._loss.loss_fn(logits, example)
+            return loss, logits, labels
 
     def _eval_fn(self, example):
         with tf.compat.v1.variable_scope(self._scope_name, reuse=tf.compat.v1.AUTO_REUSE):

@@ -9,6 +9,7 @@ from __future__ import absolute_import
 import os
 import time
 import tensorflow as tf
+from icecream import ic
 
 from core.tfdnn.utils.earlystop import Earlystop
 from core.tfdnn.utils.loggers import TrainLogger
@@ -73,7 +74,8 @@ class Trainer(object):
     def _build_train_graph(self):
         optimizer = self._create_optimizer()
         transform_fn = self._join_pipeline(self._transform_functions)
-        loss = self._train_fn(transform_fn(self._dataset.next_batch))
+        next_batch = self._dataset.next_batch
+        loss, self._logits, self._labels = self._train_fn(transform_fn(next_batch))
         global_step = tf.compat.v1.train.get_or_create_global_step()
         train_op = optimizer.minimize(loss, global_step=global_step)
         return loss, train_op, optimizer
@@ -125,6 +127,10 @@ class Trainer(object):
         try:
             t_start = time.time()
             loss = self._sess.run([self._loss, self._train_op])[0]
+            # ic("train")
+            # ic(self._sess.run(self._loss))
+            # ic(self._sess.run(self._logits))
+            # ic(self._sess.run(self._labels))
             t_end = time.time()
             if self._train_logger:
                 self._train_logger.log_info(loss=loss,
