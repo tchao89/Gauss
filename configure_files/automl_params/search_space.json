@@ -6,7 +6,11 @@
             },
             "learning_rate": {
                   "_type": "choice",
-                  "_value": [0.01, 0.05, 0.1, 0.2, 0.3]
+                  "_value": [0.01, 0.02, 0.03, 0.05, 0.1, 0.2]
+            },
+            "num_boost_round": {
+                  "_type": "choice",
+                  "_value": [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
             },
             "bagging_fraction": {
                   "_type": "uniform",
@@ -18,7 +22,7 @@
             },
             "bagging_freq": {
                   "_type": "choice",
-                  "_value": [1, 2, 4, 8, 10]
+                  "_value": [1, 2, 4, 5, 6, 7, 8, 9, 10]
             },
             "max_depth": {
                   "_type": "choice",
@@ -29,7 +33,7 @@
                   "_value": [0, 0.9]
             }
       },
-      "multiprocess_lightgbm":{
+      "multiprocess_lightgbm": {
             "num_leaves": {
                   "_type": "choice",
                   "_value": [10, 20, 30, 40, 50, 60]
@@ -57,7 +61,7 @@
             "lambda_l2": {
                   "_type": "uniform",
                   "_value": [0, 0.9]
-            } 
+            }
       },
       "lr": {
             "alpha": {
@@ -80,11 +84,11 @@
       "dnn":{
             "batch_size": {
                   "_type": "choice",
-                  "_value": [16, 32, 64, 128, 256]
+                  "_value": [1, 2, 4]
             },
             "embed_size": {
                   "_type": "choice",
-                  "_value": [16, 32, 64, 128, 256]
+                  "_value": [1, 2, 4]
             },
             "hidden_sizes": {
                   "_type": "choice",
@@ -106,6 +110,10 @@
       "classification": {
             "weight": 1
       },
-      "regression": {},
-      "general": {}
-}
+      "regression": {
+
+      },
+      "general": {
+
+      }
+ }
