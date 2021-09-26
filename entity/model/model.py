@@ -157,6 +157,15 @@ class ModelWrapper(Entity):
         """
 
     @abc.abstractmethod
+    def increment(self, increment_dataset: BaseDataset, **entity):
+        """
+        incremental training model
+        :param increment_dataset: BaseDataset object, incremental dataset
+        :param entity: dict object, including other entity, such as Metric... etc.
+        :return: None
+        """
+
+    @abc.abstractmethod
     def binary_train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
         """
         Training model, and this method doesn't contain evaluation.

@@ -1,10 +1,12 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2021, Citic-Lab. All rights reserved.
-# Authors: Lab
+"""
+-*- coding: utf-8 -*-
+
+Copyright (c) 2021, Citic-Lab. All rights reserved.
+Authors: Lab
+"""
 import argparse
 
-from utils.common_component import yaml_read, yaml_write
+from utils.yaml_exec import yaml_read, yaml_write
 from local_pipeline.inference import Inference
 from utils.Logger import logger
 from utils.bunch import Bunch

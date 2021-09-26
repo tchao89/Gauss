@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2021, Citic-Lab. All rights reserved.
-# Authors: Lab
 """
+-*- coding: utf-8 -*-
+
+Copyright (c) 2021, Citic-Lab. All rights reserved.
+Authors: Lab
 This is a root path configure file for feature
 """
 import os

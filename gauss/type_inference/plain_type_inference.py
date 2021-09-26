@@ -78,11 +78,18 @@ class PlainTypeInference(BaseTypeInference):
         self.final_configure_generation()
 
     def _increment_run(self, **entity):
-        self._predict_run(**entity)
+        # just detect error in test dataset.
+        assert ConstantValues.increment_dataset in entity.keys()
+        print(self._final_file_path)
+        conf = yaml_read(yaml_file=self._final_file_path)
+
+        for col in entity[ConstantValues.increment_dataset].get_dataset().data.columns:
+            assert col in list(conf)
 
     def _predict_run(self, **entity):
         # just detect error in test dataset.
         assert "infer_dataset" in entity.keys()
+        print(self._final_file_path)
         conf = yaml_read(yaml_file=self._final_file_path)
 
         for col in entity["infer_dataset"].get_dataset().data.columns:

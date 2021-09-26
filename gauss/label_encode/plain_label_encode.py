@@ -57,7 +57,65 @@ class PlainLabelEncode(BaseLabelEncode):
         self.__generate_final_configure()
 
     def _increment_run(self, **entity):
-        self._predict_run(**entity)
+        assert ConstantValues.increment_dataset in entity.keys()
+        dataset = entity[ConstantValues.increment_dataset]
+
+        data = dataset.get_dataset().data
+        assert isinstance(data, pd.DataFrame)
+
+        target = dataset.get_dataset().target
+
+        feature_names = dataset.get_dataset().feature_names
+        target_names = dataset.get_dataset().target_names
+
+        self.__feature_configure = yaml_read(yaml_file=self.__final_file_path)
+
+        with shelve.open(self.__label_encoding_configure_path) as shelve_open:
+            le_model_list = shelve_open['label_encoding']
+
+            for col in feature_names:
+                if not isinstance(self.__feature_configure, dict):
+                    raise TypeError(
+                        "Value: self.__feature_configure is not a correct data type, type: {}".format(
+                            type(self.__feature_configure)
+                        ))
+
+                if self.__feature_configure[col]['ftype'] == "category" or self.__feature_configure[col][
+                    'ftype'] == "bool":
+                    assert le_model_list.get(col)
+                    le_model = le_model_list[col]
+
+                    label_dict = dict(zip(le_model.classes_, le_model.transform(le_model.classes_)))
+                    status_list = data[col].unique()
+
+                    for item in status_list:
+                        if label_dict.get(item) is None:
+                            logger.info(
+                                "feature: " + str(col) + " has an abnormal value (unseen by label encoding): " + str(
+                                    item))
+                            raise ValueError("feature: " + str(
+                                col) + " has an abnormal value (unseen by label encoding): " + str(item))
+
+                    data[col] = le_model.transform(data[col])
+
+            for col in target_names:
+                if self._task_name == ConstantValues.binary_classification or \
+                        self._task_name == ConstantValues.multiclass_classification:
+                    assert le_model_list.get(col)
+                    le_model = le_model_list[col]
+
+                    label_dict = dict(zip(le_model.classes_, le_model.transform(le_model.classes_)))
+                    status_list = target[col].unique()
+
+                    for item in status_list:
+                        if label_dict.get(item) is None:
+                            logger.info(
+                                "feature: " + str(col) + " has an abnormal value (unseen by label encoding): " + str(
+                                    item))
+                            raise ValueError("feature: " + str(
+                                col) + " has an abnormal value (unseen by label encoding): " + str(item))
+
+                    target[col] = le_model.transform(target[col])
 
     def _predict_run(self, **entity):
         assert "infer_dataset" in entity.keys()
@@ -71,10 +129,18 @@ class PlainLabelEncode(BaseLabelEncode):
         feature_names = dataset.get_dataset().feature_names
         target_names = dataset.get_dataset().target_names
 
+        self.__feature_configure = yaml_read(yaml_file=self.__final_file_path)
+
         with shelve.open(self.__label_encoding_configure_path) as shelve_open:
             le_model_list = shelve_open['label_encoding']
 
             for col in feature_names:
+                if not isinstance(self.__feature_configure, dict):
+                    raise TypeError(
+                        "Value: self.__feature_configure is not a correct data type, type: {}".format(
+                            type(self.__feature_configure)
+                        ))
+
                 if self.__feature_configure[col]['ftype'] == "category" or self.__feature_configure[col]['ftype'] == "bool":
                     assert le_model_list.get(col)
                     le_model = le_model_list[col]

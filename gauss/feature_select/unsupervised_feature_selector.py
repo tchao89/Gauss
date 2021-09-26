@@ -11,6 +11,7 @@ from sklearn.feature_selection import chi2, SelectKBest
 from gauss.feature_select.base_feature_selector import BaseFeatureSelector
 from entity.dataset.base_dataset import BaseDataset
 from core.featuretools import variable_types
+from utils.constant_values import ConstantValues
 
 from utils.yaml_exec import yaml_read
 from utils.yaml_exec import yaml_write
@@ -73,7 +74,15 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         self.final_configure_generation(dataset=dataset)
 
     def _increment_run(self, **entity):
-        self._predict_run(**entity)
+        assert ConstantValues.increment_dataset in entity.keys()
+
+        dataset = entity[ConstantValues.increment_dataset]
+        conf = yaml_read(yaml_file=self._final_file_path)
+
+        if self._enable is True:
+            generated_feature_names = feature_list_generator(feature_conf=conf)
+            dataset.get_dataset().data = dataset.get_dataset().data[generated_feature_names]
+            dataset.get_dataset().generated_feature_names = generated_feature_names
 
     def _predict_run(self, **entity):
         assert "infer_dataset" in entity.keys()
