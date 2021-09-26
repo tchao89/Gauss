@@ -10,7 +10,7 @@ from gauss.component import Component
 class BaseDataClear(Component):
     def __init__(self, name, train_flag, enable, task_name):
         """
-        如果输入数据中存在缺失值，其需要经过dataclear模块
+        如果输入数据中存在缺失值，其需要经过data clear模块
         :param name:
         :param train_flag:
         :param enable:
@@ -23,4 +23,8 @@ class BaseDataClear(Component):
 
     @abc.abstractmethod
     def _predict_run(self, **entity):
+        pass
+
+    @abc.abstractmethod
+    def _increment_run(self, **entity):
         pass
