@@ -250,7 +250,55 @@ class PreprocessRoute(Component):
         logger.info("Dataset preprocessing has finished.")
 
     def _increment_run(self, **entity):
-        pass
+        entity_dict = {}
+
+        assert self._train_data_path is not None
+        assert os.path.isfile(self._train_data_path)
+        assert self._train_flag is ConstantValues.increment
+
+        # 拼接数据
+        dataset_params = Bunch(
+            name=self._dataset_name,
+            task_name=self._task_name,
+            data_pair=None,
+            data_path=self._train_data_path,
+            data_file_type=self._data_file_type,
+            target_name=self._target_names,
+            memory_only=True
+        )
+        logger.info("Starting loading data.")
+        train_dataset = self.create_entity(
+            entity_name=self._dataset_name,
+            **dataset_params
+        )
+
+        entity_dict[ConstantValues.increment_dataset] = train_dataset
+        # 类型推导
+        logger.info("Starting type inference.")
+        self.type_inference.run(**entity_dict)
+
+        # 数据清洗
+        logger.info("Starting data clear.")
+        self.data_clear.run(**entity_dict)
+
+        self._already_data_clear = self.data_clear.already_data_clear
+        if self._already_data_clear is False \
+                and train_dataset.need_data_clear is True \
+                and self._feature_generator_flag is True:
+            raise PipeLineLogicError("Aberrant dataset can not generate additional features.")
+
+        logger.info("Starting encoding features and labels.")
+        self.label_encoder.run(**entity_dict)
+
+        logger.info("Starting feature generation.")
+        # 特征生成
+        self.feature_generator.run(**entity_dict)
+
+        logger.info("Starting unsupervised feature selector.")
+        # 无监督特征选择
+        self.unsupervised_feature_selector.run(**entity_dict)
+        self._entity_dict = entity_dict
+        logger.info("Dataset preprocessing has finished.")
 
     def _predict_run(self, **entity):
         entity_dict = {}

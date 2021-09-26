@@ -18,6 +18,7 @@ from utils.base import get_current_memory_gb
 from utils.yaml_exec import yaml_read
 from utils.reduce_data import reduce_data
 from utils.Logger import logger
+from utils.constant_values import ConstantValues
 
 
 # 需要传入三个参数， 数模型的数据/非数模型的数据， yaml文件， base dataset
@@ -80,7 +81,34 @@ class PlainDataClear(BaseDataClear):
                     get_current_memory_gb()["memory_usage"])
 
     def _increment_run(self, **entity):
-        self._predict_run(**entity)
+        assert ConstantValues.increment_dataset in entity.keys()
+        dataset = entity[ConstantValues.increment_dataset]
+
+        data = dataset.get_dataset().data
+        assert isinstance(data, pd.DataFrame)
+
+        feature_names = dataset.get_dataset().feature_names
+        feature_conf = yaml_read(self._feature_configure_path)
+        self._aberrant_modify(data=data)
+
+        if self._enable is True:
+            with shelve.open(self._data_clear_configure_path) as shelve_open:
+                dc_model_list = shelve_open['impute_models']
+
+            for col in feature_names:
+                item_conf = feature_conf[col]
+                if dc_model_list.get(col):
+                    item_data = np.array(data[col]).reshape(-1, 1)
+
+                    if "int" in item_conf['dtype']:
+                        dc_model_list.get(col).fit(item_data.astype(np.int64))
+                    elif "float" in item_conf['dtype']:
+                        dc_model_list.get(col).fit(item_data.astype(np.float64))
+                    else:
+                        dc_model_list.get(col).fit(item_data)
+
+                    item_data = dc_model_list.get(col).transform(item_data)
+                    data[col] = item_data.reshape(1, -1).squeeze(axis=0)
 
     def _predict_run(self, **entity):
         assert "infer_dataset" in entity.keys()

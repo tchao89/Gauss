@@ -36,6 +36,8 @@ class ConstantValues:
     dataset_name = "dataset_name"
     train_dataset = "train_dataset"
     val_dataset = "val_dataset"
+    infer_dataset = "infer_dataset"
+    increment_dataset = "increment_dataset"
     metric_name = "metric_name"
     loss_name = "loss_name"
     metric_result = "metric_result"

@@ -215,7 +215,40 @@ class CoreRoute(Component):
         entity["model"].model_save()
 
     def _increment_run(self, **entity):
-        pass
+        assert "increment_dataset" in entity.keys()
+
+        entity["model"] = self.model
+        entity["metric"] = self.metric
+        entity["auto_ml"] = self.auto_ml
+        entity["feature_configure"] = self.feature_conf
+        entity["loss"] = self.loss
+
+        train_dataset = entity[ConstantValues.increment_dataset]
+        self.metric.label_name = train_dataset.get_dataset().target_names[0]
+
+        feature_conf = yaml_read(self.__feature_configure_path)
+        self.feature_conf.file_path = self.__feature_configure_path
+        self.feature_conf.parse(method="system")
+        # if feature_list is None, all feature's used will be set true.
+        self.feature_conf.feature_select(feature_list=None)
+
+        entity["model"].update_feature_conf(feature_conf=feature_conf)
+
+        logger.info(
+            "Incremental training has started, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+
+        entity["model"].increment(**entity)
+
+        yaml_write(yaml_dict=feature_conf, yaml_file=self._final_file_path)
+
+        # self._best_metric is a MetricResult object.
+        self._best_metric = entity["model"].val_best_metric_result
+
+        entity["model"].model_save()
 
     def _predict_run(self, **entity):
         """
