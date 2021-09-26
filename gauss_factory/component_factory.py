@@ -102,4 +102,4 @@ class ComponentFactory(AbstractGauss):
             # auto_ml_path
             return TabularAutoML(**params)
 
-        return None
+        raise ValueError("Component factory can not construct entity by name: %s.", component_name)

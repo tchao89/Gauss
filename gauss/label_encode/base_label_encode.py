@@ -24,7 +24,6 @@ class BaseLabelEncode(Component):
             train_flag=train_flag,
             enable=enable,
             task_name=task_name
-
         )
         self._feature_configure_path = feature_configure_path
 
@@ -32,4 +31,7 @@ class BaseLabelEncode(Component):
         pass
 
     def _predict_run(self, **entity):
+        pass
+
+    def _increment_run(self, **entity):
         pass

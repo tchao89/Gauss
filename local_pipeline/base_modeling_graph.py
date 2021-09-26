@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2021, Citic-Lab. All rights reserved.
-# Authors: Lab
 """
+-*- coding: utf-8 -*-
+
+Copyright (c) 2021, Citic-Lab. All rights reserved.
+Authors: Lab
 Abstract object for pipelines.
 """
 from __future__ import annotations
@@ -12,6 +12,7 @@ import abc
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 
 from utils.bunch import Bunch
+from utils.constant_values import ConstantValues
 
 
 class BaseModelingGraph:
@@ -39,7 +40,7 @@ class BaseModelingGraph:
         :param auto_ml_name:
         :param opt_model_names:
         :param auto_ml_path:
-        :param selector_config_path:
+        :param selector_configure_path:
         """
         assert params["opt_model_names"] is not None
 
@@ -55,12 +56,13 @@ class BaseModelingGraph:
             val_data_path=params["val_data_path"],
             feature_configure_path=params["feature_configure_path"],
             auto_ml_path=params["auto_ml_path"],
-            selector_config_path=params["selector_config_path"],
+            selector_configure_path=params["selector_configure_path"],
         )
 
         self._entity_names = Bunch(
             dataset_name=params["dataset_name"],
             metric_name=params["metric_name"],
+            loss_name=params[ConstantValues.loss_name],
             feature_configure_name=params["feature_configure_name"]
         )
 
@@ -75,13 +77,23 @@ class BaseModelingGraph:
         )
 
         self._global_values = Bunch(
+            data_file_type=params["data_file_type"],
             selector_trial_num=params["selector_trial_num"],
             auto_ml_trial_num=params["auto_ml_trial_num"],
             opt_model_names=params["opt_model_names"],
             supervised_selector_model_names=params["supervised_selector_model_names"]
         )
 
+        self._flag_dict = Bunch(
+            data_clear_flag=params["data_clear_flag"],
+            label_encoder_flag=params["label_encoder_flag"],
+            feature_generator_flag=params["feature_generator_flag"],
+            unsupervised_feature_selector_flag=params["unsupervised_feature_selector_flag"],
+            supervised_feature_selector_flag=params["supervised_feature_selector_flag"]
+        )
+
         self._already_data_clear = None
+        self._model_need_clear_flag = params["model_need_clear_flag"]
         self._pipeline_configure = None
 
     @abc.abstractmethod

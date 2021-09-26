@@ -1,37 +1,10 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic-Lab. All rights reserved.
-# Authors: citic-lab
-import os
+"""
+-*- coding: utf-8 -*-
+
+Copyright (c) 2020, Citic-Lab. All rights reserved.
+Authors: citic-lab
+"""
 from typing import List, Any
-
-import yaml
-
-def mkdir(path: str):
-    try:
-        os.mkdir(path=path)
-    except FileNotFoundError:
-        os.system("mkdir -p " + path)
-
-def yaml_write(yaml_dict: dict, yaml_file: str):
-    root, _ = os.path.split(yaml_file)
-
-    try:
-        assert os.path.isdir(root)
-    except AssertionError:
-
-        mkdir(root)
-
-    with open(yaml_file, "w", encoding="utf-8") as yaml_file:
-        yaml.dump(yaml_dict, yaml_file)
-
-def yaml_read(yaml_file: str):
-    assert os.path.isfile(yaml_file)
-
-    with open(yaml_file, "r") as yaml_file:
-        yaml_dict = yaml.load(yaml_file, Loader=yaml.FullLoader)
-
-    return yaml_dict
 
 def feature_list_generator(feature_conf):
     feature_dict = {}
@@ -42,7 +15,11 @@ def feature_list_generator(feature_conf):
         feature_conf = feature_conf.feature_dict
         for item in feature_conf.keys():
             item = feature_conf[item]
-            item_dict = {"name": item.name, "index": item.index, "dtype": item.dtype, "ftype": item.ftype, "used": item.used}
+            item_dict = {"name": item.name,
+                         "index": item.index,
+                         "dtype": item.dtype,
+                         "ftype": item.ftype,
+                         "used": item.used}
             feature_dict[item.name] = item_dict
 
     def get_item(dict_key):
@@ -65,7 +42,11 @@ def feature_list_selector(feature_conf: Any, feature_indexes: List[int]):
         feature_conf = feature_conf.feature_dict
         for item in feature_conf.keys():
             item = feature_conf[item]
-            item_dict = {"name": item.name, "index": item.index, "dtype": item.dtype, "ftype": item.ftype, "used": item.used}
+            item_dict = {"name": item.name,
+                         "index": item.index,
+                         "dtype": item.dtype,
+                         "ftype": item.ftype,
+                         "used": item.used}
             feature_dict[item.name] = item_dict
 
     def get_item(dict_key):
@@ -88,7 +69,7 @@ def feature_list_selector(feature_conf: Any, feature_indexes: List[int]):
 
     return feature_list
 
-def feature_index_generator(feature_conf):
+def categorical_name_generator(feature_conf: Any):
     feature_dict = {}
     if isinstance(feature_conf, dict):
         feature_dict = feature_conf
@@ -97,7 +78,11 @@ def feature_index_generator(feature_conf):
         feature_conf = feature_conf.feature_dict
         for item in feature_conf.keys():
             item = feature_conf[item]
-            item_dict = {"name": item.name, "index": item.index, "dtype": item.dtype, "ftype": item.ftype, "used": item.used}
+            item_dict = {"name": item.name,
+                         "index": item.index,
+                         "dtype": item.dtype,
+                         "ftype": item.ftype,
+                         "used": item.used}
             feature_dict[item.name] = item_dict
 
     def get_item(dict_key):
@@ -106,6 +91,7 @@ def feature_index_generator(feature_conf):
     feature_list = []
     for item in feature_dict.keys():
         if feature_dict[item]["used"] is True:
-            feature_list.append(get_item(item))
-    feature_list.sort()
+            if feature_dict[item]["ftype"] == "category" or feature_dict[item]["ftype"] == "bool":
+                feature_list.append(item)
+    feature_list.sort(key=get_item)
     return feature_list

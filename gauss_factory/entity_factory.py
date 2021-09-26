@@ -13,9 +13,12 @@ from entity.feature_configuration.feature_config import FeatureConf
 from entity.model.gbdt import GaussLightgbm
 from entity.model.multiprocess_gbdt import MultiprocessGaussLightgbm
 from entity.model.linear_models import GaussLinearModels
-from entity.model.dnn_model import GaussNN
 from entity.metrics.udf_metric import AUC
-from entity.metrics.udf_metric import NNAUC
+from entity.metrics.udf_metric import BinaryF1
+from entity.metrics.udf_metric import MulticlassF1
+from entity.metrics.udf_metric import MSE
+from entity.losses.udf_loss import MSELoss
+from entity.losses.udf_loss import BinaryLogLoss
 
 """
 This class will be used in local_pipeline
@@ -33,72 +36,31 @@ class EntityFactory(AbstractGauss):
         elif entity_name.lower() == "feature_configure":
             # parameters: name: str, file_path: str
             return FeatureConf(**params)
-        elif entity_name.lower() == "lightgbm":
-            # parameters: name: str, model_path: str, task_type: str, train_flag: str
-            return GaussLightgbm(**params)
-        elif entity_name.lower() == "multiprocess_lightgbm":
-            # Parameters of this entity is same as "lightgbm", and it's used in multiprocess
-            return MultiprocessGaussLightgbm(**params)
         elif entity_name.lower() == "auc":
             # parameters: name: str, label_name: str
             return AUC(**params)
-        elif entity_name.lower() == "lr":
-            return GaussLinearModels(**params)
-        elif entity_name.lower() == "multiprocess_lr":
-            return GaussLinearModels(**params)
-        elif entity_name.lower() == "dnn":
-            return GaussNN(**params)
-        return None
-
-    def get_component(self, component_name: str):
-        return None
-
-# This class will be used in inner gauss
-class MetricsFactory(AbstractGauss):
-    def get_entity(self, entity_name: str, **params):
-        if entity_name.lower() == "auc":
+        elif entity_name.lower() == "binary_f1":
             # parameters: name: str, label_name: str
-            return AUC(**params)
-        elif entity_name.lower() == "nnauc":
-            return NNAUC(**params)
-        else:
-            raise NotImplementedError
-            
-    def get_component(self, component_name: str):
-        pass
-
-
-# This class will be used in inner gauss
-class ModelFactory(AbstractGauss):
-    def get_entity(self, entity_name: str, **params):
-        if entity_name.lower() == "lightgbm":
+            return BinaryF1(**params)
+        elif entity_name.lower() == "multiclass_f1":
+            return MulticlassF1(**params)
+        elif entity_name.lower() == "mse":
+            return MSE(**params)
+        elif entity_name.lower() == "mse_loss":
+            return MSELoss(**params)
+        elif entity_name.lower() == "binary_logloss":
+            return BinaryLogLoss(**params)
+        elif entity_name.lower() == "lightgbm":
             # parameters: name: str, label_name: str
             return GaussLightgbm(**params)
-        if entity_name.lower() == "multiprocess_lightgbm":
+        elif entity_name.lower() == "multiprocess_lightgbm":
             return MultiprocessGaussLightgbm(**params)
         elif entity_name.lower() == "lr":
             return GaussLinearModels(**params)
         elif entity_name.lower() == "multiprocess_lr":
             return GaussLinearModels(**params)
-        return None
+
+        raise ValueError("Entity factory can not construct entity by name: %s.", entity_name)
 
     def get_component(self, component_name: str):
-        pass
-
-
-# This class will be used in inner gauss
-class StaticModelFactory(AbstractGauss):
-    def get_entity(self, entity_name: str):
-        if entity_name.lower() == "lightgbm":
-            # parameters: name: str, label_name: str
-            return GaussLightgbm
-        if entity_name.lower() == "multiprocess_lightgbm":
-            return MultiprocessGaussLightgbm
-        elif entity_name.lower() == "lr":
-            return GaussLinearModels
-        elif entity_name.lower() == "multiprocess_lr":
-            return GaussLinearModels
         return None
-
-    def get_component(self, component_name: str):
-        pass

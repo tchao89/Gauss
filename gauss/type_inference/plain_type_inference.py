@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic Inc. All rights reserved.
-# Authors: Lab
+"""
+-*- coding: utf-8 -*-
+
+Copyright (c) 2020, Citic Inc. All rights reserved.
+Authors: Lab
+"""
 import re
 import copy
-
-from utils.Logger import logger
-from utils.common_component import yaml_write, yaml_read
 
 import numpy as np
 import pandas as pd
@@ -14,6 +13,11 @@ import pandas as pd
 from entity.dataset.base_dataset import BaseDataset
 from gauss.type_inference.base_type_inference import BaseTypeInference
 from entity.feature_configuration.feature_config import FeatureItemConf, FeatureConf
+
+from utils.Logger import logger
+from utils.constant_values import ConstantValues
+from utils.yaml_exec import yaml_read
+from utils.yaml_exec import yaml_write
 
 
 class PlainTypeInference(BaseTypeInference):
@@ -41,7 +45,9 @@ class PlainTypeInference(BaseTypeInference):
             final_file_prefix=params["final_file_prefix"]
         )
 
-        assert params["task_name"] in ["regression", "classification"]
+        assert params[ConstantValues.task_name] in [ConstantValues.binary_classification,
+                                                    ConstantValues.multiclass_classification,
+                                                    ConstantValues.regression]
 
         self._task_name = params["task_name"]
         self.ftype_list = []
@@ -51,7 +57,7 @@ class PlainTypeInference(BaseTypeInference):
         self.dtype_threshold = 0.95
         self.categorical_threshold = 0.01
 
-        if params["source_file_path"] != "null":
+        if params["source_file_path"] is not None:
             self.init_feature_configure = FeatureConf(name="source feature path", file_path=params["source_file_path"])
             self.init_feature_configure.parse(method="user")
         else:
@@ -68,9 +74,11 @@ class PlainTypeInference(BaseTypeInference):
 
         self.target_check(dataset=entity["train_dataset"])
 
-        self._check_init_final_conf()
+        # self._check_init_final_conf()
         self.final_configure_generation()
-        return self.final_feature_configure
+
+    def _increment_run(self, **entity):
+        self._predict_run(**entity)
 
     def _predict_run(self, **entity):
         # just detect error in test dataset.
@@ -206,14 +214,17 @@ class PlainTypeInference(BaseTypeInference):
         # check if target columns is illegal.
         for label_index, label in enumerate(target):
 
-            if self._task_name == 'regression':
+            if self._task_name == ConstantValues.regression:
                 assert "float" in str(target[label].dtypes) and target[label].isna().sum() == 0
 
-            if self._task_name == 'classification':
-                assert "int" in str(target[label].dtypes)
+            if self._task_name == ConstantValues.binary_classification:
+                if "float" in str(target[label].dtypes):
+                    target[label] = target[label].astype("int64")
+                assert "int" in str(target[label].dtypes) or "object" in str(target[label].dtypes)
 
     def _check_init_final_conf(self):
-        assert self.init_feature_configure is not None
+        if self.init_feature_configure is None:
+            return
 
         for item in self.init_feature_configure.feature_dict.items():
             if self.final_feature_configure.feature_dict.get(item[0]):

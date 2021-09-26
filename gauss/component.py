@@ -10,6 +10,8 @@ from __future__ import division
 from __future__ import print_function
 import abc
 
+from utils.constant_values import ConstantValues
+
 
 class Component(metaclass=abc.ABCMeta):
     """Base class for a component of ML workflow, such as feature generation, feature selector
@@ -28,7 +30,9 @@ class Component(metaclass=abc.ABCMeta):
         :param name: The name of the Component.
         :param train_flag: The flag of train or inference statues of current workflow
         """
-        assert task_name in ["classification", "regression"]
+        assert task_name in [ConstantValues.binary_classification,
+                             ConstantValues.multiclass_classification,
+                             ConstantValues.regression]
 
         self._task_name = task_name
         self._name = name
@@ -72,10 +76,12 @@ class Component(metaclass=abc.ABCMeta):
         :param entity:
         :return:
         """
-        if self._train_flag:
+        if self._train_flag == ConstantValues.train:
             self._train_run(**entity)
-        else:
+        if self._train_flag == ConstantValues.inference:
             self._predict_run(**entity)
+        if self._train_flag == ConstantValues.increment:
+            self._increment_run(**entity)
 
     @abc.abstractmethod
     def _train_run(self, **entity):
@@ -83,4 +89,8 @@ class Component(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _predict_run(self, **entity):
+        pass
+
+    @abc.abstractmethod
+    def _increment_run(self, **entity):
         pass
