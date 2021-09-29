@@ -132,3 +132,21 @@ class BaseNetwork(metaclass=abc.ABCMeta):
                               if key in self.serve_inputs]
         batch_size = tf.reduce_max(batch_size_tensors)
         return batch_size
+
+    def _create_activation_func(self, name):
+        """Return an activation function by given name.
+
+        Current supported activation function: `relu`, `leaky_relu`, 
+        and `selu`. 
+        """
+        if name == "relu":
+            return tf.nn.relu
+        elif name == "leaky_relu":
+            return tf.nn.leaky_relu
+        elif name == "selu":
+            return tf.nn.selu
+        else:
+            raise NotImplementedError(
+                "Not supported activation function."
+            )
+

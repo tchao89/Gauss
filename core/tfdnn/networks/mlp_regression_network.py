@@ -27,7 +27,7 @@ class MlpRegNetwork(BaseNetwork):
         self._loss = loss
         self._hidden_sizes = hidden_sizes
         self._scope_name = scope_name
-        self._activation = self._get_activation_func(activation)
+        self._activation = self._create_activation_func(activation)
 
     def _train_fn(self, example):
         with tf.compat.v1.variable_scope(self._scope_name, reuse=tf.compat.v1.AUTO_REUSE):
@@ -65,13 +65,3 @@ class MlpRegNetwork(BaseNetwork):
 
     def _get_serve_inputs(self):
         return self._numerical_features + self._categorical_features
-
-    def _get_activation_func(self, name):
-        if name == "relu":
-            return tf.nn.relu
-        elif name == "leaky_relu":
-            return tf.nn.leaky_relu
-        elif name == "selu":
-            return tf.nn.selu
-        else:
-            raise("Not supported activation function.")
