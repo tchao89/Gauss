@@ -8,20 +8,23 @@ import gc
 import copy
 import shutil
 
+import tensorflow as tf
+
 from entity.model.model import ModelWrapper
+from entity.dataset.tf_plain_dataset import TFPlainDataset
+from entity.feature_configuration.feature_config import FeatureConf 
 from core.tfdnn.trainers.trainer import Trainer
 from core.tfdnn.evaluators.evaluator import Evaluator
 from core.tfdnn.evaluators.predictor import Predictor
 from core.tfdnn.networks.mlp_network import MlpNetwork
-from entity.dataset.tf_plain_dataset import TFPlainDataset
+from core.tfdnn.networks.mlp_regression_network import MlpRegNetwork
 from core.tfdnn.transforms.numerical_transform import NumericalTransform
 from core.tfdnn.transforms.categorical_transform import CategoricalTransform
 from core.tfdnn.statistics_gens.dataset_statistics_gen import DatasetStatisticsGen
 from core.tfdnn.statistics_gens.external_statistics_gen import ExternalStatisticsGen
-from utils.common_component import mkdir
-from utils.common_component import feature_list_generator
-from gauss_factory.loss_factory import LossFunctionFactory
-
+from utils.base import mkdir
+from utils.feature_name_exec import feature_list_generator
+from core.tfdnn.factory.loss_factory import LossFunctionFactory 
 
 class GaussNN(ModelWrapper):
     """Multi layer perceptron neural network wrapper.
@@ -33,24 +36,26 @@ class GaussNN(ModelWrapper):
         """"""
         super(GaussNN, self).__init__(
             name=params["name"],
-            model_path=params["model_path"],
-            model_config_root=params["model_config_root"],
-            feature_config_root=params["feature_config_root"],
+            model_root_path=params["model_root_path"],
             task_name=params["task_name"],
             train_flag=params["train_flag"],
             )
 
-        self._loss_name=params["loss_name"]
-        self._model_root = params["model_root"]
-        self.model_file_name = params["model_root"] + "/" + self.name + ".txt"
+        self._loss_name = params["loss_func"]
+        self.model_file_name = self._model_root_path + "/" + self.name + ".txt"
         self.model_config_file_name = self._model_config_root + "/" + self.name + ".model_conf.yaml"
         self.feature_config_file_name = self._feature_config_root + "/" + self.name + ".final.yaml"
 
-        self._save_statistics_filepath = self._model_root + "/statistics/"
-        self._save_checkpoints_dir = self._model_root + "/checkpoint/"
-        self._restore_checkpoint_dir = self._model_root + "/restore_checkpoint/"
-        self._save_tensorboard_logdir = self._model_root + "/tensorboard_logdir/"
-        self._save_model_dir = self._model_root + "/saved_model/"
+        self._save_statistics_filepath = os.path.join(
+            self._model_root_path, "statistics")
+        self._save_checkpoints_dir = os.path.join(
+            self._model_root_path, "checkpoint")
+        self._restore_checkpoint_dir = os.path.join(
+            self._model_root_path, "restore_checkpoint")
+        self._save_tensorboard_logdir = os.path.join(
+            self._model_root_path, "tensorboard_logdir")
+        self._save_model_dir = os.path.join(
+            self._model_root_path, "saved_model")
         
         self._model_params = {}
         self._categorical_features = None
@@ -74,31 +79,44 @@ class GaussNN(ModelWrapper):
     
 
     @property
-    def val_metrics(self):
+    def val_metric(self):
+        return self._metrics.metrics_result
+
+    @property
+    def val_best_metric_result(self):
         return self._metrics.metrics_result
     
-    
     def update_feature_conf(self, feature_conf):
-        """Select features used in current model before 'build()'.
+        """Select features using in current model before 'dataset.build()'.
 
         Select features using in current model and classify them 
         to categorical or numerical. 'feature_conf' is the description
-        object of whole features, property 'used' in them will decided whether
-        to keep the feature, and 'dtype' can give a hint for classification
+        object of all features, property 'used' in conf will decided whether
+        to keep the feature or not, and features will be classified by it's 
+        `dtype` mentioned in config.
         """
 
-        self._feature_conf = feature_conf
-        self._feature_list = feature_list_generator(feature_conf=self._feature_conf)
-        self._categorical_features, self._numerical_features = self._cate_num_split(configs=self._feature_conf)
+        # self._feature_conf = feature_conf
+        self._feature_list = feature_list_generator(feature_conf=feature_conf)
+        self._categorical_features, self._numerical_features = \
+            self._cate_num_split(feature_conf=feature_conf)
 
     def _cate_num_split(self, feature_conf):
-        configs = feature_conf.feature_dict
+        if isinstance(feature_conf, FeatureConf):
+            configs = feature_conf.feature_dict
+        elif isinstance(feature_conf, dict):
+            configs = feature_conf
+        else:
+            raise AttributeError(
+                "feature_conf can only support `dict` or `FeatureConf`."
+                )
         categorical_features, numerical_features = [], []
-        for fea, info in configs.items():
-            if info["ftype"] != "numerical":
-                categorical_features.append(fea)
-            else:
-                numerical_features.append(fea)
+        for name, info in configs.items():
+            if name in self._feature_list:
+                if info["ftype"] != "numerical":
+                    categorical_features.append(name)
+                else:
+                    numerical_features.append(name)
         return categorical_features, numerical_features
         
     def train_init(self, **entity):
@@ -150,14 +168,16 @@ class GaussNN(ModelWrapper):
             feature_names=self._numerical_features
         )
         Loss = LossFunctionFactory.get_loss_function(func_name=self._loss_name)
-        self._network = MlpNetwork(
+        self._network = MlpRegNetwork(
             categorical_features=self._categorical_features,
             numerical_features=self._numerical_features,
+            task_name=self._task_name,
+            activation="leaky_relu",
             hidden_sizes=self._model_params["hidden_sizes"],
             loss=Loss(label_name=train_dataset.target_name)
         )
         # Phase 4. Create Evaluator and Trainer ----------------------------
-        self._metrics = entity["metrics"] 
+        self._metrics = entity["metric"]
         metrics_wrapper = { 
             self._metrics.name: self._metrics
         }
@@ -180,6 +200,7 @@ class GaussNN(ModelWrapper):
             save_checkpoints_dir=self._save_checkpoints_dir,
             tensorboard_logdir=self._save_tensorboard_logdir
         )
+        print(tf.trainable_variables)
         
     def inference_init(self, **entity):
         """Initialize calculation graph and load 'tf.Variables' to graph for
@@ -212,6 +233,7 @@ class GaussNN(ModelWrapper):
         self._network = MlpNetwork(
             categorical_features=self._categorical_features,
             numerical_features=self._numerical_features,
+            task_name=self._task_name,
             hidden_sizes=self._model_params["hidden_sizes"],
         )
         if not self._train_flag:
@@ -234,7 +256,7 @@ class GaussNN(ModelWrapper):
 
     def eval(self, **entity):
         if self._train_flag:
-            print(self._metrics.metrics_result)
+            print("Evaluation result:", self._metrics.metrics_result)
             return self._metrics.metrics_result
         else:
             self.inference_init(**entity)
@@ -261,11 +283,6 @@ class GaussNN(ModelWrapper):
         self._numerical_features = copy.deepcopy(self._best_numerical_features)
 
     def preprocess(self, dataset):
-        """
-        This method is used to implement Normalization, Standardization, Ont hot encoding which need
-        self._train_flag parameters, and this operator needs model_config dict.
-        :return: None
-        """
         dataset = TFPlainDataset(
             name="tf_dataset",
             dataset=dataset,
@@ -322,7 +339,7 @@ class GaussNN(ModelWrapper):
 
     def _reset_tf_graph(self):
         import tensorflow as tf
-        tf.reset_default_graph()
+        tf.compat.v1.reset_default_graph()
 
     def model_save(self):
         pass
@@ -352,4 +369,13 @@ class GaussNN(ModelWrapper):
         pass
 
     def _initialize_model(self):
+        pass
+
+    def _eval_func(self):
+        pass
+
+    def _loss_func(self):
+        pass
+
+    def binary_train(self):
         pass

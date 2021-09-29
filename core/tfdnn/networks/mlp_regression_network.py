@@ -7,17 +7,17 @@ from __future__ import division
 from __future__ import absolute_import
 
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
 
 from core.tfdnn.networks.base_network import BaseNetwork
 
 
-class MlpNetwork(BaseNetwork):
+class MlpRegNetwork(BaseNetwork):
 
     def __init__(self,
                  categorical_features,
                  numerical_features,
                  task_name,
+                 activation,
                  loss=None,
                  hidden_sizes=[1024, 512, 512],
                  scope_name="mlp_network"):
@@ -27,23 +27,23 @@ class MlpNetwork(BaseNetwork):
         self._loss = loss
         self._hidden_sizes = hidden_sizes
         self._scope_name = scope_name
+        self._activation = self._get_activation_func(activation)
 
     def _train_fn(self, example):
         with tf.compat.v1.variable_scope(self._scope_name, reuse=tf.compat.v1.AUTO_REUSE):
-            logits = self._build_graph(example)
+            logits = self._build_graph(example, training=True)
             loss = self._loss.loss_fn(logits, example)
             return loss
 
     def _eval_fn(self, example):
         with tf.compat.v1.variable_scope(self._scope_name, reuse=tf.compat.v1.AUTO_REUSE):
             logits = self._build_graph(example)
-            outputs = tf.sigmoid(logits)
-            return outputs
+            return logits
 
     def _serve_fn(self, example):
         return self._eval_fn(example)
 
-    def _build_graph(self, inputs):
+    def _build_graph(self, inputs, training=False):
         categorical_part = tf.concat(
             [tf.squeeze(inputs[name], axis=1) for name in self._categorical_features],
             axis=1,
@@ -58,8 +58,20 @@ class MlpNetwork(BaseNetwork):
                 activation=self._activation,
                 name="fc_" + str(i)
             )
+            if i != len(self._hidden_sizes)-1:
+                hidden = tf.layers.batch_normalization(hidden, training=training)
         outputs = tf.layers.dense(inputs=hidden, units=1, name="logits")
         return outputs
 
     def _get_serve_inputs(self):
         return self._numerical_features + self._categorical_features
+
+    def _get_activation_func(self, name):
+        if name == "relu":
+            return tf.nn.relu
+        elif name == "leaky_relu":
+            return tf.nn.leaky_relu
+        elif name == "selu":
+            return tf.nn.selu
+        else:
+            raise("Not supported activation function.")

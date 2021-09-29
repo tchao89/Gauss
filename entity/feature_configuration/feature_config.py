@@ -9,7 +9,8 @@ import yaml
 
 from entity.entity import Entity
 from utils.bunch import Bunch
-from utils.common_component import yaml_read, yaml_write
+from utils.yaml_exec import yaml_read
+from utils.yaml_exec import yaml_write
 
 
 class FeatureItemConf(object):
@@ -23,8 +24,10 @@ class FeatureItemConf(object):
         self._dtype = dtype
         self._index = index
         self._size = size
-        self._ftype = ftype
-        self._used = True if used is None else used
+        if used is None:
+            self._used = True
+        else:
+            self._used = used
 
         if default_value is None:
             if dtype == "string" or dtype == "date":
@@ -34,12 +37,7 @@ class FeatureItemConf(object):
         else:
             self.default_value = default_value
 
-    def __repr__(self):
-        res = "<index: {index}, dtype: {dtype}, ftype: {ftype}>".format(
-            name=self._name, index=self._index, dtype=self._dtype, ftype=self._ftype
-        )
-        return res
-
+        self._ftype = ftype
 
     @property
     def name(self):
@@ -89,25 +87,18 @@ class FeatureItemConf(object):
     def used(self, used: bool):
         self._used = used
 
-
 class FeatureConf(Entity):
     def __init__(self, **params):
         super(FeatureConf, self).__init__(
             name=params["name"],
         )
 
+        # yaml file path
         self._file_path = params.get("file_path")
         self._feature_dict = Bunch()
 
     def __repr__(self):
-        res = ""
-        for k, v in self._feature_dict.items():
-            line = "{name}: \t{info}\n".format(
-                name=k,
-                info=v
-            )
-            res += line
-        return res
+        pass
 
     def parse(self, method=None):
         assert method in ["user", "system"]
@@ -123,14 +114,13 @@ class FeatureConf(Entity):
                 if item[1]['size'] != 1:
                     raise ValueError("Size of each feature must be 1.")
                 else:
-                    name = item[0]
-                    info = item[1]
-                    item_configure = FeatureItemConf(name=name, dtype=info['dtype'], index=info['index'], size=info['size'])
-                    self._feature_dict[name] = item_configure
+                    item_configure = FeatureItemConf(name=item[0], dtype=item[1]['dtype'], index=item[1]['index'], size=item[1]['size'])
+                    self._feature_dict[item[0]] = item_configure
 
             if len(list(set(init_conf['transforms']['categorical_features']))) != len(init_conf['transforms']['categorical_features'])\
                     or len(list(set(init_conf['transforms']['numerical_features']))) != len(init_conf['transforms']['numerical_features'])\
                     or len(list(set(init_conf['transforms']['bool_features']))) != len(init_conf['transforms']['bool_features']):
+
                 raise ValueError("Duplicate keys in transformers.")
 
             if init_conf['transforms']['categorical_features'] is not None:
@@ -169,20 +159,26 @@ class FeatureConf(Entity):
                         item_configure.ftype = "datetime"
                         self._feature_dict[item] = item_configure
         else:
+            self._feature_dict = Bunch()
             feature_dict = yaml_read(yaml_file=self._file_path)
 
-            for fea_name in feature_dict.keys():
-                feature_item = feature_dict[fea_name]
+            for key in feature_dict.keys():
+                feature_item = feature_dict[key]
                 item_configure = FeatureItemConf(name=feature_item["name"],
                                                  dtype=feature_item["dtype"],
                                                  ftype=feature_item["ftype"],
                                                  index=feature_item["index"],
                                                  used=feature_item["used"])
-                self._feature_dict[fea_name] = item_configure
+
+                self._feature_dict[key] = item_configure
             return self
 
     def add_item_type(self, column_name: str, feature_item_conf: FeatureItemConf):
         self._feature_dict[column_name] = feature_item_conf
+
+    @property
+    def feature_dict(self):
+        return self._feature_dict
 
     def reset_feature_type(self, key, ftype):
         assert (key in self._feature_dict)
@@ -194,13 +190,8 @@ class FeatureConf(Entity):
 
         feature_dict = self._feature_dict
         for item_conf in feature_dict.keys():
-            item_dict = {
-                "name": item_conf.name, 
-                "dtype": item_conf.dtype, 
-                "ftype": item_conf.ftype,
-                "index": item_conf.index, 
-                "used": item_conf.used
-                }
+            item_dict = {"name": item_conf.name, "dtype": item_conf.dtype, "ftype": item_conf.ftype,
+                         "index": item_conf.index, "used": item_conf.used}
             features[item_conf.name] = item_dict
         yaml_write(yaml_dict=features, yaml_file=save_path)
 
@@ -215,11 +206,6 @@ class FeatureConf(Entity):
                 self._feature_dict[feature].used = False
             else:
                 assert self._feature_dict[feature].used is True
-
-
-    @property
-    def feature_dict(self):
-        return self._feature_dict
 
     @property
     def file_path(self):

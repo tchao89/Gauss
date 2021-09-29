@@ -124,13 +124,18 @@ class BaseMetric(Entity, ABC):
         """
         pass
 
-    @abc.abstractmethod
-    def metric_result(self):
-        """
+    # @abc.abstractmethod
+    # def metric_result(self):
+    #     """
 
-        :return: MetricResult object for this BaseMetric object.
-        """
-        pass
+    #     :return: MetricResult object for this BaseMetric object.
+    #     """
+    #     pass
+
+    @property
+    def metric_result(self):
+        assert self._metric_result is not None
+        return self._metric_result
 
     @property
     def label_name(self):
@@ -139,3 +144,7 @@ class BaseMetric(Entity, ABC):
     @label_name.setter
     def label_name(self, label_name: str):
         self._label_name = label_name
+
+    @property
+    def required_label_names(self):
+        return self._label_name

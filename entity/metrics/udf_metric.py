@@ -11,7 +11,10 @@ import numpy as np
 from icecream import ic
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import f1_score
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import (
+    mean_squared_error,
+    r2_score
+)
 
 from entity.metrics.base_metric import BaseMetric
 from entity.metrics.base_metric import MetricResult
@@ -68,16 +71,6 @@ class AUC(BaseMetric):
                                                optimize_mode=self._optimize_mode)
 
         return self._metric_result
-
-    @property
-    def required_label_names(self):
-        return self._label_name
-
-    @property
-    def metric_result(self):
-        assert self._metric_result is not None
-        return self._metric_result
-
 
 
 class BinaryF1(BaseMetric):
@@ -138,15 +131,6 @@ class BinaryF1(BaseMetric):
 
         return self._metric_result
 
-    @property
-    def required_label_names(self):
-        return [self._label_name]
-
-    @property
-    def metrics_result(self):
-        assert self._metrics_result is not None
-        return self._metrics_result
-
     def metric_result(self):
         pass
 
@@ -196,15 +180,6 @@ class MulticlassF1(BaseMetric):
 
         return self._metric_result
 
-    @property
-    def required_label_names(self):
-        return [self._label_name]
-
-    @property
-    def metric_result(self):
-        assert self._metric_result is not None
-        return self._metric_result
-
 
 class MSE(BaseMetric):
     """
@@ -251,11 +226,35 @@ class MSE(BaseMetric):
 
         return self._metric_result
 
-    @property
-    def required_label_names(self):
-        return self._label_name
 
-    @property
-    def metric_result(self):
-        assert self._metric_result is not None
+class RSquare(BaseMetric):
+
+    def __init__(self, **params):
+        super().__init__(
+            name=params["name"],
+            optimize_mode="minimize"
+            )
+        self._metric_result = None
+        self._label_name = params["label_name"]
+
+    def __repr__(self):
+        pass
+
+    def evaluate(self, predict: np.ndarray, labels_map: dict):
+        label = labels_map[self._label_name[0]]
+        if np.sum(label) == 0 or np.sum(label) == label.shape[0]:
+            self._metric_result = MetricResult(
+                name=self._name,
+                metric_name=self._name,
+                result=float('nan'),
+                optimize_mode=self._optimize_mode)
+        else:
+            r2 = r2_score(y_true=label, y_pred=predict)
+            self._metric_result = MetricResult(
+                name=self._name,
+                metric_name=self._name,
+                result=r2,
+                meta={'#': predict.size},
+                optimize_mode=self._optimize_mode)
         return self._metric_result
+

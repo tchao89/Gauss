@@ -75,7 +75,9 @@ class Trainer(object):
         transform_fn = self._join_pipeline(self._transform_functions)
         loss = self._train_fn(transform_fn(self._dataset.next_batch))
         global_step = tf.compat.v1.train.get_or_create_global_step()
-        train_op = optimizer.minimize(loss, global_step=global_step)
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            train_op = optimizer.minimize(loss, global_step=global_step)
         return loss, train_op, optimizer
 
     def _create_optimizer(self):
@@ -85,6 +87,8 @@ class Trainer(object):
             return tf.compat.v1.train.AdamOptimizer(learning_rate=self._learning_rate)
         elif self._optimizer_type == "lazy_adam":
             return tf.contrib.opt.LazyAdamOptimizer(learning_rate=self._learning_rate)
+        elif self._optimizer_type == "nadam":
+            return tf.contrib.opt.NadamOptimizer(learning_rate=self._learning_rate)
         else:
             raise NotImplementedError(
                 "optimizer type %s is not supported." % self._optimizer_type

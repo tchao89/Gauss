@@ -14,7 +14,7 @@ class Earlystop(object):
     or not in global trend. Considering 'delta' and 'patience' if applied.
     Once decreasing trend dismiss, 'flag' will set to False to terminate training."""
 
-    def __init__(self, patience=5, delta=0.001):
+    def __init__(self, patience=3, delta=0.001):
         """
         :param patience: number of epochs with no decreasing after 
             which trainign will be stopped.

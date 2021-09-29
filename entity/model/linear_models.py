@@ -1,7 +1,9 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic-Lab. All rights reserved.
-# Authors: citic-lab
+"""
+-*- coding: utf-8 -*-
+
+Copyright (c) 2020, Citic-Lab. All rights reserved.
+Authors: citic-lab
+"""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -19,7 +21,7 @@ from entity.model.single_process_model import SingleProcessModelWrapper
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from utils.bunch import Bunch
-from utils.common_component import mkdir
+from utils.base import mkdir
 
 
 class GaussLinearModels(SingleProcessModelWrapper):

@@ -6,13 +6,16 @@ Authors: Lab
 """
 from __future__ import annotations
 
+import os
 import abc
 
 from entity.entity import Entity
 from entity.dataset.base_dataset import BaseDataset
-from entity.metrics.base_metric import MetricResult, BaseMetric
+from entity.metrics.base_metric import BaseMetric
+from entity.metrics.base_metric import MetricResult
 
 from utils.bunch import Bunch
+from utils.constant_values import ConstantValues
 
 
 class ModelWrapper(Entity):
@@ -21,10 +24,21 @@ class ModelWrapper(Entity):
     model which doesn't use multiprocess.
     """
     def __init__(self, **params):
-        self._model_path = params["model_path"]
-        # model_config save root
-        self._model_config_root = params["model_config_root"]
-        self._feature_config_root = params["feature_config_root"]
+        self._model_root_path = params["model_root_path"]
+        self._feature_config_root = os.path.join(
+            params["model_root_path"],
+            ConstantValues.feature_configure
+        )
+
+        self._model_config_root = os.path.join(
+            params["model_root_path"],
+            "model_parameters"
+        )
+
+        self._model_save_root = os.path.join(
+            params["model_root_path"],
+            "model_save"
+        )
 
         self._task_name = params["task_name"]
         self._train_flag = params["train_flag"]
@@ -35,10 +49,11 @@ class ModelWrapper(Entity):
         self._model_config = None
 
         self._model = None
+        self._target_names = None
 
         # MetricResult object.
-        self._val_metrics_result = None
-        self._train_metrics_result = None
+        self._val_metric_result = None
+        self._train_metric_result = None
 
         self._val_loss_result = None
         self._train_loss_result = None
@@ -49,15 +64,16 @@ class ModelWrapper(Entity):
         self._feature_conf = None
         # feature list
         self._feature_list = None
+        self._categorical_list = None
 
         # Update best model and parameters.
         self._best_model = None
-        self._best_val_metrics_result = None
+        self._best_val_metric_result = None
         self._best_model_params = None
         self._best_feature_list = None
 
         # recording all metric results.
-        self.metrics_history = []
+        self.metric_history = []
 
         super().__init__(
             name=params["name"],
@@ -69,11 +85,7 @@ class ModelWrapper(Entity):
         Get best metric result in validation set.
         :return: MetricResult
         """
-        return self._best_val_metrics_result
-
-    @abc.abstractmethod
-    def _generate_sub_dataset(self, dataset: BaseDataset):
-        pass
+        return self._best_val_metric_result
 
     @abc.abstractmethod
     def _initialize_model(self):
@@ -101,25 +113,27 @@ class ModelWrapper(Entity):
         if self._best_model_params is None:
             self._best_model_params = self._model_params
 
-        if self._best_val_metrics_result is None:
-            self._best_val_metrics_result = MetricResult(
-                name=self._val_metrics_result.name,
-                result=self._val_metrics_result.result,
-                optimize_mode=self._val_metrics_result.optimize_mode
+        if self._best_val_metric_result is None:
+            self._best_val_metric_result = MetricResult(
+                name=self._val_metric_result.name,
+                metric_name=self._val_metric_result.metric_name,
+                result=self._val_metric_result.result,
+                optimize_mode=self._val_metric_result.optimize_mode
             )
 
         if self._best_feature_list is None:
             self._best_feature_list = self._feature_list
 
         # this value is used for test program.
-        self.metrics_history.append(self._val_metrics_result.result)
-        if self._best_val_metrics_result.__cmp__(self._val_metrics_result) < 0:
+        self.metric_history.append(self._val_metric_result.result)
+        if self._best_val_metric_result.__cmp__(self._val_metric_result) < 0:
             self._best_model = self._model
             self._best_model_params = self._model_params
-            self._best_val_metrics_result = MetricResult(
-                name=self._val_metrics_result.name,
-                result=self._val_metrics_result.result,
-                optimize_mode=self._val_metrics_result.optimize_mode
+            self._best_val_metric_result = MetricResult(
+                name=self._val_metric_result.name,
+                metric_name=self._val_metric_result.metric_name,
+                result=self._val_metric_result.result,
+                optimize_mode=self._val_metric_result.optimize_mode
             )
             self._best_feature_list = self._feature_list
 
@@ -143,6 +157,16 @@ class ModelWrapper(Entity):
         """
 
     @abc.abstractmethod
+    def binary_train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
+        """
+        Training model, and this method doesn't contain evaluation.
+        :param train_dataset: BaseDataset object, training dataset.
+        :param val_dataset: BaseDataset object, validation dataset.
+        :param entity: dict object, including other entity, such as Metric... etc.
+        :return:
+        """
+
+    @abc.abstractmethod
     def predict(self, infer_dataset: BaseDataset, **entity):
         """
         Predicting and get inference result.
@@ -155,13 +179,13 @@ class ModelWrapper(Entity):
     def eval(self,
              train_dataset: BaseDataset,
              val_dataset: BaseDataset,
-             metrics: BaseMetric,
+             metric: BaseMetric,
              **entity):
         """
         Evaluate after each training.
         :param train_dataset: BaseDataset object
         :param val_dataset: BaseDataset object
-        :param metrics: BaseMetric object
+        :param metric: BaseMetric object
         :param entity: dict object, including other entity object.
         :return: None
         """
@@ -191,12 +215,12 @@ class ModelWrapper(Entity):
         return self._val_loss_result
 
     @property
-    def val_metrics(self):
+    def val_metric(self):
         """
-        Get validation metrics.
+        Get validation metric.
         :return: MetricResult
         """
-        return self._val_metrics_result
+        return self._val_metric_result
 
     @property
     def feature_list(self):
@@ -290,4 +314,28 @@ class ModelWrapper(Entity):
         """
         Preprocessing in inference.
         :return: None
+        """
+
+    @abc.abstractmethod
+    def _loss_func(self, *params):
+        """
+        This method is used to customize loss function, and the
+        input parameters and return value are decided by model.
+        Usually, these parameters are needed:
+        :param y_prob: np.ndarray, the probabilities of model output.
+        :param y_true: np.ndarray, the ture label of dataset.
+        :return: this value is decided by model, and this value
+        is usually loss value, grad value or hess value.
+        """
+
+    @abc.abstractmethod
+    def _eval_func(self, *params):
+        """
+        This method is used to customize metric function and the
+        input parameters and return value are decided by model.
+        Usually, these parameters are needed:
+        :param y_prob: np.ndarray, the probabilities of model output.
+        :param y_true: np.ndarray, the ture label of dataset.
+        :return: this value is decided by model, and this value
+        is usually loss value, grad value or hess value.
         """

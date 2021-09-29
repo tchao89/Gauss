@@ -82,7 +82,7 @@ class Evaluator(object):
     def _all_required_label_names(self):
         required = set()
         for metric in self._metrics.values():
-            required.update(metric.required_label_names[0])
+            required.update(metric.required_label_names)
         return list(required)
 
     def _join_pipeline(self, map_functions):
