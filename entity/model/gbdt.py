@@ -43,7 +43,9 @@ class GaussLightgbm(SingleProcessModelWrapper):
             name=params["name"],
             model_root_path=params["model_root_path"],
             task_name=params["task_name"],
-            train_flag=params["train_flag"]
+            train_flag=params["train_flag"],
+            use_weight=params["use_weight"],
+            metric_eval_used=params["metric_eval_used"]
         )
 
         self.__model_file_name = self.name + ".txt"
@@ -82,16 +84,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
             raise ValueError("Value: (train) task name is invalid.")
 
     def inference(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
-        dataset = train_dataset.get_dataset()
-        self._check_bunch(dataset=dataset)
-        if self._task_name == ConstantValues.binary_classification:
-            pass
-        elif self._task_name == ConstantValues.multiclass_classification:
-            pass
-        elif self._task_name == ConstantValues.regression:
-            pass
-        else:
-            raise ValueError("Value: (inference) task name is invalid.")
+        pass
 
     def increment(self, increment_dataset: BaseDataset, **entity):
         dataset = increment_dataset.get_dataset()
@@ -121,17 +114,18 @@ class GaussLightgbm(SingleProcessModelWrapper):
         # dataset is a BaseDataset object, you can use get_dataset() method to get a Bunch object,
         # including data, target, feature_names, target_names, generated_feature_names.
         assert isinstance(dataset.get("data"), pd.DataFrame)
-
         if train_flag == ConstantValues.train or ConstantValues.increment:
             data_shape = dataset.get("data").shape
             label_shape = dataset.get("target").shape
             logger.info("Data shape: {}, label shape: {}".format(data_shape, label_shape))
             assert data_shape[0] == label_shape[0], "Data shape is inconsistent with label shape."
+            weight = dataset.dataset_weight["target_A"]
 
             lgb_data = lgb.Dataset(
                 data=dataset.get("data"),
                 label=dataset.get("target"),
                 categorical_feature=categorical_list,
+                weight=[weight[item] for item in dataset.get("target").values.flatten()],
                 free_raw_data=False,
                 silent=True
             )
@@ -163,6 +157,9 @@ class GaussLightgbm(SingleProcessModelWrapper):
         assert self._train_flag == ConstantValues.train
         assert self._task_name == ConstantValues.binary_classification
 
+        params = self._model_params
+        params["objective"] = "binary"
+
         if entity["loss"] is not None:
             self._loss_function = entity["loss"].loss_fn
             obj_function = self._loss_func
@@ -190,11 +187,12 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 train_label_set, train_label_num, eval_label_set, eval_label_num
             )
 
-        if entity["metric"] is not None:
+        if self._metric_eval_used and entity["metric"] is not None:
             entity["metric"].label_name = self._target_names
             self._eval_function = entity["metric"].evaluate
             eval_function = self._eval_func
         else:
+            params["metric"] = "binary_logloss"
             eval_function = None
 
         logger.info(
@@ -205,11 +203,15 @@ class GaussLightgbm(SingleProcessModelWrapper):
         )
 
         lgb_train = self.__load_data(
+            label_name=self._target_names,
             dataset=train_dataset,
+            use_weight=self._use_weight,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
-            train_flag=self._train_flag)
+            train_flag=self._train_flag,
+            task_name=self._task_name
+        )
 
         assert isinstance(lgb_train, lgb.Dataset)
         logger.info(
@@ -220,11 +222,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
         )
 
         lgb_eval = self.__load_data(
+            label_name=self._target_names,
             dataset=val_dataset,
+            use_weight=self._use_weight,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
-            train_flag=self._train_flag
+            train_flag=self._train_flag,
+            task_name=self._task_name
         )
 
         logger.info(
@@ -244,9 +249,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 "ModelParameters": self._model_params
             }
 
-            params = self._model_params
-            params["objective"] = "binary"
-            params["metric"] = "binary_logloss"
             logger.info(
                 "Start training lightgbm model, "
                 "with current memory usage: {:.2f} GiB".format(
@@ -256,9 +258,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
             num_boost_round = params.pop("num_boost_round")
             early_stopping_rounds = params.pop("early_stopping_rounds")
-
-            obj_function = None
-            eval_function = None
 
             self._model = lgb.train(
                 params=params,
@@ -289,6 +288,9 @@ class GaussLightgbm(SingleProcessModelWrapper):
                          **entity):
         assert self._train_flag == ConstantValues.train
 
+        params = self._model_params
+        params["objective"] = "multiclass"
+
         if entity["loss"] is not None:
             self._loss_function = entity["loss"].loss_fn
             obj_function = self._loss_func
@@ -310,17 +312,20 @@ class GaussLightgbm(SingleProcessModelWrapper):
         train_label_num = len(train_label_set)
         eval_label_num = len(eval_label_set)
 
+        params["num_class"] = train_label_num
+
         assert train_label_num == eval_label_num and train_label_num > 2 and eval_label_num > 2, \
             "Set of train label is: {}, length: {}, validation label is {}, length is {}, " \
             "and multiclass classification can not be used.".format(
                 train_label_set, train_label_num, val_dataset, eval_label_num
             )
 
-        if entity["metric"] is not None:
+        if self._metric_eval_used and entity["metric"] is not None:
             entity["metric"].label_name = self._target_names
             self._eval_function = entity["metric"].evaluate
             eval_function = self._eval_func
         else:
+            params["metric"] = "multi_logloss"
             eval_function = None
 
         logger.info(
@@ -331,11 +336,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
         )
 
         lgb_train = self.__load_data(
+            label_name=self._target_names,
             dataset=train_dataset,
+            use_weight=self._use_weight,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
-            train_flag=self._train_flag)
+            train_flag=self._train_flag,
+            task_name=self._task_name)
 
         assert isinstance(lgb_train, lgb.Dataset)
         logger.info(
@@ -346,11 +354,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
         )
 
         lgb_eval = self.__load_data(
+            label_name=self._target_names,
             dataset=val_dataset,
+            use_weight=self._use_weight,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
-            train_flag=self._train_flag
+            train_flag=self._train_flag,
+            task_name=self._task_name
         )
 
         logger.info(
@@ -369,10 +380,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 "ModelParameters": self._model_params
             }
 
-            params = self._model_params
-            params["objective"] = "multiclass"
-            params["metric"] = "multi_logloss"
-            params["num_class"] = train_label_num
             logger.info(
                 "Training lightgbm model with params: {}".format(params)
             )
@@ -385,9 +392,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
             num_boost_round = params.pop("num_boost_round")
             early_stopping_rounds = params.pop("early_stopping_rounds")
-
-            obj_function = None
-            eval_function = None
 
             self._model = lgb.train(
                 params=params,
@@ -418,6 +422,9 @@ class GaussLightgbm(SingleProcessModelWrapper):
                          **entity):
         assert self._task_name == ConstantValues.regression
 
+        params = self._model_params
+        params["objective"] = "regression"
+
         if entity["loss"] is not None:
             self._loss_function = entity["loss"].loss_fn
             obj_function = self._loss_func
@@ -431,12 +438,13 @@ class GaussLightgbm(SingleProcessModelWrapper):
             "Value: target_names is different between train_dataset and validation dataset."
 
         self._target_names = list(set(train_target_names).union(set(eval_target_names)))[0]
+        entity["metric"].label_name = self._target_names
 
-        if entity["metric"] is not None:
-            entity["metric"].label_name = self._target_names
+        if self._metric_eval_used and entity["metric"] is not None:
             self._eval_function = entity["metric"].evaluate
             eval_function = self._eval_func
         else:
+            params["metric"] = "mse"
             eval_function = None
 
         logger.info(
@@ -447,11 +455,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
         )
 
         lgb_train = self.__load_data(
+            label_name=self._target_names,
             dataset=train_dataset,
+            use_weight=self._use_weight,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
-            train_flag=self._train_flag)
+            train_flag=self._train_flag,
+            task_name=self._task_name)
 
         assert isinstance(lgb_train, lgb.Dataset)
         logger.info(
@@ -462,11 +473,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
         )
 
         lgb_eval = self.__load_data(
+            label_name=self._target_names,
             dataset=val_dataset,
+            use_weight=self._use_weight,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
-            train_flag=self._train_flag
+            train_flag=self._train_flag,
+            task_name=self._task_name
         )
 
         logger.info(
@@ -486,9 +500,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 "ModelParameters": self._model_params
             }
 
-            params = self._model_params
-            params["objective"] = "multiclass"
-            params["metric"] = "multi_logloss"
             logger.info(
                 "Start training lightgbm model, "
                 "with current memory usage: {:.2f} GiB".format(
@@ -498,11 +509,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
             num_boost_round = params.pop("num_boost_round")
             early_stopping_rounds = params.pop("early_stopping_rounds")
-            params["objective"] = "regression"
-            params["metric"] = "mse"
-
-            obj_function = None
-            eval_function = None
 
             self._model = lgb.train(
                 params=params,
@@ -550,6 +556,8 @@ class GaussLightgbm(SingleProcessModelWrapper):
         assert self._task_name == ConstantValues.binary_classification
 
         origin_model = lgb.Booster(model_file=model_path)
+        params = self._model_params
+        params["objective"] = "binary"
 
         if entity["loss"] is not None:
             self._loss_function = entity["loss"].loss_fn
@@ -578,11 +586,12 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 train_label_set, train_label_num, eval_label_set, eval_label_num
             )
 
-        if entity["metric"] is not None:
+        if self._metric_eval_used and entity["metric"] is not None:
             entity["metric"].label_name = self._target_names
             self._eval_function = entity["metric"].evaluate
             eval_function = self._eval_func
         else:
+            params["metric"] = "binary_logloss"
             eval_function = None
 
         logger.info(
@@ -593,11 +602,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
         )
 
         lgb_train = self.__load_data(
+            label_name=self._target_names,
             dataset=train_dataset,
+            use_weight=self._use_weight,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
-            train_flag=self._train_flag)
+            train_flag=self._train_flag,
+            task_name=self._task_name)
 
         assert isinstance(lgb_train, lgb.Dataset)
         logger.info(
@@ -608,11 +620,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
         )
 
         lgb_eval = self.__load_data(
+            label_name=self._target_names,
             dataset=val_dataset,
+            use_weight=self._use_weight,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
-            train_flag=self._train_flag
+            train_flag=self._train_flag,
+            task_name=self._task_name
         )
 
         logger.info(
@@ -632,9 +647,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 "ModelParameters": self._model_params
             }
 
-            params = self._model_params
-            params["objective"] = "binary"
-            params["metric"] = "binary_logloss"
             logger.info(
                 "Start training lightgbm model, "
                 "with current memory usage: {:.2f} GiB".format(
@@ -644,9 +656,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
             num_boost_round = params.pop("num_boost_round")
             early_stopping_rounds = params.pop("early_stopping_rounds")
-
-            obj_function = None
-            eval_function = None
 
             self._model = lgb.train(
                 params=params,
@@ -709,8 +718,9 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 train_label_set, train_label_num, val_dataset, eval_label_num
             )
 
-        if entity["metric"] is not None:
-            entity["metric"].label_name = self._target_names
+        entity["metric"].label_name = self._target_names
+
+        if self._metric_eval_used and entity["metric"] is not None:
             self._eval_function = entity["metric"].evaluate
             eval_function = self._eval_func
         else:
@@ -724,11 +734,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
         )
 
         lgb_train = self.__load_data(
+            label_name=self._target_names,
             dataset=train_dataset,
+            use_weight=self._use_weight,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
-            train_flag=self._train_flag)
+            train_flag=self._train_flag,
+            task_name=self._task_name)
 
         assert isinstance(lgb_train, lgb.Dataset)
         logger.info(
@@ -739,11 +752,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
         )
 
         lgb_eval = self.__load_data(
+            label_name=self._target_names,
             dataset=val_dataset,
+            use_weight=self._use_weight,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
-            train_flag=self._train_flag
+            train_flag=self._train_flag,
+            task_name=self._task_name
         )
 
         logger.info(
@@ -778,9 +794,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
             num_boost_round = params.pop("num_boost_round")
             early_stopping_rounds = params.pop("early_stopping_rounds")
-
-            obj_function = None
-            eval_function = None
 
             self._model = lgb.train(
                 params=params,
@@ -819,6 +832,9 @@ class GaussLightgbm(SingleProcessModelWrapper):
         model_params = yaml_read(model_params_path)
 
         self._model_params = model_params["ModelParameters"]
+        params = self._model_params
+        params["objective"] = "regression"
+
         origin_model = lgb.Booster(model_file=model_path)
 
         if entity["loss"] is not None:
@@ -829,13 +845,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
         self._target_names = increment_dataset.get_dataset().target_names
 
-        if entity["metric"] is not None:
-            entity["metric"].label_name = self._target_names
-            self._eval_function = entity["metric"].evaluate
-            eval_function = self._eval_func
-        else:
-            eval_function = None
-
         logger.info(
             "Construct lightgbm training dataset, "
             "with current memory usage: {:.2f} GiB".format(
@@ -844,11 +853,14 @@ class GaussLightgbm(SingleProcessModelWrapper):
         )
 
         lgb_train = self.__load_data(
+            label_name=self._target_names,
             dataset=increment_dataset,
+            use_weight=self._use_weight,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
-            train_flag=self._train_flag)
+            train_flag=self._train_flag,
+            task_name=self._task_name)
 
         assert isinstance(lgb_train, lgb.Dataset), \
             "Value: lgb_train should be type: lgb.Dataset, but get {}".format(
@@ -879,10 +891,8 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 "ModelParameters": self._model_params
             }
 
-            params = self._model_params
             self.__model_file_name = model_params["Name"] + ConstantValues.increment
-            params["objective"] = "regression"
-            params["metric"] = "mse"
+
             logger.info(
                 "Start training lightgbm model, "
                 "with current memory usage: {:.2f} GiB".format(
@@ -893,10 +903,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
             num_boost_round = params.pop("num_boost_round")
             if "early_stopping_rounds" in params:
                 params.pop("early_stopping_rounds")
-            params["objective"] = "regression"
-            params["metric"] = "mse"
-
-            obj_function = None
 
             self._model = lgb.train(
                 params=params,
@@ -927,6 +933,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         assert self._train_flag == ConstantValues.inference
 
         lgb_test = self.__load_data(
+            label_name=self._target_names,
             dataset=infer_dataset,
             check_bunch=self._check_bunch,
             categorical_list=self._categorical_list,
@@ -958,7 +965,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
              **entity
              ):
         """
-
+        Evaluating
         :param train_dataset: BaseDataset object, used to get training metric and loss.
         :param val_dataset: BaseDataset object, used to get validation metric and loss.
         :param metric: BaseMetric object, used to calculate metric.
@@ -1074,12 +1081,6 @@ class GaussLightgbm(SingleProcessModelWrapper):
                        self.__feature_config_file_name
                    )
                    )
-
-    def set_weight(self, **entity):
-        """
-        This method can set weight for different label.
-        :return: list
-        """
 
     def update_best(self):
         """

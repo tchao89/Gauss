@@ -80,7 +80,9 @@ class CoreRoute(Component):
             name=self._model_name,
             model_root_path=params["model_root_path"],
             train_flag=self._train_flag,
-            task_name=self._task_name
+            task_name=self._task_name,
+            use_weight=params["use_weight"],
+            metric_eval_used=params["metric_eval_used"],
         )
 
         self.model = self.create_entity(entity_name=self._model_name, **model_params)

@@ -121,6 +121,7 @@ class PreprocessRoute(Component):
                 feature_config_path=params["feature_path_dict"][ConstantValues.data_clear_feature_path],
                 final_file_path=params["feature_path_dict"][ConstantValues.label_encoder_feature_path],
                 label_encoding_configure_path=params["feature_path_dict"][ConstantValues.label_encoding_models_path],
+                dataset_weight=params["dataset_weight"],
             )
         )
 

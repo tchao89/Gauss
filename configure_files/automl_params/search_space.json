@@ -90,17 +90,5 @@
             "_type": "choice",
             "_value": [20, 50, 100]
       }
-  },
-
-  "classification": {
-    "weight": 1
-  },
-
-  "regression": {
-
-  },
-
-  "general": {
-
   }
   }

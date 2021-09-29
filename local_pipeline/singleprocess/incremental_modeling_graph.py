@@ -26,7 +26,6 @@ class IncrementModelingGraph(BaseModelingGraph):
     In this pipeline, value: train_flag will be set "increment"
     between "train", "inference" and "increment".
     """
-
     def __init__(self, name: str, **params):
         """
         :param name: string project, pipeline name
@@ -54,9 +53,9 @@ class IncrementModelingGraph(BaseModelingGraph):
         :param auto_ml_path:
         :param selector_configure_path:
         """
-        print(params)
         super().__init__(
             name=name,
+            metric_eval_used=params[ConstantValues.metric_eval_used],
             data_file_type=params[ConstantValues.data_file_type],
             work_root=params[ConstantValues.work_root],
             task_name=params[ConstantValues.task_name],
@@ -234,6 +233,7 @@ class IncrementModelingGraph(BaseModelingGraph):
             target_feature_configure_path=feature_dict[ConstantValues.final_feature_configure],
             pre_feature_configure_path=feature_dict[ConstantValues.unsupervised_feature_path],
             model_name=params.get(ConstantValues.model_name),
+            metric_eval_used=self._attributes_names.metric_eval_used,
             feature_configure_name=self._entity_names[ConstantValues.feature_configure_name],
             label_encoding_path=feature_dict[ConstantValues.label_encoding_models_path],
             metric_name=self._entity_names[ConstantValues.metric_name],
@@ -269,6 +269,10 @@ class IncrementModelingGraph(BaseModelingGraph):
 
         yaml_write(yaml_dict=yaml_dict,
                    yaml_file=join(self._work_paths["work_root"], feature_dict.pipeline_configure))
+
+    def _find_best_result(self, train_results):
+        if len(train_results) == 0:
+            raise NoResultReturnException("No model is trained successfully.")
 
     @property
     def pipeline_configure(self):

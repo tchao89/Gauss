@@ -16,6 +16,7 @@ from sklearn.datasets import load_svmlight_file
 from utils.bunch import Bunch
 from entity.dataset.base_dataset import BaseDataset
 from utils.Logger import logger
+from utils.constant_values import ConstantValues
 from utils.reduce_data import reduce_data
 
 
@@ -48,11 +49,18 @@ class PlaintextDataset(BaseDataset):
         :param target_name: A `list` containing label names in string format.
         :param memory_only: a boolean value, true for memory, false for others, default True.
         """
-        for item in ["name", "task_type", "data_pair", "data_path", "target_name", "memory_only", "data_file_type"]:
+        for item in ["name",
+                     "task_name",
+                     "data_pair",
+                     "data_path",
+                     "target_name",
+                     "memory_only",
+                     "data_file_type",
+                     "proportion"]:
             if params.get(item) is None:
                 params[item] = None
 
-        super(PlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_type"],
+        super(PlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_name"],
                                                params["target_name"], params["memory_only"])
 
         if not params["data_path"] and not params["data_pair"]:
@@ -178,7 +186,29 @@ class PlaintextDataset(BaseDataset):
 
         else:
             raise TypeError("File type can not be accepted.")
+        self.__set_proportion()
         return self._bunch
+
+    def __set_proportion(self):
+        if self._bunch is None:
+            raise ValueError("Dataset has not been loaded.")
+        if self._bunch.get("proportion"):
+            raise ValueError("Value: self._proportion must be empty.")
+        if not isinstance(self._bunch, Bunch):
+            raise AttributeError("Value: self._bunch must be type: Bunch, "
+                                 "but get {} instead.".format(type(self._bunch)))
+        target = self._bunch.target
+        target_names = self._bunch.target_names[0]
+
+        count = 0
+        proportion_dict = {}
+        label_class_dict = {}
+        for index, value in target[target_names].value_counts().iteritems():
+            proportion_dict[index] = value
+            count += 1
+        label_class_dict[target_names] = count
+        self._bunch.label_class = label_class_dict
+        self._bunch.proportion = {target_names: proportion_dict}
 
     def load_csv(self):
         target = None
@@ -279,7 +309,7 @@ class PlaintextDataset(BaseDataset):
         """
         self._val_start = self._bunch.target.shape[0]
         if self._bunch.data.shape[1] != val_dataset.get_dataset().data.shape[1]:
-            pass
+            raise ValueError("Shape of train dataset is not consistent with shape of validation dataset.")
 
         self._bunch.data = pd.concat([self._bunch.data, val_dataset.get_dataset().data], axis=0)
 
@@ -305,7 +335,7 @@ class PlaintextDataset(BaseDataset):
         assert self._bunch is not None
 
         for key in self._bunch.keys():
-            assert key in ["data", "target", "feature_names", "target_names", "generated_feature_names"]
+            assert key in ConstantValues.dataset_items
 
         if self._val_start is None:
             self._val_start = int(val_start * self._bunch.data.shape[0])
@@ -327,6 +357,9 @@ class PlaintextDataset(BaseDataset):
         if "feature_names" in self._bunch.keys():
             data_pair.target_names = self._bunch.target_names
             data_pair.feature_names = self._bunch.feature_names
+
+        data_pair.dataset_weight = self._bunch.dataset_weight
+        data_pair.proportion = self._bunch.proportion
 
         return PlaintextDataset(name="train_data",
                                 task_type="train",

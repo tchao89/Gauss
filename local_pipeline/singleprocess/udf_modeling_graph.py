@@ -57,9 +57,12 @@ class UdfModelingGraph(BaseModelingGraph):
         """
         super().__init__(
             name=name,
+            metric_eval_used=params[ConstantValues.metric_eval_used],
             data_file_type=params[ConstantValues.data_file_type],
             work_root=params[ConstantValues.work_root],
             task_name=params[ConstantValues.task_name],
+            dataset_weight=params[ConstantValues.dataset_weight],
+            use_weight=params[ConstantValues.use_weight],
             metric_name=params[ConstantValues.metric_name],
             loss_name=params[ConstantValues.loss_name],
             train_data_path=params[ConstantValues.train_data_path],
@@ -200,6 +203,7 @@ class UdfModelingGraph(BaseModelingGraph):
             data_file_type=self._global_values[ConstantValues.data_file_type],
             task_name=self._attributes_names[ConstantValues.task_name],
             train_flag=ConstantValues.train,
+            dataset_weight=self._global_values[ConstantValues.dataset_weight],
             train_data_path=self._work_paths[ConstantValues.train_data_path],
             val_data_path=self._work_paths[ConstantValues.val_data_path],
             test_data_path=None,
@@ -237,10 +241,12 @@ class UdfModelingGraph(BaseModelingGraph):
         core_chain = CoreRoute(
             name=ConstantValues.CoreRoute,
             train_flag=ConstantValues.train,
+            use_weight=self._global_values[ConstantValues.use_weight],
             model_root_path=work_model_root,
             target_feature_configure_path=feature_dict[ConstantValues.final_feature_configure],
             pre_feature_configure_path=feature_dict[ConstantValues.unsupervised_feature_path],
             model_name=params.get(ConstantValues.model_name),
+            metric_eval_used=self._attributes_names.metric_eval_used,
             feature_configure_name=self._entity_names[ConstantValues.feature_configure_name],
             label_encoding_path=feature_dict[ConstantValues.label_encoding_models_path],
             metric_name=self._entity_names[ConstantValues.metric_name],

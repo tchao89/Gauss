@@ -24,22 +24,31 @@ environ_configure = EnvironmentConfigure(work_root="/home/liangqian/Gauss/experi
 pipeline_dict = Bunch()
 # ["udf", "auto", "multi_udf"]
 pipeline_dict.mode = "udf"
+# Because udf metric using in model evaluation may reduce bad results,
+# this bool value is used to avoid this.
+pipeline_dict.metric_eval_used = False
+# if this value is true and type of dataset file is csv, "data_weight" column will be seen as weight.
+pipeline_dict.weight_column = True
 pipeline_dict.work_root = environ_configure.work_root
 # optional: ["binary_classification", "multiclass_classification", "regression"]
-pipeline_dict.task_name = "regression"
+pipeline_dict.task_name = "binary_classification"
 # optional: ["auc", "binary_f1", "multiclass_f1"]
 # This value will decided the way auto ml component chooses the best model.
-pipeline_dict.metric_name = "mse"
+pipeline_dict.metric_name = "binary_f1"
+pipeline_dict.use_weight = True
+# format: {"label_name": {label_value: weight_value, ...}}, if no label value, choose target_A, target_B, ... instead.
+# eg. {"target_A": {1: 1.9, -1: 1}}
+pipeline_dict.dataset_weight = None
 # optional: ["mse", "binary_logloss", "None"]
 # This value will customize the loss function of model, and it can be set None.
 # if None, default loss will be chosen.
 pipeline_dict.loss_name = None
 # optional: ["libsvm", "txt", "csv"]
 pipeline_dict.data_file_type = "libsvm"
-pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/eunite2001/eunite2001"
-pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/eunite2001/eunite2001.t"
+pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/a9a/a9a"
+pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/a9a/a9a.t"
 # pipeline do not need to get target names in libsvm and txt file.
-pipeline_dict.target_names = ["deposit"]
+pipeline_dict.target_names = None
 pipeline_dict.feature_configure_path = environ_configure.user_feature_path
 pipeline_dict.dataset_name = "plaindataset"
 pipeline_dict.model_zoo = ["lightgbm"]

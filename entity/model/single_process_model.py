@@ -7,6 +7,7 @@ Authors: Lab
 from __future__ import annotations
 
 import copy
+from statistics import harmonic_mean
 from abc import ABC
 
 import pandas as pd
@@ -19,6 +20,7 @@ from utils.base import get_current_memory_gb
 from utils.bunch import Bunch
 from utils.feature_name_exec import feature_list_generator
 from utils.feature_name_exec import categorical_name_generator
+from utils.constant_values import ConstantValues
 
 
 class SingleProcessModelWrapper(ModelWrapper, ABC):
@@ -31,7 +33,9 @@ class SingleProcessModelWrapper(ModelWrapper, ABC):
             name=params["name"],
             model_root_path=params["model_root_path"],
             task_name=params["task_name"],
-            train_flag=params["train_flag"]
+            train_flag=params["train_flag"],
+            metric_eval_used=params["metric_eval_used"],
+            use_weight=params["use_weight"]
         )
 
     def update_feature_conf(self, feature_conf=None):
@@ -101,17 +105,25 @@ class SingleProcessModelWrapper(ModelWrapper, ABC):
 class choose_features:
     def __init__(self, func):
         self.__load_dataset = func
+        self.__dataset_weight = None
 
     def __call__(self, *args, **kwargs):
-
         dataset = kwargs.get("dataset")
+        label_name = kwargs.get("label_name")
         check_bunch = kwargs.get("check_bunch")
         feature_list = kwargs.get("feature_list")
         train_flag = kwargs.get("train_flag")
         categorical_list = kwargs.get("categorical_list")
+        use_weight = kwargs.get("use_weight")
+        task_name = kwargs.get("task_name")
 
         data = dataset.get_dataset().data
         assert isinstance(data, pd.DataFrame)
+        assert isinstance(use_weight, bool)
+
+        if use_weight:
+            self.__set_weight(dataset=dataset, task_name=task_name)
+
         for feature in data.columns:
             if feature in categorical_list:
                 data[feature] = data[feature].astype("category")
@@ -123,7 +135,7 @@ class choose_features:
             data_pair = Bunch(
                 data=data,
                 target=target,
-                target_names=dataset.get_dataset().target_names
+                target_names=dataset.get_dataset().target_names,
             )
 
             dataset = copy.deepcopy(dataset).set_dataset(data_pair=data_pair)
@@ -153,13 +165,33 @@ class choose_features:
         if train_flag:
             return self.__load_dataset(
                 self,
-                dataset={"data": dataset.data,
-                         "target": dataset.target},
+                dataset=Bunch(data=dataset.data,
+                              target=dataset.target,
+                              label_name=label_name,
+                              dataset_weight=self.__dataset_weight),
                 train_flag=train_flag,
-                categorical_list=categorical_list
+                categorical_list=categorical_list,
             )
 
         return self.__load_dataset(
             self,
             dataset={"data": dataset.data.values},
             train_flag=train_flag)
+
+    def __set_weight(self, dataset: BaseDataset, task_name: str):
+        dataset_bunch = dataset.get_dataset()
+        proportion = dataset_bunch.proportion
+        dataset_weight = dataset_bunch.dataset_weight
+
+        if not dataset_weight:
+            if task_name == ConstantValues.binary_classification or ConstantValues.multiclass_classification:
+                dataset_weight = {}
+                for target_name, proportion_dict in proportion.items():
+                    weight = {}
+                    harmonic_value = harmonic_mean(proportion_dict.values())
+                    for label_value, label_num in proportion_dict.items():
+                        weight[label_value] = harmonic_value / label_num
+                    dataset_weight[target_name] = weight
+            else:
+                dataset_weight["target_name"] = None
+        self.__dataset_weight = dataset_weight
