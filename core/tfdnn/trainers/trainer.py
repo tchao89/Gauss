@@ -16,6 +16,19 @@ from core.tfdnn.utils.loggers import ValidateLogger
 
 
 class Trainer(object):
+    """Activating initializing and the trainer.
+
+    Parameters:
+    ----------
+    dataset: tf.data.Dataset, whole dataset for training the model.
+    validate_step: int, steps between runing validation function through whole 
+        dataset.
+    optimizer_type: str, 
+    earlystopping: bool, Wether the Early stop function activated. If True, `patience`
+        and `delta` should be provided, otherwise could be None.
+    patience: int, toralance of the epoch number when monitored metrics decreasing.
+    delta: int, float, toralance of the increasing value monitored metrics value.
+    """
 
     def __init__(self,
                  dataset,
@@ -26,8 +39,9 @@ class Trainer(object):
                  learning_rate,
                  optimizer_type="lazy_adam",
                  train_epochs=100,
-                 patience=0,
-                 delta=0,
+                 earlystopping=False,
+                 patience=None,
+                 delta=None,
                  evaluator=None,
                  save_checkpoints_dir=None,
                  restore_checkpoint_dir=None,
@@ -45,8 +59,10 @@ class Trainer(object):
         self._optimizer_type = optimizer_type
         self._validate_at_start = validate_at_start
         self._evaluator = evaluator
+        self._earlystopping = earlystopping
 
-        self._earlystop = Earlystop(patience, delta)
+        if self._earlystopping:
+            self._earlystop = Earlystop(patience, delta)
         self._valid_logger = ValidateLogger(tensorboard_logdir)
         self._train_logger = TrainLogger(self._log_steps, tensorboard_logdir)
 
@@ -113,10 +129,10 @@ class Trainer(object):
                 step += 1
                 if step % self._validate_steps == 0:
                     eval_result = self._run_validate_loop(epoch=epoch, step=step)
-            # self._evaluate_epoch()
-            self._earlystop(epoch, avg_loss)
-            if self._earlystop.flag:
-                break
+            if self._earlystopping:
+                self._earlystop(epoch, avg_loss)
+                if self._earlystop.flag:
+                    break
             self._save_checkpoint(epoch + 1)
             
     def _run_validate_loop(self, epoch, step):

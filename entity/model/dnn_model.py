@@ -16,14 +16,16 @@ from entity.feature_configuration.feature_config import FeatureConf
 from core.tfdnn.trainers.trainer import Trainer
 from core.tfdnn.evaluators.evaluator import Evaluator
 from core.tfdnn.evaluators.predictor import Predictor
-from core.tfdnn.networks.mlp_network import MlpNetwork
-from core.tfdnn.networks.mlp_regression_network import MlpRegNetwork
-from core.tfdnn.transforms.numerical_transform import NumericalTransform
+from core.tfdnn.transforms.numerical_transform import (
+    ClsNumericalTransform,
+    RegNumericalTransform
+)
 from core.tfdnn.transforms.categorical_transform import CategoricalTransform
 from core.tfdnn.statistics_gens.dataset_statistics_gen import DatasetStatisticsGen
 from core.tfdnn.statistics_gens.external_statistics_gen import ExternalStatisticsGen
 from utils.base import mkdir
 from utils.feature_name_exec import feature_list_generator
+from core.tfdnn.factory.network_factory import NetworkFactory
 from core.tfdnn.factory.loss_factory import LossFunctionFactory 
 
 class GaussNN(ModelWrapper):
@@ -163,16 +165,17 @@ class GaussNN(ModelWrapper):
             feature_names=self._categorical_features,
             embed_size=self._model_params["embed_size"],
         )
-        self._transform2 = NumericalTransform(
+        self._transform2 = RegNumericalTransform(
             statistics=self._statistics,
             feature_names=self._numerical_features
         )
         Loss = LossFunctionFactory.get_loss_function(func_name=self._loss_name)
-        self._network = MlpRegNetwork(
+        Network = NetworkFactory.get_network(task_name=self._task_name)
+        self._network = Network(
             categorical_features=self._categorical_features,
             numerical_features=self._numerical_features,
             task_name=self._task_name,
-            activation="leaky_relu",
+            activation=self._model_params["activation"],
             hidden_sizes=self._model_params["hidden_sizes"],
             loss=Loss(label_name=train_dataset.target_name)
         )
@@ -196,6 +199,7 @@ class GaussNN(ModelWrapper):
             learning_rate=self._model_params["learning_rate"],
             optimizer_type=self._model_params["optimizer_type"],
             train_epochs=self._model_params["train_epochs"],
+            earlystopping=False,
             evaluator=self._evaluator,
             save_checkpoints_dir=self._save_checkpoints_dir,
             tensorboard_logdir=self._save_tensorboard_logdir
@@ -226,11 +230,12 @@ class GaussNN(ModelWrapper):
             feature_names=self._categorical_features,
             embed_size=self._model_params["embed_size"],
         )
-        self._transform2 = NumericalTransform(
+        self._transform2 = RegNumericalTransform(
             statistics=statistics,
             feature_names=self._numerical_features
         )
-        self._network = MlpNetwork(
+        Network = NetworkFactory.get_network(task_name=self._task_name)
+        self._network = Network(
             categorical_features=self._categorical_features,
             numerical_features=self._numerical_features,
             task_name=self._task_name,

@@ -154,8 +154,8 @@ class TFPlainDataset(BaseDataset):
         return dataset
 
     def _dtype_cast(self, dataset):
-        for fea in self._categorical_features:
-            dataset.loc[:, fea] = dataset.loc[:, fea].apply(lambda x: int(x))
+        for name in self._categorical_features:
+            dataset.loc[:, name] = dataset.loc[:, name].apply(lambda x: int(x))
         return dataset
 
     def _build_raw_dataset(self, dataset) -> tf.data.Dataset:
@@ -208,4 +208,13 @@ class TFPlainDataset(BaseDataset):
         pass
 
     def load_data(self):
+        pass
+    
+    def split(self):
+        pass
+
+    def union(self):
+        pass
+
+    def set_dataset(self):
         pass

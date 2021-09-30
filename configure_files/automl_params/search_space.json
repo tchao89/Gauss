@@ -81,7 +81,7 @@
                   "_value": [0, 0.15, 0.3, 0.5, 0.8, 1]
             }
       },
-      "dnn":{
+      "dnn_reg":{
             "batch_size": {
                   "_type": "choice",
                   "_value": [1, 2, 4]
@@ -101,6 +101,40 @@
             "optimizer_type": {
                   "_type": "choice",
                   "_value": ["sgd", "adam", "lazy_adam"]
+            },
+            "loss_func": {
+                  "_type": "choice",
+                  "_value": ["MeanSquareError", "MeanAbsoluteError", "Huber"]
+            },
+            "train_epochs": {
+                  "_type": "choice",
+                  "_value": [20, 50, 100]
+            }
+      },
+      "dnn_cls":{
+            "batch_size": {
+                  "_type": "choice",
+                  "_value": [1, 2, 4]
+            },
+            "embed_size": {
+                  "_type": "choice",
+                  "_value": [1, 2, 4]
+            },
+            "hidden_sizes": {
+                  "_type": "choice",
+                  "_value": [[1024, 512, 256], [512, 256, 128], [256, 128, 64], [128, 64, 32]]
+            },
+            "learning_rate": {
+                  "_type": "uniform",
+                  "_value": [0.01, 0.0001]
+            },
+            "optimizer_type": {
+                  "_type": "choice",
+                  "_value": ["sgd", "adam", "lazy_adam"]
+            },
+            "loss_func": {
+                  "_type": "choice",
+                  "_value": ["BinaryCrossEntropy"]
             },
             "train_epochs": {
                   "_type": "choice",

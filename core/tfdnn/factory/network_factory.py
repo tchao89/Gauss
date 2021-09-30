@@ -3,8 +3,11 @@
 # Copyright (c) 2021, Citic-Lab. All rights reserved.
 # Authors: citic-lab
 
-from core.tfdnn.networks.mlp_regression_network import MlpRegNetwork
-from core.tfdnn.networks.mlp_classification_network import MlpClsNetwork
+from core.tfdnn.networks.mlp_network import (
+    MlpRegNetwork,
+    MlpClsNetwork
+)
+
 
 class NetworkFactory():
 
