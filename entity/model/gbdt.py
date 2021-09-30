@@ -44,8 +44,8 @@ class GaussLightgbm(SingleProcessModelWrapper):
             model_root_path=params["model_root_path"],
             task_name=params["task_name"],
             train_flag=params["train_flag"],
-            use_weight=params["use_weight"],
-            metric_eval_used=params["metric_eval_used"]
+            use_weight_flag=params["use_weight_flag"],
+            metric_eval_used_flag=params["metric_eval_used_flag"]
         )
 
         self.__model_file_name = self.name + ".txt"
@@ -110,22 +110,29 @@ class GaussLightgbm(SingleProcessModelWrapper):
         """
         dataset = kwargs.get("dataset")
         train_flag = kwargs.get("train_flag")
-        categorical_list = kwargs.get("categorical_list")
+
+        dataset_bunch = dataset.get_dataset()
+        categorical_list = dataset_bunch.categorical_list
         # dataset is a BaseDataset object, you can use get_dataset() method to get a Bunch object,
         # including data, target, feature_names, target_names, generated_feature_names.
-        assert isinstance(dataset.get("data"), pd.DataFrame)
+        assert isinstance(dataset_bunch.data, pd.DataFrame)
         if train_flag == ConstantValues.train or ConstantValues.increment:
-            data_shape = dataset.get("data").shape
-            label_shape = dataset.get("target").shape
+            data_shape = dataset_bunch.data.shape
+            label_shape = dataset_bunch.target.shape
             logger.info("Data shape: {}, label shape: {}".format(data_shape, label_shape))
             assert data_shape[0] == label_shape[0], "Data shape is inconsistent with label shape."
-            weight = dataset.dataset_weight["target_A"]
+
+            if dataset_bunch.dataset_weight is not None:
+                weight_dict = dataset_bunch.dataset_weight["target_A"]
+                weight = [weight_dict[item] for item in dataset_bunch.target.values.flatten()]
+            else:
+                weight = None
 
             lgb_data = lgb.Dataset(
-                data=dataset.get("data"),
-                label=dataset.get("target"),
+                data=dataset_bunch.data,
+                label=dataset_bunch.target,
                 categorical_feature=categorical_list,
-                weight=[weight[item] for item in dataset.get("target").values.flatten()],
+                weight=weight,
                 free_raw_data=False,
                 silent=True
             )
@@ -137,7 +144,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
             )
             return lgb_data
 
-        return dataset.get("data")
+        return dataset_bunch.data
 
     def _initialize_model(self):
         pass
@@ -187,7 +194,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 train_label_set, train_label_num, eval_label_set, eval_label_num
             )
 
-        if self._metric_eval_used and entity["metric"] is not None:
+        if self._metric_eval_used_flag and entity["metric"] is not None:
             entity["metric"].label_name = self._target_names
             self._eval_function = entity["metric"].evaluate
             eval_function = self._eval_func
@@ -205,7 +212,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_train = self.__load_data(
             label_name=self._target_names,
             dataset=train_dataset,
-            use_weight=self._use_weight,
+            use_weight_flag=self._use_weight_flag,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
@@ -224,7 +231,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_eval = self.__load_data(
             label_name=self._target_names,
             dataset=val_dataset,
-            use_weight=self._use_weight,
+            use_weight_flag=False,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
@@ -320,7 +327,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 train_label_set, train_label_num, val_dataset, eval_label_num
             )
 
-        if self._metric_eval_used and entity["metric"] is not None:
+        if self._metric_eval_used_flag and entity["metric"] is not None:
             entity["metric"].label_name = self._target_names
             self._eval_function = entity["metric"].evaluate
             eval_function = self._eval_func
@@ -338,7 +345,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_train = self.__load_data(
             label_name=self._target_names,
             dataset=train_dataset,
-            use_weight=self._use_weight,
+            use_weight_flag=self._use_weight_flag,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
@@ -356,7 +363,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_eval = self.__load_data(
             label_name=self._target_names,
             dataset=val_dataset,
-            use_weight=self._use_weight,
+            use_weight_flag=False,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
@@ -440,7 +447,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         self._target_names = list(set(train_target_names).union(set(eval_target_names)))[0]
         entity["metric"].label_name = self._target_names
 
-        if self._metric_eval_used and entity["metric"] is not None:
+        if self._metric_eval_used_flag and entity["metric"] is not None:
             self._eval_function = entity["metric"].evaluate
             eval_function = self._eval_func
         else:
@@ -457,7 +464,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_train = self.__load_data(
             label_name=self._target_names,
             dataset=train_dataset,
-            use_weight=self._use_weight,
+            use_weight_flag=self._use_weight_flag,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
@@ -475,7 +482,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_eval = self.__load_data(
             label_name=self._target_names,
             dataset=val_dataset,
-            use_weight=self._use_weight,
+            use_weight_flag=False,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
@@ -586,7 +593,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
                 train_label_set, train_label_num, eval_label_set, eval_label_num
             )
 
-        if self._metric_eval_used and entity["metric"] is not None:
+        if self._metric_eval_used_flag and entity["metric"] is not None:
             entity["metric"].label_name = self._target_names
             self._eval_function = entity["metric"].evaluate
             eval_function = self._eval_func
@@ -604,7 +611,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_train = self.__load_data(
             label_name=self._target_names,
             dataset=train_dataset,
-            use_weight=self._use_weight,
+            use_weight_flag=self._use_weight_flag,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
@@ -622,7 +629,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_eval = self.__load_data(
             label_name=self._target_names,
             dataset=val_dataset,
-            use_weight=self._use_weight,
+            use_weight_flag=False,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
@@ -720,7 +727,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
         entity["metric"].label_name = self._target_names
 
-        if self._metric_eval_used and entity["metric"] is not None:
+        if self._metric_eval_used_flag and entity["metric"] is not None:
             self._eval_function = entity["metric"].evaluate
             eval_function = self._eval_func
         else:
@@ -736,7 +743,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_train = self.__load_data(
             label_name=self._target_names,
             dataset=train_dataset,
-            use_weight=self._use_weight,
+            use_weight=self._use_weight_flag,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
@@ -754,7 +761,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_eval = self.__load_data(
             label_name=self._target_names,
             dataset=val_dataset,
-            use_weight=self._use_weight,
+            use_weight_flag=False,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
@@ -855,7 +862,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_train = self.__load_data(
             label_name=self._target_names,
             dataset=increment_dataset,
-            use_weight=self._use_weight,
+            use_weight=self._use_weight_flag,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,

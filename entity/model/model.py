@@ -43,9 +43,9 @@ class ModelWrapper(Entity):
         self._task_name = params["task_name"]
         self._train_flag = params["train_flag"]
 
-        assert isinstance(params["metric_eval_used"], bool)
-        self._metric_eval_used = params["metric_eval_used"]
-        self._use_weight = params["use_weight"]
+        assert isinstance(params["metric_eval_used_flag"], bool)
+        self._metric_eval_used_flag = params["metric_eval_used_flag"]
+        self._use_weight_flag = params["use_weight_flag"]
 
         # model_config is a dict containing all features and these attributes used in the model.
         # This dict will write to yaml file.

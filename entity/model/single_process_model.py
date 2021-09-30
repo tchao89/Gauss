@@ -34,8 +34,8 @@ class SingleProcessModelWrapper(ModelWrapper, ABC):
             model_root_path=params["model_root_path"],
             task_name=params["task_name"],
             train_flag=params["train_flag"],
-            metric_eval_used=params["metric_eval_used"],
-            use_weight=params["use_weight"]
+            metric_eval_used_flag=params["metric_eval_used_flag"],
+            use_weight_flag=params["use_weight_flag"]
         )
 
     def update_feature_conf(self, feature_conf=None):
@@ -114,14 +114,14 @@ class choose_features:
         feature_list = kwargs.get("feature_list")
         train_flag = kwargs.get("train_flag")
         categorical_list = kwargs.get("categorical_list")
-        use_weight = kwargs.get("use_weight")
+        use_weight_flag = kwargs.get("use_weight_flag")
         task_name = kwargs.get("task_name")
 
         data = dataset.get_dataset().data
         assert isinstance(data, pd.DataFrame)
-        assert isinstance(use_weight, bool)
+        assert isinstance(use_weight_flag, bool)
 
-        if use_weight:
+        if use_weight_flag is True:
             self.__set_weight(dataset=dataset, task_name=task_name)
 
         for feature in data.columns:
@@ -136,6 +136,8 @@ class choose_features:
                 data=data,
                 target=target,
                 target_names=dataset.get_dataset().target_names,
+                dataset_weight=self.__dataset_weight,
+                categorical_list=categorical_list
             )
 
             dataset = copy.deepcopy(dataset).set_dataset(data_pair=data_pair)
@@ -146,14 +148,14 @@ class choose_features:
             )
         )
 
-        dataset = dataset.get_dataset()
+        dataset_bunch = dataset.get_dataset()
 
         logger.info(
             "Check base dataset, with current memory usage: {:.2f} GiB".format(
                 get_current_memory_gb()["memory_usage"]
             )
         )
-        check_bunch(dataset=dataset)
+        check_bunch(dataset=dataset_bunch)
 
         logger.info(
             "Construct lgb.Dataset object in load_data method, "
@@ -163,14 +165,11 @@ class choose_features:
         )
 
         if train_flag:
+            self.__reset_params()
             return self.__load_dataset(
                 self,
-                dataset=Bunch(data=dataset.data,
-                              target=dataset.target,
-                              label_name=label_name,
-                              dataset_weight=self.__dataset_weight),
+                dataset=dataset,
                 train_flag=train_flag,
-                categorical_list=categorical_list,
             )
 
         return self.__load_dataset(
@@ -195,3 +194,6 @@ class choose_features:
             else:
                 dataset_weight["target_name"] = None
         self.__dataset_weight = dataset_weight
+
+    def __reset_params(self):
+        self.__dataset_weight = None
