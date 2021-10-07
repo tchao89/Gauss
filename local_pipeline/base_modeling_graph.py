@@ -48,6 +48,7 @@ class BaseModelingGraph:
             name=params["name"],
             task_name=params["task_name"],
             target_names=params["target_names"],
+            metric_eval_used_flag=params["metric_eval_used_flag"]
         )
 
         self._work_paths = Bunch(
@@ -77,6 +78,8 @@ class BaseModelingGraph:
         )
 
         self._global_values = Bunch(
+            dataset_weight=params["dataset_weight"],
+            use_weight_flag=params["use_weight_flag"],
             data_file_type=params["data_file_type"],
             selector_trial_num=params["selector_trial_num"],
             auto_ml_trial_num=params["auto_ml_trial_num"],

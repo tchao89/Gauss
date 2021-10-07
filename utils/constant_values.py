@@ -20,6 +20,19 @@ class ConstantValues:
     model_zoo = "model_zoo"
     feature_path_dict = "feature_path_dict"
     model_need_clear_flag = "model_need_clear_flag"
+    metric_eval_used_flag = "metric_eval_used_flag"
+    dataset_weight = "dataset_weight"
+    use_weight_flag = "use_weight_flag"
+    weight_column_flag = "weight_column_flag"
+    dataset_items = ["data",
+                     "target",
+                     "feature_names",
+                     "target_names",
+                     "generated_feature_names",
+                     "dataset_weight",
+                     "proportion",
+                     "categorical_list",
+                     "label_class",]
     # train_flag:
     train = "train"
     increment = "increment"

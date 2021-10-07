@@ -40,6 +40,7 @@ class PlainLabelEncode(BaseLabelEncode):
 
         self.__label_encoding_configure_path = params["label_encoding_configure_path"]
         self.__label_encoding = {}
+        self.__dataset_weight = params["dataset_weight"]
 
     def _train_run(self, **entity):
         assert "train_dataset" in entity.keys()
@@ -50,6 +51,7 @@ class PlainLabelEncode(BaseLabelEncode):
         logger.info("Starting label encoding, " + "with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])
         self.__encode_label(dataset=dataset)
+        self.__reset_dataset_attributes(dataset=dataset)
 
         logger.info("Label encoding serialize, " + "with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])
@@ -80,8 +82,8 @@ class PlainLabelEncode(BaseLabelEncode):
                             type(self.__feature_configure)
                         ))
 
-                if self.__feature_configure[col]['ftype'] == "category" or self.__feature_configure[col][
-                    'ftype'] == "bool":
+                if self.__feature_configure[col]['ftype'] == "category" or \
+                        self.__feature_configure[col]['ftype'] == "bool":
                     assert le_model_list.get(col)
                     le_model = le_model_list[col]
 
@@ -116,6 +118,7 @@ class PlainLabelEncode(BaseLabelEncode):
                                 col) + " has an abnormal value (unseen by label encoding): " + str(item))
 
                     target[col] = le_model.transform(target[col])
+        self.__reset_dataset_attributes(dataset=dataset)
 
     def _predict_run(self, **entity):
         assert "infer_dataset" in entity.keys()
@@ -176,6 +179,7 @@ class PlainLabelEncode(BaseLabelEncode):
                                 col) + " has an abnormal value (unseen by label encoding): " + str(item))
 
                     target[col] = le_model.transform(target[col])
+        self.__reset_dataset_attributes(dataset=dataset)
 
     def __encode_label(self, dataset: BaseDataset):
         data = dataset.get_dataset().data
@@ -206,6 +210,39 @@ class PlainLabelEncode(BaseLabelEncode):
                     get_current_memory_gb()["memory_usage"])
         reduce_data(dataframe=dataset.get_dataset().data)
 
+    def __reset_dataset_attributes(self, dataset: BaseDataset):
+        target = dataset.get_dataset().target
+        target_names = dataset.get_dataset().target_names
+
+        encoding_weight = {}
+        encoding_proportion = {}
+        if self._task_name == ConstantValues.binary_classification \
+                or self._task_name == ConstantValues.multiclass_classification:
+            for label in target_names:
+                weight = {}
+                proportion = {}
+                if self.__dataset_weight is not None:
+                    for label_value, label_weight in self.__dataset_weight[label].copy().items():
+                        """
+                        Using dict.copy() can avoid RuntimeError: dictionary changed size during iteration.
+                        """
+                        [encoding_value] = self.__label_encoding[label].transform([label_value])
+                        logger.info("Original value: {} has been encoded to value: {}".format(label_value, encoding_value))
+                        weight[encoding_value] = label_weight
+                    encoding_weight[label] = weight
+
+                for label_value, label_num in dataset.get_dataset().proportion[label].copy().items():
+                    """
+                    Using dict.copy() can avoid RuntimeError: dictionary changed size during iteration.
+                    """
+                    [encoding_value] = self.__label_encoding[label].transform([label_value])
+                    logger.info("Original value: {} has been encoded to value: {}".format(label_value,
+                                                                                          encoding_value))
+                    proportion[encoding_value] = label_num
+                encoding_proportion[label] = proportion
+            dataset.get_dataset().dataset_weight = encoding_weight
+            dataset.get_dataset().proportion = encoding_proportion
+
     def __serialize_label_encoding(self):
         # 序列化label encoding模型字典
         with shelve.open(self.__label_encoding_configure_path) as shelve_open:
@@ -216,3 +253,7 @@ class PlainLabelEncode(BaseLabelEncode):
 
     def __generate_final_configure(self):
         yaml_write(yaml_dict=self.__feature_configure, yaml_file=self.__final_file_path)
+
+    @property
+    def dataset_weight(self):
+        return self.__dataset_weight

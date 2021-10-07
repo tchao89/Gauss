@@ -20,7 +20,7 @@ class BaseDataset(Entity):
 
         super(BaseDataset, self).__init__(name=name)
 
-        assert isinstance(target_name, List) or target_name is None
+        assert isinstance(target_name, List) or target_name is None, "Value: target_name is {}".format(target_name)
 
         self._data_path = data_path
         self._target_name = target_name

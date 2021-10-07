@@ -14,7 +14,7 @@ from entity.dataset.base_dataset import BaseDataset
 from entity.feature_configuration.feature_config import FeatureConf
 from entity.model.model import ModelWrapper
 from entity.metrics.base_metric import BaseMetric, MetricResult
-from entity.losses.base_loss import BaseLoss, LossResult
+from entity.losses.base_loss import BaseLoss
 
 from utils.Logger import logger
 from utils.base import get_current_memory_gb
@@ -132,7 +132,7 @@ class TabularAutoML(BaseAutoML):
                 )
             )
 
-            tuner.update_search_space(self.__search_space.get(entity["model"].name))
+            tuner.update_search_space(search_space=self.__search_space.get(entity["model"].name))
             for trial in range(self.__trial_num):
                 self._trial_count += 1
 

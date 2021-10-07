@@ -43,6 +43,10 @@ class ModelWrapper(Entity):
         self._task_name = params["task_name"]
         self._train_flag = params["train_flag"]
 
+        assert isinstance(params["metric_eval_used_flag"], bool)
+        self._metric_eval_used_flag = params["metric_eval_used_flag"]
+        self._use_weight_flag = params["use_weight_flag"]
+
         # model_config is a dict containing all features and these attributes used in the model.
         # This dict will write to yaml file.
         # This parameters contains model parameters and preprocessing flags.
@@ -97,7 +101,7 @@ class ModelWrapper(Entity):
 
     @classmethod
     def _check_bunch(cls, dataset: Bunch):
-        keys = ["data", "target", "feature_names", "target_names", "generated_feature_names"]
+        keys = ConstantValues.dataset_items
         for key in dataset.keys():
             assert key in keys
 

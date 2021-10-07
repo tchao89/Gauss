@@ -24,6 +24,9 @@ environ_configure = EnvironmentConfigure(work_root="/home/liangqian/Gauss/experi
                                          user_feature=None)
 
 pipeline_dict = Bunch()
+# Because udf metric using in model evaluation may reduce bad results,
+# this bool value is used to avoid this.
+pipeline_dict.metric_eval_used = False
 # new work root for increment task
 pipeline_dict.work_root = environ_configure.work_root
 logger.info("work_root: %s", pipeline_dict.work_root)
