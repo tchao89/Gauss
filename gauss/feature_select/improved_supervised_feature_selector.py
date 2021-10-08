@@ -19,6 +19,7 @@ from entity.metrics.base_metric import MetricResult
 
 from gauss.feature_select.base_feature_selector import BaseFeatureSelector
 
+import core.lightgbm as lgb
 from core.nni.algorithms.feature_engineering.gradient_selector import FeatureGradientSelector
 from core.nni.algorithms.feature_engineering.gbdt_selector import GBDTSelector
 from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
@@ -122,7 +123,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
     def __load_specified_configure(self, dataset, selector_name):
         assert selector_name in ["GBDTSelector", "gradient_feature_selector"]
 
-        lgb_params = None
         if selector_name == "gradient_feature_selector":
             if self.__check_dataset(dataset.get_dataset().data):
                 # 接受默认参数列表
@@ -137,18 +137,12 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         else:
             parameters = self._default_parameters[selector_name]
 
-            assert parameters.get("lgb_params")
-            assert isinstance(parameters, dict)
-
-            lgb_params = parameters.get("lgb_params")
-            lgb_params = lgb_params.keys()
-
             # flatten dict
             parameters = self.__load_default_params(json_dict=parameters)
             search_space = self._search_space[selector_name]
             search_space = self.__load_search_space(json_dict=search_space)
 
-        return parameters, search_space, lgb_params
+        return parameters, search_space
 
     def _train_run(self, **entity):
         """
@@ -169,20 +163,16 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         assert "feature_configure" in entity.keys()
         assert "loss" in entity.keys()
 
+        feature_importance_pair = self.__feature_select(**entity)
+
         original_dataset = entity["train_dataset"]
         original_val_dataset = entity["val_dataset"]
-
-        logger.info(
-            "Loading hyperparameters and search space "
-            "for supervised selector, with current memory usage: %.2f GiB",
-            get_current_memory_gb()["memory_usage"]
-        )
-
         feature_configure = entity["feature_configure"]
-
         metric = entity["metric"]
         loss = entity["loss"]
+
         self._optimize_mode = metric.optimize_mode
+        columns = original_dataset.get_dataset().data.shape[1]
 
         # 创建自动机器学习对象
         model_tuner = entity["auto_ml"]
@@ -205,10 +195,15 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                     get_current_memory_gb()["memory_usage"]
                 )
             )
-            parameters, search_space, lgb_params = self.__load_specified_configure(
-                selector_name=model_name,
-                dataset=original_dataset
-            )
+
+            auto_ml_path = "/home/liangqian/Gauss/configure_files/improved_selector_params"
+            default_params_path = os.path.join(auto_ml_path, "default_parameters.json")
+            with open(default_params_path, 'r', encoding="utf-8") as json_file:
+                parameters = json.load(json_file)
+
+            search_space_path = os.path.join(auto_ml_path, "search_space.json")
+            with open(search_space_path, 'r', encoding="utf-8") as json_file:
+                search_space = json.load(json_file)
 
             # 更新特征选择模块的搜索空间
             logger.info(
@@ -237,19 +232,11 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 # feature selector hyper-parameters
                 parameters.update(receive_params)
 
-                if model_name == "GBDTSelector":
-                    lgb_params_dict = {}
-                    for key in parameters.keys():
-                        if key in lgb_params:
-                            lgb_params_dict[key] = parameters[key]
+                def len_features(col_ratio: float):
+                    return int(columns * col_ratio)
 
-                    parameters["lgb_params"] = lgb_params_dict
-
-                feature_list = self.__choose_features(
-                    selector_name=model_name,
-                    dataset=original_dataset,
-                    params=parameters
-                )
+                parameters["topk"] = len_features(parameters["topk"])
+                feature_list = [item[0] for item in feature_importance_pair]
                 logger.info(
                     "trial: {:d}, supervised selector training, and starting training model, "
                     "with current memory usage: {:.2f} GiB".format(
@@ -313,6 +300,64 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         else:
             assert isinstance(original_dataset.get_dataset().data, np.ndarray)
             self.multiprocess_final_configure_generation()
+
+    @classmethod
+    def __feature_select(cls, **entity):
+        train_dataset = entity["train_dataset"].get_dataset()
+        val_dataset = entity["val_dataset"].get_dataset()
+
+        train_dataset = lgb.Dataset(train_dataset.data, train_dataset.target, feature_name=train_dataset.data.columns)
+        val_dataset = lgb.Dataset(val_dataset.data, val_dataset.target, feature_name=val_dataset.data.columns)
+
+        tuner = HyperoptTuner(
+            algorithm_name="tpe",
+            optimize_mode="minimize"
+        )
+
+        auto_ml_path = "/home/liangqian/Gauss/configure_files/automl_params"
+        default_params_path = os.path.join(auto_ml_path, "default_parameters.json")
+        with open(default_params_path, 'r', encoding="utf-8") as json_file:
+            default_parameters = json.load(json_file)
+
+        search_space_path = os.path.join(auto_ml_path, "search_space.json")
+        with open(search_space_path, 'r', encoding="utf-8") as json_file:
+            search_space = json.load(json_file)
+
+        tuner.update_search_space(search_space=search_space.get("lightgbm"))
+
+        selector = None
+        for trial in range(15):
+            if default_parameters is not None:
+                params = default_parameters.get("lightgbm")
+                assert params is not None
+
+                receive_params = tuner.generate_parameters(trial)
+                params.update(receive_params)
+                params["lgb_params"]["objective"] = "binary"
+                params["lgb_params"]["metric"] = "binary_logloss"
+
+                eval_result = dict()
+
+                selector = lgb.train(params=params["lgb_params"],
+                                     train_set=train_dataset,
+                                     valid_sets=val_dataset,
+                                     num_boost_round=params["num_boost_round"],
+                                     early_stopping_rounds=params["early_stopping_rounds"],
+                                     callbacks=lgb.record_evaluation(eval_result=eval_result),
+                                     verbose_eval=False)
+
+                metric_result = min(eval_result["eval"]["logloss"])
+                tuner.receive_trial_result(trial, receive_params, metric_result)
+            else:
+                raise ValueError("Default parameters is None.")
+
+        assert isinstance(selector, lgb.Booster)
+        feature_name_list = selector.feature_name()
+        importance_list = list(selector.feature_importance())
+        feature_importance_pair = [(fe, round(im, 2)) for fe, im in zip(feature_name_list, importance_list)]
+        feature_importance_pair = sorted(feature_importance_pair, key=lambda x: x[1], reverse=True)
+
+        return feature_importance_pair
 
     def _increment_run(self, **entity):
         self._train_run(**entity)
