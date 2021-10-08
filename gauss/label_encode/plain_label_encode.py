@@ -214,12 +214,12 @@ class PlainLabelEncode(BaseLabelEncode):
         target = dataset.get_dataset().target
         target_names = dataset.get_dataset().target_names
 
+        encoding_weight = None
         encoding_proportion = {}
         if self._task_name == ConstantValues.binary_classification \
                 or self._task_name == ConstantValues.multiclass_classification:
             for label in target_names:
                 proportion = {}
-                encoding_weight = None
                 if self.__dataset_weight is not None:
                     weight = {}
                     encoding_weight = {}
@@ -242,7 +242,9 @@ class PlainLabelEncode(BaseLabelEncode):
                     proportion[encoding_value] = label_num
                 encoding_proportion[label] = proportion
 
-            dataset.get_dataset().dataset_weight = encoding_weight
+            if dataset.get_dataset().dataset_weight is None:
+                dataset.get_dataset().dataset_weight = encoding_weight
+
             dataset.get_dataset().proportion = encoding_proportion
 
     def __serialize_label_encoding(self):
