@@ -123,8 +123,11 @@ class GaussLightgbm(SingleProcessModelWrapper):
             assert data_shape[0] == label_shape[0], "Data shape is inconsistent with label shape."
 
             if dataset_bunch.dataset_weight is not None:
-                weight_dict = dataset_bunch.dataset_weight["target_A"]
-                weight = [weight_dict[item] for item in dataset_bunch.target.values.flatten()]
+                if isinstance(dataset_bunch.dataset_weight, dict):
+                    weight_dict = dataset_bunch.dataset_weight["target_A"]
+                    weight = [weight_dict[item] for item in dataset_bunch.target.values.flatten()]
+                else:
+                    weight = dataset_bunch.dataset_weight
             else:
                 weight = None
 

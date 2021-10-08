@@ -68,6 +68,9 @@ class PlaintextDataset(BaseDataset):
 
         self._data_pair = params["data_pair"]
         self.__type_doc = params["data_file_type"]
+
+        assert isinstance(params["weight_column_flag"], bool)
+        self._weight_column_flag = params["weight_column_flag"]
         # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
         # by the length of validation dataset.
@@ -126,10 +129,11 @@ class PlaintextDataset(BaseDataset):
         target = None
         feature_names = None
         target_name = None
+        weight = None
 
         if self.__type_doc == "csv":
             try:
-                data, target, feature_names, target_name = self.load_csv()
+                data, target, feature_names, target_name, weight = self.load_csv()
             except IOError:
                 logger.info("File path does not exist.")
             except KeyError:
@@ -140,7 +144,8 @@ class PlaintextDataset(BaseDataset):
             self._bunch = Bunch(data=data,
                                 target=target,
                                 target_names=target_name,
-                                feature_names=feature_names)
+                                feature_names=feature_names,
+                                dataset_weight=weight)
 
         elif self.__type_doc == 'libsvm':
             try:
@@ -152,9 +157,17 @@ class PlaintextDataset(BaseDataset):
 
             _, data, target = self._convert_data_dataframe(data=data,
                                                            target=target)
+
+            if self._weight_column_flag is True:
+                weight = data.iloc[:, -1]
+                data.drop(data.columns[-1], axis=1, inplace=True)
+            else:
+                weight = None
+
             self._bunch = Bunch(
                 data=data,
-                target=target
+                target=target,
+                dataset_weight=weight
             )
 
             self._bunch.target_names = ["target_" + string.ascii_uppercase[index]
@@ -173,9 +186,17 @@ class PlaintextDataset(BaseDataset):
 
             _, data, target = self._convert_data_dataframe(data=data,
                                                            target=target)
+
+            if self._weight_column_flag is True:
+                weight = data.iloc[:, -1]
+                data.drop(data.columns[-1], axis=1, inplace=True)
+            else:
+                weight = None
+
             self._bunch = Bunch(
                 data=data,
-                target=target
+                target=target,
+                dataset_weight=weight
             )
 
             self._bunch.target_names = ["target_" + string.ascii_uppercase[index]
@@ -225,13 +246,21 @@ class PlaintextDataset(BaseDataset):
             feature_names = data.columns
             target_name = self._target_name
             self._column_size = data.shape[1] + target.shape[1]
-        return data, target, feature_names, target_name
+
+        # there must exist a column named dataset_weight
+        if self._weight_column_flag is True:
+            weight = data[ConstantValues.dataset_weight]
+            data.drop([ConstantValues.dataset_weight], axis=1, inplace=True)
+        else:
+            weight = None
+        return data, target, feature_names, target_name, weight
 
     def load_libsvm(self):
         data, target = load_svmlight_file(self._data_path)
         data = data.toarray()
         self._column_size = len(data[0]) + 1
         self._row_size = len(data)
+
         return data, target
 
     def load_txt(self):
@@ -358,11 +387,14 @@ class PlaintextDataset(BaseDataset):
             data_pair.target_names = self._bunch.target_names
             data_pair.feature_names = self._bunch.feature_names
 
-        data_pair.dataset_weight = self._bunch.dataset_weight
+        if ConstantValues.dataset_weight in self._bunch.keys():
+            data_pair.dataset_weight = self._bunch.dataset_weight
+
         data_pair.proportion = self._bunch.proportion
 
         return PlaintextDataset(name="train_data",
                                 task_type="train",
+                                weight_column_flag=self._weight_column_flag,
                                 data_pair=data_pair)
 
     @property

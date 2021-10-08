@@ -109,7 +109,6 @@ class choose_features:
 
     def __call__(self, *args, **kwargs):
         dataset = kwargs.get("dataset")
-        label_name = kwargs.get("label_name")
         check_bunch = kwargs.get("check_bunch")
         feature_list = kwargs.get("feature_list")
         train_flag = kwargs.get("train_flag")
@@ -122,7 +121,10 @@ class choose_features:
         assert isinstance(use_weight_flag, bool)
 
         if use_weight_flag is True:
-            self.__set_weight(dataset=dataset, task_name=task_name)
+            if dataset.get_dataset().dataset_weight is None:
+                self.__set_weight(dataset=dataset, task_name=task_name)
+            else:
+                logger.info("Weight column is in dataset, weight generation method will not start.")
 
         for feature in data.columns:
             if feature in categorical_list:
@@ -139,6 +141,9 @@ class choose_features:
                 dataset_weight=self.__dataset_weight,
                 categorical_list=categorical_list
             )
+
+            if dataset.get_dataset().dataset_weight is not None:
+                data_pair.dataset_weight = dataset.get_dataset().dataset_weight
 
             dataset = copy.deepcopy(dataset).set_dataset(data_pair=data_pair)
 
@@ -172,6 +177,7 @@ class choose_features:
                 train_flag=train_flag,
             )
 
+        label_name = kwargs.get("label_name")
         return self.__load_dataset(
             self,
             dataset={"data": dataset.data.values},

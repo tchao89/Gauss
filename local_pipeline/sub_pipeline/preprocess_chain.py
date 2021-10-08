@@ -80,6 +80,7 @@ class PreprocessRoute(Component):
         self._data_file_type = params.get("data_file_type")
         self._target_names = params.get("target_names")
         self._dataset_name = params["dataset_name"]
+        self._weight_column_flag = params["weight_column_flag"]
 
         # Create component algorithms.
         logger.info("Creating type inference object.")
@@ -196,6 +197,7 @@ class PreprocessRoute(Component):
             data_path=self._train_data_path,
             data_file_type=self._data_file_type,
             target_name=self._target_names,
+            weight_column_flag=self._weight_column_flag,
             memory_only=True
         )
         logger.info("Starting loading data...")
@@ -211,6 +213,7 @@ class PreprocessRoute(Component):
                 data_path=self._val_data_path,
                 data_file_type=self._data_file_type,
                 target_name=self._target_names,
+                weight_column_flag=self._weight_column_flag,
                 memory_only=True
             )
             val_dataset = self.create_entity(

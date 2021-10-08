@@ -205,6 +205,7 @@ class UdfModelingGraph(BaseModelingGraph):
             task_name=self._attributes_names[ConstantValues.task_name],
             train_flag=ConstantValues.train,
             dataset_weight=self._global_values[ConstantValues.dataset_weight],
+            weight_column_flag=self._global_values[ConstantValues.weight_column_flag],
             train_data_path=self._work_paths[ConstantValues.train_data_path],
             val_data_path=self._work_paths[ConstantValues.val_data_path],
             test_data_path=None,

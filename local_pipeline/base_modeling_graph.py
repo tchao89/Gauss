@@ -80,6 +80,7 @@ class BaseModelingGraph:
         self._global_values = Bunch(
             dataset_weight=params["dataset_weight"],
             use_weight_flag=params["use_weight_flag"],
+            weight_column_flag=params["weight_column_flag"],
             data_file_type=params["data_file_type"],
             selector_trial_num=params["selector_trial_num"],
             auto_ml_trial_num=params["auto_ml_trial_num"],
