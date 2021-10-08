@@ -32,17 +32,16 @@ pipeline_dict.supervised_selector_mode = ["model_select", "topk_select"]
 # Because udf metric using in model evaluation may reduce bad results,
 # this bool value is used to avoid this.
 pipeline_dict.metric_eval_used_flag = False
+# modify, 最外层
+pipeline_dict.use_weight_flag = True
 # if this value is true and type of dataset file is csv, "data_weight" column will be seen as weight.
-# 第二层
-pipeline_dict.weight_column_flag = False
+pipeline_dict.weight_column_flag = True
 pipeline_dict.work_root = environ_configure.work_root
 # optional: ["binary_classification", "multiclass_classification", "regression"]
 pipeline_dict.task_name = "binary_classification"
 # optional: ["auc", "binary_f1", "multiclass_f1"]
 # This value will decided the way auto ml component chooses the best model.
 pipeline_dict.metric_name = "binary_f1"
-# modify, 最外层
-pipeline_dict.use_weight_flag = True
 # format: {"label_name": {label_value: weight_value, ...}}, if no label value, choose target_A, target_B, ... instead.
 # eg. {"target_A": {1: 1.9, -1: 1}}
 # this interface will be reserved because anyone who is good at weight setting could use it conveniently

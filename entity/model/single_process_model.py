@@ -117,6 +117,8 @@ class choose_features:
         task_name = kwargs.get("task_name")
 
         data = dataset.get_dataset().data
+        weight = dataset.get_dataset().dataset_weight
+
         assert isinstance(data, pd.DataFrame)
         assert isinstance(use_weight_flag, bool)
 
@@ -142,8 +144,9 @@ class choose_features:
                 categorical_list=categorical_list
             )
 
-            if dataset.get_dataset().dataset_weight is not None:
-                data_pair.dataset_weight = dataset.get_dataset().dataset_weight
+            if use_weight_flag is True and weight is not None:
+                assert isinstance(weight, (pd.DataFrame, pd.Series))
+                data_pair.dataset_weight = weight
 
             dataset = copy.deepcopy(dataset).set_dataset(data_pair=data_pair)
 
@@ -177,7 +180,6 @@ class choose_features:
                 train_flag=train_flag,
             )
 
-        label_name = kwargs.get("label_name")
         return self.__load_dataset(
             self,
             dataset={"data": dataset.data.values},
