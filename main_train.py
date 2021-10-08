@@ -24,12 +24,17 @@ environ_configure = EnvironmentConfigure(work_root="/home/liangqian/Gauss/experi
 pipeline_dict = Bunch()
 # ["udf", "auto", "multi_udf"]
 pipeline_dict.mode = "udf"
+# initial model path, optional: str or None, and it's different from increment model setting.
+# This is used to train a better model instead of increment.
+pipeline_dict.init_model_path = None
+# choose different supervised selector
+pipeline_dict.supervised_selector_mode = ["model_select", "topk_select"]
 # Because udf metric using in model evaluation may reduce bad results,
 # this bool value is used to avoid this.
 pipeline_dict.metric_eval_used_flag = False
 # if this value is true and type of dataset file is csv, "data_weight" column will be seen as weight.
-# 第二层有限
-pipeline_dict.weight_column_flag = True
+# 第二层
+pipeline_dict.weight_column_flag = False
 pipeline_dict.work_root = environ_configure.work_root
 # optional: ["binary_classification", "multiclass_classification", "regression"]
 pipeline_dict.task_name = "binary_classification"
@@ -70,6 +75,8 @@ def main(config=config_path):
     pipeline_configure.system_configure_root = "/home/liangqian/Gauss/configure_files"
     pipeline_configure.auto_ml_path = pipeline_configure.system_configure_root + "/" + "automl_params"
     pipeline_configure.selector_configure_path = pipeline_configure.system_configure_root + "/" + "selector_params"
+    pipeline_configure.improved_selector_configure_path = pipeline_configure.system_configure_root + "/" + "improved_selector_params"
+
     system_config = yaml_read(pipeline_configure.system_configure_root + "/" + "system_config/system_config.yaml")
     system_config = Bunch(**system_config)
 
