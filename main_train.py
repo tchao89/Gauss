@@ -45,6 +45,8 @@ pipeline_dict.metric_name = "binary_f1"
 pipeline_dict.use_weight_flag = True
 # format: {"label_name": {label_value: weight_value, ...}}, if no label value, choose target_A, target_B, ... instead.
 # eg. {"target_A": {1: 1.9, -1: 1}}
+# this interface will be reserved because anyone who is good at weight setting could use it conveniently
+# this interface could be set False permanently if it doesn't need.
 pipeline_dict.dataset_weight = None
 # optional: ["mse", "binary_logloss", "None"]
 # This value will customize the loss function of model, and it can be set None.
