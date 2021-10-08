@@ -7,12 +7,10 @@ Training model with supervised feature selector.
 """
 import os
 import json
-from typing import List
 
 import numpy as np
 import pandas as pd
 
-from entity.dataset.base_dataset import BaseDataset
 from entity.model.single_process_model import SingleProcessModelWrapper
 from entity.model.multiprocess_model import MultiprocessModelWrapper
 from entity.metrics.base_metric import MetricResult
@@ -20,8 +18,6 @@ from entity.metrics.base_metric import MetricResult
 from gauss.feature_select.base_feature_selector import BaseFeatureSelector
 
 import core.lightgbm as lgb
-from core.nni.algorithms.feature_engineering.gradient_selector import FeatureGradientSelector
-from core.nni.algorithms.feature_engineering.gbdt_selector import GBDTSelector
 from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
 
 from utils.base import get_current_memory_gb
@@ -31,7 +27,7 @@ from utils.Logger import logger
 from utils.constant_values import ConstantValues
 
 
-class SupervisedFeatureSelector(BaseFeatureSelector):
+class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
     """
     SupervisedFeatureSelector object.
     """
@@ -62,7 +58,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         )
 
         self._metrics_name = params[ConstantValues.metric_name]
-        self._selector_config_path = params[ConstantValues.selector_configure_path]
         self._model_name = params[ConstantValues.model_name]
         self._auto_ml_path = params[ConstantValues.auto_ml_path]
         self._model_root_path = params[ConstantValues.model_root_path]
@@ -70,10 +65,10 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         self._optimize_mode = None
 
-        # selector names
-        self._feature_selector_names = params["feature_selector_model_names"]
         # max trail num for selector tuner
         self.selector_trial_num = params["selector_trial_num"]
+        self.__improved_selector_configure_path = params["improved_selector_configure_path"]
+        self.__feature_model_trial = 15
         # default parameters concludes tree selector parameters and gradient parameters.
         # format: {"gradient_feature_selector": {"order": 4, "n_epochs": 100},
         # "GBDTSelector": {"lgb_params": {}, "eval_ratio", 0.3, "importance_type":
@@ -86,63 +81,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         self.__set_default_params()
         self.__set_search_space()
-
-    @property
-    def feature_selector_names(self):
-        """
-        Get feature selector name.
-        :return:
-        """
-        return self._feature_selector_names
-
-    @feature_selector_names.setter
-    def feature_selector_names(self, selector_names: List[str]):
-        """
-        set feature selector name.
-        :param selector_names:
-        :return:
-        """
-        for item in selector_names:
-            assert item in ["GBDTSelector", "gradient_feature_selector"]
-        self._feature_selector_names = selector_names
-
-    def __choose_features(self, selector_name: str, dataset: BaseDataset, params: dict):
-        """
-        Get selector model
-        :param selector_name:
-        :param dataset:
-        :param params:
-        :return:
-        """
-        if selector_name == "gradient_feature_selector":
-            return self._gradient_based_selector(dataset=dataset, params=params)
-        if selector_name == "GBDTSelector":
-            return self._tree_based_selector(dataset=dataset, params=params)
-        return None
-
-    def __load_specified_configure(self, dataset, selector_name):
-        assert selector_name in ["GBDTSelector", "gradient_feature_selector"]
-
-        if selector_name == "gradient_feature_selector":
-            if self.__check_dataset(dataset.get_dataset().data):
-                # 接受默认参数列表
-                parameters = self._default_parameters[selector_name]
-                # 设定搜索空间
-                search_space = self._search_space[selector_name]
-            else:
-                raise ValueError("There are irregular values "
-                                 "such as np.nan, np.inf or -np.inf in dataset, "
-                                 "and gradient feature selector can not start.")
-
-        else:
-            parameters = self._default_parameters[selector_name]
-
-            # flatten dict
-            parameters = self.__load_default_params(json_dict=parameters)
-            search_space = self._search_space[selector_name]
-            search_space = self.__load_search_space(json_dict=search_space)
-
-        return parameters, search_space
 
     def _train_run(self, **entity):
         """
@@ -186,107 +124,97 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
             optimize_mode=self._optimize_mode
         )
 
-        for model_name in self._feature_selector_names:
-            # 梯度特征选择
+        default_params_path = os.path.join(self.__improved_selector_configure_path, "default_parameters.json")
+        with open(default_params_path, 'r', encoding="utf-8") as json_file:
+            parameters = json.load(json_file)
+
+        search_space_path = os.path.join(self.__improved_selector_configure_path, "search_space.json")
+        with open(search_space_path, 'r', encoding="utf-8") as json_file:
+            search_space = json.load(json_file)
+
+        # 更新特征选择模块的搜索空间
+        logger.info(
+            "Update search space for supervised selector, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+        selector_tuner.update_search_space(search_space=search_space)
+
+        logger.info(
+            "Starting training supervised selector models, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+
+        for trial in range(self.selector_trial_num):
             logger.info(
-                "Choose supervised selector: {}, "
+                "supervised selector models training, round: {:d}, "
                 "with current memory usage: {:.2f} GiB".format(
-                    model_name,
-                    get_current_memory_gb()["memory_usage"]
+                    trial, get_current_memory_gb()["memory_usage"]
                 )
             )
 
-            auto_ml_path = "/home/liangqian/Gauss/configure_files/improved_selector_params"
-            default_params_path = os.path.join(auto_ml_path, "default_parameters.json")
-            with open(default_params_path, 'r', encoding="utf-8") as json_file:
-                parameters = json.load(json_file)
+            receive_params = selector_tuner.generate_parameters(trial)
+            # feature selector hyper-parameters
+            parameters.update(receive_params)
 
-            search_space_path = os.path.join(auto_ml_path, "search_space.json")
-            with open(search_space_path, 'r', encoding="utf-8") as json_file:
-                search_space = json.load(json_file)
+            def len_features(col_ratio: float):
+                return int(columns * col_ratio)
 
-            # 更新特征选择模块的搜索空间
+            parameters["topk"] = len_features(parameters["topk"])
+            feature_list = [item[0] for item in feature_importance_pair]
             logger.info(
-                "Update search space for supervised selector, "
+                "trial: {:d}, supervised selector training, and starting training model, "
                 "with current memory usage: {:.2f} GiB".format(
-                    get_current_memory_gb()["memory_usage"]
-                )
-            )
-            selector_tuner.update_search_space(search_space=search_space)
-
-            logger.info(
-                "Starting training supervised selector models, "
-                "with current memory usage: {:.2f} GiB".format(
-                    get_current_memory_gb()["memory_usage"]
-                )
-            )
-            for trial in range(self.selector_trial_num):
-                logger.info(
-                    "supervised selector models training, round: {:d}, "
-                    "with current memory usage: {:.2f} GiB".format(
-                        trial, get_current_memory_gb()["memory_usage"]
-                    )
-                )
-
-                receive_params = selector_tuner.generate_parameters(trial)
-                # feature selector hyper-parameters
-                parameters.update(receive_params)
-
-                def len_features(col_ratio: float):
-                    return int(columns * col_ratio)
-
-                parameters["topk"] = len_features(parameters["topk"])
-                feature_list = [item[0] for item in feature_importance_pair]
-                logger.info(
-                    "trial: {:d}, supervised selector training, and starting training model, "
-                    "with current memory usage: {:.2f} GiB".format(
-                        trial,
-                        get_current_memory_gb()["memory_usage"]
-                    )
-                )
-
-                metric.label_name = original_dataset.get_dataset().target_names[0]
-
-                logger.info(
-                    "Parse feature configure and generate feature configure object, "
-                    "with current memory usage: {:.2f} GiB".format(
-                        get_current_memory_gb()["memory_usage"]
-                    )
-                )
-                feature_configure.file_path = self._feature_configure_path
-
-                feature_configure.parse(method="system")
-                feature_configure.feature_select(feature_list=feature_list)
-
-                logger.info(
-                    "Auto model training starts, with current memory usage: {:.2f} GiB".format(
-                        get_current_memory_gb()["memory_usage"]
-                    )
-                )
-                # 返回训练好的最佳模型
-                model_tuner.run(
-                    model=model,
-                    train_dataset=original_dataset,
-                    val_dataset=original_val_dataset,
-                    metric=metric,
-                    loss=loss,
-                    feature_configure=feature_configure
-                )
-
-                assert isinstance(model.val_metric, MetricResult)
-                local_optimal_metric = model_tuner.local_best
-
-                logger.info(
-                    "Receive supervised selectors training trial result, "
-                    "with current memory usage: {:.2f} GiB".format(
-                        get_current_memory_gb()["memory_usage"]
-                    )
-                )
-                selector_tuner.receive_trial_result(
                     trial,
-                    receive_params,
-                    local_optimal_metric.result
+                    get_current_memory_gb()["memory_usage"]
                 )
+            )
+
+            metric.label_name = original_dataset.get_dataset().target_names[0]
+
+            logger.info(
+                "Parse feature configure and generate feature configure object, "
+                "with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
+            feature_configure.file_path = self._feature_configure_path
+
+            feature_configure.parse(method="system")
+            feature_configure.feature_select(feature_list=feature_list)
+
+            logger.info(
+                "Auto model training starts, with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
+            # 返回训练好的最佳模型
+            model_tuner.run(
+                model=model,
+                train_dataset=original_dataset,
+                val_dataset=original_val_dataset,
+                metric=metric,
+                loss=loss,
+                feature_configure=feature_configure
+            )
+
+            assert isinstance(model.val_metric, MetricResult)
+            local_optimal_metric = model_tuner.local_best
+
+            logger.info(
+                "Receive supervised selectors training trial result, "
+                "with current memory usage: {:.2f} GiB".format(
+                    get_current_memory_gb()["memory_usage"]
+                )
+            )
+            selector_tuner.receive_trial_result(
+                trial,
+                receive_params,
+                local_optimal_metric.result
+            )
 
         if model_tuner.is_final_set is False:
             model.set_best_model()
@@ -301,8 +229,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
             assert isinstance(original_dataset.get_dataset().data, np.ndarray)
             self.multiprocess_final_configure_generation()
 
-    @classmethod
-    def __feature_select(cls, **entity):
+    def __feature_select(self, **entity):
         train_dataset = entity["train_dataset"].get_dataset()
         val_dataset = entity["val_dataset"].get_dataset()
 
@@ -314,19 +241,18 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
             optimize_mode="minimize"
         )
 
-        auto_ml_path = "/home/liangqian/Gauss/configure_files/automl_params"
-        default_params_path = os.path.join(auto_ml_path, "default_parameters.json")
+        default_params_path = os.path.join(self._auto_ml_path, "default_parameters.json")
         with open(default_params_path, 'r', encoding="utf-8") as json_file:
             default_parameters = json.load(json_file)
 
-        search_space_path = os.path.join(auto_ml_path, "search_space.json")
+        search_space_path = os.path.join(self._auto_ml_path, "search_space.json")
         with open(search_space_path, 'r', encoding="utf-8") as json_file:
             search_space = json.load(json_file)
 
         tuner.update_search_space(search_space=search_space.get("lightgbm"))
 
         selector = None
-        for trial in range(15):
+        for trial in range(self.__feature_model_trial):
             if default_parameters is not None:
                 params = default_parameters.get("lightgbm")
                 assert params is not None
@@ -428,7 +354,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         Read search space file.
         :return:
         """
-        search_space_path = os.path.join(self._selector_config_path, "search_space.json")
+        search_space_path = os.path.join(self.__improved_selector_configure_path, "search_space.json")
         with open(search_space_path, 'r', encoding="utf-8") as json_file:
             self._search_space = json.load(json_file)
 
@@ -436,9 +362,9 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
     def __load_search_space(cls, json_dict: dict, res=None):
         """
         Read search space configuration.
-        :param json_dict:
-        :param res:
-        :return:
+        :param json_dict: It's a json dict that need to be recursion.
+        :param res: result dict that has been nested dismissed.
+        :return: dict
         """
         if res is None:
             res = {}
@@ -451,61 +377,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
             else:
                 res[key] = key_value
         return res
-
-    @classmethod
-    def _tree_based_selector(cls, dataset: BaseDataset, params: dict):
-        data = dataset.get_dataset().data
-        target = dataset.get_dataset().target
-
-        columns = data.shape[1]
-
-        def len_features(col_ratio: float):
-            return int(columns * col_ratio)
-
-        params["topk"] = len_features(params["topk"])
-
-        selector = GBDTSelector()
-        if isinstance(data, pd.DataFrame) and isinstance(target, pd.DataFrame):
-            selector.fit(data.values, target.values.flatten(),
-                         lgb_params=params["lgb_params"],
-                         eval_ratio=params["eval_ratio"],
-                         early_stopping_rounds=params["early_stopping_rounds"],
-                         importance_type=params["importance_type"],
-                         num_boost_round=params["num_boost_round"])
-        else:
-            selector.fit(data, target.flatten(),
-                         lgb_params=params["lgb_params"],
-                         eval_ratio=params["eval_ratio"],
-                         early_stopping_rounds=params["early_stopping_rounds"],
-                         importance_type=params["importance_type"],
-                         num_boost_round=params["num_boost_round"])
-        return selector.get_selected_features(topk=params["topk"])
-
-    @classmethod
-    def _gradient_based_selector(cls, dataset: BaseDataset, params: dict):
-        # 注意定义n_features
-        data = dataset.get_dataset().data.astype(np.float32)
-        target = dataset.get_dataset().target
-
-        columns = data.shape[1]
-
-        def len_features(col_ratio: float):
-            return int(columns * col_ratio)
-
-        params["n_features"] = len_features(params["n_features"])
-
-        selector = FeatureGradientSelector(
-            order=params["order"],
-            n_epochs=params["n_epochs"],
-            batch_size=params["batch_size"],
-            device=params["device"],
-            classification=params["classification"],
-            learning_rate=params["learning_rate"],
-            n_features=params["n_features"],
-            verbose=0
-        )
-        selector.fit(data, target.values.flatten())
-        return selector.get_selected_features()
 
     @property
     def default_params(self):
@@ -521,7 +392,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         :return: None
         """
         default_params_path = os.path.join(
-            self._selector_config_path,
+            self.__improved_selector_configure_path,
             "default_parameters.json"
         )
 

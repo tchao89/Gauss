@@ -10,6 +10,7 @@ from gauss_factory.abstarct_guass import AbstractGauss
 from gauss.data_clear.plain_data_clear import PlainDataClear
 from gauss.feature_generation.featuretools_generation import FeatureToolsGenerator
 from gauss.feature_select.supervised_feature_selector import SupervisedFeatureSelector
+from gauss.feature_select.improved_supervised_feature_selector import ImprovedSupervisedFeatureSelector
 from gauss.feature_select.unsupervised_feature_selector import UnsupervisedFeatureSelector
 from gauss.type_inference.plain_type_inference import PlainTypeInference
 from gauss.label_encode.plain_label_encode import PlainLabelEncode
@@ -72,6 +73,17 @@ class ComponentFactory(AbstractGauss):
             # selector_config_path: str,
             # metrics_name: str
             return SupervisedFeatureSelector(**params)
+
+        if component_name.lower() == "improved_supervised_feature_selector":
+            # name: str,
+            # train_flag: bool,
+            # enable: bool,
+            # feature_config_path: str,
+            # label_encoding_configure_path: str,
+            # task_name: str,
+            # selector_config_path: str,
+            # metrics_name: str
+            return ImprovedSupervisedFeatureSelector(**params)
 
         if component_name.lower() == "unsupervised_feature_selector":
             # name: str,
