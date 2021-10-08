@@ -31,6 +31,7 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
     """
     SupervisedFeatureSelector object.
     """
+
     def __init__(self, **params):
         """
         :param name: Name of this operator.
@@ -262,8 +263,21 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
 
                 receive_params = tuner.generate_parameters(trial)
                 params.update(receive_params)
-                params["lgb_params"]["objective"] = "binary"
-                params["lgb_params"]["metric"] = "binary_logloss"
+                if self._task_name == "binary_classification":
+                    params["objective"] = "binary"
+                    params["metric"] = "binary_logloss"
+                elif self._task_name == "multiclass_classification":
+                    params["objective"] = "binary"
+                    params["metric"] = "binary_logloss"
+                elif self._task_name == "regression":
+                    params["objective"] = "binary"
+                    params["metric"] = "binary_logloss"
+                else:
+                    raise ValueError(
+                        "Value: task name must be one of binary_classification, "
+                        "multiclass_classification or regression, but get {} instead.".format(
+                            self._task_name
+                        ))
 
                 eval_result = dict()
                 num_boost_round = params.pop("num_boost_round")
