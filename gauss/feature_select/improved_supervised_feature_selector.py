@@ -68,7 +68,7 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         # max trail num for selector tuner
         self.selector_trial_num = params["selector_trial_num"]
         self.__improved_selector_configure_path = params["improved_selector_configure_path"]
-        self.__feature_model_trial = 15
+        self.__feature_model_trial = params["feature_model_trial"]
         # default parameters concludes tree selector parameters and gradient parameters.
         # format: {"gradient_feature_selector": {"order": 4, "n_epochs": 100},
         # "GBDTSelector": {"lgb_params": {}, "eval_ratio", 0.3, "importance_type":
@@ -101,6 +101,7 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         assert "feature_configure" in entity.keys()
         assert "loss" in entity.keys()
 
+        # use auto ml component to train a lightgbm model and get feature_importance_pair
         feature_importance_pair = self.__feature_select(**entity)
 
         original_dataset = entity["train_dataset"]
@@ -124,13 +125,8 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
             optimize_mode=self._optimize_mode
         )
 
-        default_params_path = os.path.join(self.__improved_selector_configure_path, "default_parameters.json")
-        with open(default_params_path, 'r', encoding="utf-8") as json_file:
-            parameters = json.load(json_file)
-
-        search_space_path = os.path.join(self.__improved_selector_configure_path, "search_space.json")
-        with open(search_space_path, 'r', encoding="utf-8") as json_file:
-            search_space = json.load(json_file)
+        search_space = self._search_space
+        parameters = self._default_parameters
 
         # 更新特征选择模块的搜索空间
         logger.info(
@@ -241,13 +237,20 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
             optimize_mode="minimize"
         )
 
-        default_params_path = os.path.join(self._auto_ml_path, "default_parameters.json")
-        with open(default_params_path, 'r', encoding="utf-8") as json_file:
-            default_parameters = json.load(json_file)
+        def set_default_parameters():
+            default_params_path = os.path.join(self._auto_ml_path, "default_parameters.json")
+            with open(default_params_path, 'r', encoding="utf-8") as json_file:
+                _default_parameters = json.load(json_file)
+            return _default_parameters
 
-        search_space_path = os.path.join(self._auto_ml_path, "search_space.json")
-        with open(search_space_path, 'r', encoding="utf-8") as json_file:
-            search_space = json.load(json_file)
+        def set_search_space():
+            search_space_path = os.path.join(self._auto_ml_path, "search_space.json")
+            with open(search_space_path, 'r', encoding="utf-8") as json_file:
+                _search_space = json.load(json_file)
+            return _search_space
+
+        default_parameters = set_default_parameters()
+        search_space = set_search_space()
 
         tuner.update_search_space(search_space=search_space.get("lightgbm"))
 
@@ -263,12 +266,13 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
                 params["lgb_params"]["metric"] = "binary_logloss"
 
                 eval_result = dict()
-
-                selector = lgb.train(params=params["lgb_params"],
+                num_boost_round = params.pop("num_boost_round")
+                early_stopping_rounds = params.pop("early_stopping_rounds")
+                selector = lgb.train(params=params,
                                      train_set=train_dataset,
                                      valid_sets=val_dataset,
-                                     num_boost_round=params["num_boost_round"],
-                                     early_stopping_rounds=params["early_stopping_rounds"],
+                                     num_boost_round=num_boost_round,
+                                     early_stopping_rounds=early_stopping_rounds,
                                      callbacks=lgb.record_evaluation(eval_result=eval_result),
                                      verbose_eval=False)
 
