@@ -259,6 +259,14 @@ class ModelWrapper(Entity):
         """
         return self._model_config
 
+    @property
+    def model(self):
+        """
+        Get trained model.
+        :return: a certainty model object.
+        """
+        return self._model
+
     @model_config.setter
     def model_config(self, model_config: dict):
         """
