@@ -311,7 +311,6 @@ class ModelWrapper(Entity):
         self._feature_list = self._best_feature_list
         self.set_best()
 
-    @abc.abstractmethod
     def preprocess(self):
         """
         This method is used to implement Normalization, Standardization, Ont hot encoding which need
@@ -321,7 +320,7 @@ class ModelWrapper(Entity):
         if self._train_flag:
             self._train_preprocess()
         else:
-            self._predict_process()
+            self._predict_preprocess()
 
     @abc.abstractmethod
     def _train_preprocess(self):
@@ -331,7 +330,7 @@ class ModelWrapper(Entity):
         """
 
     @abc.abstractmethod
-    def _predict_process(self):
+    def _predict_preprocess(self):
         """
         Preprocessing in inference.
         :return: None

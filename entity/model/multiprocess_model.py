@@ -15,7 +15,7 @@ from entity.model.model import ModelWrapper
 from utils.base import get_current_memory_gb
 from utils.bunch import Bunch
 from utils.Logger import logger
-from utils.feature_index_exec import feature_index_generator
+from utils.feature_index_exec import generate_feature_index
 
 
 class MultiprocessModelWrapper(ModelWrapper, ABC):
@@ -77,6 +77,6 @@ class MultiprocessModelWrapper(ModelWrapper, ABC):
 
     def update_feature_conf(self, feature_conf):
         self._feature_conf = feature_conf
-        self._feature_list = feature_index_generator(feature_conf=self._feature_conf)
+        self._feature_list = generate_feature_index(feature_conf=self._feature_conf)
         assert self._feature_list is not None
         return self._feature_list

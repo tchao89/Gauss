@@ -28,7 +28,7 @@ pipeline_dict.mode = "udf"
 # This is used to train a better model instead of increment.
 pipeline_dict.init_model_path = None
 # choose different supervised selector, optional: ["model_select", "topk_select"]
-pipeline_dict.supervised_selector_mode = "topk_select"
+pipeline_dict.supervised_selector_mode = "model_select"
 # Because udf metric using in model evaluation may reduce bad results,
 # this bool value is used to avoid this.
 pipeline_dict.metric_eval_used_flag = False

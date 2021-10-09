@@ -7,7 +7,7 @@ Authors: citic-lab
 from typing import Any
 
 
-def feature_index_generator(feature_conf: Any):
+def generate_feature_index(feature_conf: Any):
     feature_dict = {}
     if isinstance(feature_conf, dict):
         feature_dict = feature_conf

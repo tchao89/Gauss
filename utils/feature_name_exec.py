@@ -6,7 +6,7 @@ Authors: citic-lab
 """
 from typing import List, Any
 
-def feature_list_generator(feature_conf):
+def generate_feature_list(feature_conf):
     feature_dict = {}
     if isinstance(feature_conf, dict):
         feature_dict = feature_conf
@@ -33,7 +33,7 @@ def feature_list_generator(feature_conf):
 
     return feature_list
 
-def feature_list_selector(feature_conf: Any, feature_indexes: List[int]):
+def select_feature_list(feature_conf: Any, feature_indexes: List[int]):
     feature_dict = {}
     if isinstance(feature_conf, dict):
         feature_dict = feature_conf
@@ -69,7 +69,7 @@ def feature_list_selector(feature_conf: Any, feature_indexes: List[int]):
 
     return feature_list
 
-def categorical_name_generator(feature_conf: Any):
+def generate_categorical_list(feature_conf: Any):
     feature_dict = {}
     if isinstance(feature_conf, dict):
         feature_dict = feature_conf

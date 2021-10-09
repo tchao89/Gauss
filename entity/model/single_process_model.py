@@ -18,8 +18,8 @@ from entity.model.model import ModelWrapper
 from utils.Logger import logger
 from utils.base import get_current_memory_gb
 from utils.bunch import Bunch
-from utils.feature_name_exec import feature_list_generator
-from utils.feature_name_exec import categorical_name_generator
+from utils.feature_name_exec import generate_feature_list
+from utils.feature_name_exec import generate_categorical_list
 from utils.constant_values import ConstantValues
 
 
@@ -46,8 +46,8 @@ class SingleProcessModelWrapper(ModelWrapper, ABC):
         """
         if feature_conf is not None:
             self._feature_conf = feature_conf
-            self._feature_list = feature_list_generator(feature_conf=self._feature_conf)
-            self._categorical_list = categorical_name_generator(feature_conf=self._feature_conf)
+            self._feature_list = generate_feature_list(feature_conf=self._feature_conf)
+            self._categorical_list = generate_categorical_list(feature_conf=self._feature_conf)
             assert self._feature_list is not None
             return self._feature_list
 
@@ -63,13 +63,13 @@ class SingleProcessModelWrapper(ModelWrapper, ABC):
             data = dataset.feature_choose(self._feature_list)
             target = dataset.get_dataset().target
 
-            data_pair = Bunch(
+            data_package = Bunch(
                 data=data,
                 target=target,
                 target_names=dataset.get_dataset().target_names
             )
 
-            dataset = copy.deepcopy(dataset).set_dataset(data_pair=data_pair)
+            dataset = copy.deepcopy(dataset).set_dataset(data_package=data_package)
 
         logger.info(
             "Reading base dataset, with current memory usage: {:.2f} GiB".format(
@@ -136,7 +136,7 @@ class choose_features:
             data = dataset.feature_choose(feature_list)
             target = dataset.get_dataset().target
 
-            data_pair = Bunch(
+            data_package = Bunch(
                 data=data,
                 target=target,
                 target_names=dataset.get_dataset().target_names,
@@ -146,9 +146,9 @@ class choose_features:
 
             if use_weight_flag is True and weight is not None:
                 assert isinstance(weight, (pd.DataFrame, pd.Series))
-                data_pair.dataset_weight = weight
+                data_package.dataset_weight = weight
 
-            dataset = copy.deepcopy(dataset).set_dataset(data_pair=data_pair)
+            dataset = copy.deepcopy(dataset).set_dataset(data_package=data_package)
 
         logger.info(
             "Reading base dataset, with current memory usage: {:.2f} GiB".format(
