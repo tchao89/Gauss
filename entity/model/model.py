@@ -47,6 +47,8 @@ class ModelWrapper(Entity):
         self._metric_eval_used_flag = params["metric_eval_used_flag"]
         self._use_weight_flag = params["use_weight_flag"]
 
+        self._init_model_path = params["init_model_path"]
+
         # model_config is a dict containing all features and these attributes used in the model.
         # This dict will write to yaml file.
         # This parameters contains model parameters and preprocessing flags.

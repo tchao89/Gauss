@@ -32,6 +32,7 @@ class SingleProcessModelWrapper(ModelWrapper, ABC):
         super().__init__(
             name=params["name"],
             model_root_path=params["model_root_path"],
+            init_model_path=params["init_model_path"],
             task_name=params["task_name"],
             train_flag=params["train_flag"],
             metric_eval_used_flag=params["metric_eval_used_flag"],

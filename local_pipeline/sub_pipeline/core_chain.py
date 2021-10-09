@@ -83,6 +83,7 @@ class CoreRoute(Component):
             task_name=self._task_name,
             use_weight_flag=params["use_weight_flag"],
             metric_eval_used_flag=params["metric_eval_used_flag"],
+            init_model_path=params["init_model_path"]
         )
 
         self.model = self.create_entity(entity_name=self._model_name, **model_params)
