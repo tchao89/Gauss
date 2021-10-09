@@ -26,7 +26,7 @@ pipeline_dict = Bunch()
 pipeline_dict.mode = "udf"
 # initial model path, optional: str or None, and it's different from increment model setting.
 # This is used to train a better model instead of increment.
-pipeline_dict.init_model_path = None
+pipeline_dict.init_model_path = "/home/liangqian/Gauss/experiments/mRjEC0/model/lightgbm/model_save/lightgbm.txt"
 # choose different supervised selector, optional: ["model_select", "topk_select"]
 pipeline_dict.supervised_selector_mode = "model_select"
 # Because udf metric using in model evaluation may reduce bad results,

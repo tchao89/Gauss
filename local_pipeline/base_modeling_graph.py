@@ -59,6 +59,7 @@ class BaseModelingGraph:
             auto_ml_path=params["auto_ml_path"],
             selector_configure_path=params["selector_configure_path"],
             improved_selector_configure_path=params["improved_selector_configure_path"],
+            init_model_path=params["init_model_path"]
         )
 
         self._entity_names = Bunch(

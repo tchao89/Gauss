@@ -42,6 +42,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         super().__init__(
             name=params["name"],
             model_root_path=params["model_root_path"],
+            init_model_path=params["init_model_path"],
             task_name=params["task_name"],
             train_flag=params["train_flag"],
             use_weight_flag=params["use_weight_flag"],
@@ -272,6 +273,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
             self._model = lgb.train(
                 params=params,
                 train_set=lgb_train,
+                init_model=self._init_model_path,
                 num_boost_round=num_boost_round,
                 valid_sets=lgb_eval,
                 categorical_feature=self._categorical_list,
@@ -406,6 +408,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
             self._model = lgb.train(
                 params=params,
                 train_set=lgb_train,
+                init_model=self._init_model_path,
                 num_boost_round=num_boost_round,
                 valid_sets=lgb_eval,
                 categorical_feature=self._categorical_list,
@@ -523,6 +526,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
             self._model = lgb.train(
                 params=params,
                 train_set=lgb_train,
+                init_model=self._init_model_path,
                 num_boost_round=num_boost_round,
                 valid_sets=lgb_eval,
                 categorical_feature=self._categorical_list,
