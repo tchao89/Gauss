@@ -27,15 +27,15 @@ pipeline_dict.mode = "udf"
 # initial model path, optional: str or None, and it's different from increment model setting.
 # This is used to train a better model instead of increment.
 pipeline_dict.init_model_path = None
-# choose different supervised selector
-pipeline_dict.supervised_selector_mode = ["model_select", "topk_select"]
+# choose different supervised selector, optional: ["model_select", "topk_select"]
+pipeline_dict.supervised_selector_mode = "topk_select"
 # Because udf metric using in model evaluation may reduce bad results,
 # this bool value is used to avoid this.
 pipeline_dict.metric_eval_used_flag = False
 # modify, 最外层
-pipeline_dict.use_weight_flag = True
+pipeline_dict.use_weight_flag = False
 # if this value is true and type of dataset file is csv, "data_weight" column will be seen as weight.
-pipeline_dict.weight_column_flag = True
+pipeline_dict.weight_column_flag = False
 pipeline_dict.work_root = environ_configure.work_root
 # optional: ["binary_classification", "multiclass_classification", "regression"]
 pipeline_dict.task_name = "binary_classification"
@@ -63,7 +63,7 @@ pipeline_dict.model_zoo = ["lightgbm"]
 pipeline_dict.data_clear_flag = False
 pipeline_dict.feature_generator_flag = False
 pipeline_dict.unsupervised_feature_selector_flag = False
-pipeline_dict.supervised_feature_selector_flag = False
+pipeline_dict.supervised_feature_selector_flag = True
 config_path = environ_configure.work_root + "/train_user_config.yaml"
 yaml_write(yaml_dict=dict(pipeline_dict), yaml_file=config_path)
 # --------------- test block end ---------------

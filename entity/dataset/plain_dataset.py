@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import string
+from typing import List
 
 import pandas as pd
 import numpy as np
@@ -60,14 +61,23 @@ class PlaintextDataset(BaseDataset):
             if params.get(item) is None:
                 params[item] = None
 
-        super(PlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_name"],
-                                               params["target_name"], params["memory_only"])
+        super(PlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_name"], params["memory_only"])
 
         if not params["data_path"] and not params["data_pair"]:
             raise AttributeError("data_path or data_pair must provided.")
 
         self._data_pair = params["data_pair"]
+
+        self._target_name = params["target_name"]
         self.__type_doc = params["data_file_type"]
+
+        assert isinstance(self._target_name, List) or self._target_name is None, "Value: target_name is {}".format(self._target_name)
+        self._column_size = 0
+        self._row_size = 0
+        self._default_print_size = 5
+        # Bunch object, including features, target,
+        # feature_names[optional], target_names[optional]
+        self._bunch = None
 
         assert isinstance(params["weight_column_flag"], bool)
         self._weight_column_flag = params["weight_column_flag"]
@@ -404,3 +414,19 @@ class PlaintextDataset(BaseDataset):
     @need_data_clear.setter
     def need_data_clear(self, data_clear: bool):
         self._need_data_clear = data_clear
+
+    @property
+    def column_size(self):
+        return self._column_size
+
+    @property
+    def row_size(self):
+        return self._row_size
+
+    @property
+    def target_name(self):
+        return self._target_name
+
+    @property
+    def default_print_size(self):
+        return self._default_print_size

@@ -58,6 +58,7 @@ class BaseModelingGraph:
             feature_configure_path=params["feature_configure_path"],
             auto_ml_path=params["auto_ml_path"],
             selector_configure_path=params["selector_configure_path"],
+            improved_selector_configure_path=params["improved_selector_configure_path"],
         )
 
         self._entity_names = Bunch(
@@ -74,6 +75,7 @@ class BaseModelingGraph:
             feature_generator_name=params["feature_generator_name"],
             unsupervised_feature_selector_name=params["unsupervised_feature_selector_name"],
             supervised_feature_selector_name=params["supervised_feature_selector_name"],
+            improved_supervised_feature_selector_name=params["improved_supervised_feature_selector_name"],
             auto_ml_name=params["auto_ml_name"]
         )
 
@@ -85,6 +87,8 @@ class BaseModelingGraph:
             selector_trial_num=params["selector_trial_num"],
             auto_ml_trial_num=params["auto_ml_trial_num"],
             opt_model_names=params["opt_model_names"],
+            supervised_selector_mode=params["supervised_selector_mode"],
+            feature_model_trial=params["feature_model_trial"],
             supervised_selector_model_names=params["supervised_selector_model_names"]
         )
 
