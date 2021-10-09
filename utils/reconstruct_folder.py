@@ -36,14 +36,14 @@ def reconstruct_folder(folder, init_prefix=None):
 
             if file_path.split(".")[-1] == "yaml":
                 configure_dict = yaml_read(os.path.join(path, file_name))
-                path_replace(source_dict=configure_dict,
+                replace_path(source_dict=configure_dict,
                              init_prefix=init_prefix,
                              prefix=prefix)
 
                 yaml_write(yaml_dict=configure_dict, yaml_file=file_path)
 
 
-def path_replace(source_dict, init_prefix=None, prefix=None):
+def replace_path(source_dict, init_prefix=None, prefix=None):
     """
     This method will replace folder name in a json dict by recursion method.
     :param source_dict: origin dict object.
@@ -64,7 +64,7 @@ def path_replace(source_dict, init_prefix=None, prefix=None):
             if isinstance(source_dict[key], str):
                 source_dict[key] = source_dict[key].replace(init_prefix, prefix)
             if isinstance(source_dict[key], dict):
-                path_replace(
+                replace_path(
                     source_dict=source_dict[key],
                     init_prefix=init_prefix,
                     prefix=prefix

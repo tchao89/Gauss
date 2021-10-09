@@ -15,7 +15,7 @@ from utils.constant_values import ConstantValues
 
 from utils.yaml_exec import yaml_read
 from utils.yaml_exec import yaml_write
-from utils.feature_name_exec import feature_list_generator
+from utils.feature_name_exec import generate_feature_list
 from utils.Logger import logger
 from utils.base import get_current_memory_gb
 
@@ -80,7 +80,7 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         conf = yaml_read(yaml_file=self._final_file_path)
 
         if self._enable is True:
-            generated_feature_names = feature_list_generator(feature_conf=conf)
+            generated_feature_names = generate_feature_list(feature_conf=conf)
             dataset.get_dataset().data = dataset.get_dataset().data[generated_feature_names]
             dataset.get_dataset().generated_feature_names = generated_feature_names
 
@@ -91,7 +91,7 @@ class UnsupervisedFeatureSelector(BaseFeatureSelector):
         conf = yaml_read(yaml_file=self._final_file_path)
 
         if self._enable is True:
-            generated_feature_names = feature_list_generator(feature_conf=conf)
+            generated_feature_names = generate_feature_list(feature_conf=conf)
             dataset.get_dataset().data = dataset.get_dataset().data[generated_feature_names]
             dataset.get_dataset().generated_feature_names = generated_feature_names
 

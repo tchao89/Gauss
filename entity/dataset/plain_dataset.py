@@ -38,21 +38,21 @@ class PlaintextDataset(BaseDataset):
         `.libsvm`, data after processing will wrapped into a `Bunch` object which contains
         `data` and `target`, meanwhile `feature_names` and `target_name` also can be a
         content when exist.
-            2. Pass a `data_pair` wrapped by Bunch to the construct function, `data` and
+            2. Pass a `data_package` wrapped by Bunch to the construct function, `data` and
         `target` must provided at least.
 
         ======
         :param name: A string to represent module's name.
         :param data_path:  A string or `dict`; if string, it can be directly used by load data
             function, otherwise `train_dataset` and `val_dataset` must be the key of the dict.
-        :param data_pair: default is None, must be filled if data_path not applied.
+        :param data_package: default is None, must be filled if data_path not applied.
         :param task_type: A string which is an option between `classification` or `regression`.
         :param target_name: A `list` containing label names in string format.
         :param memory_only: a boolean value, true for memory, false for others, default True.
         """
         for item in ["name",
                      "task_name",
-                     "data_pair",
+                     "data_package",
                      "data_path",
                      "target_name",
                      "memory_only",
@@ -63,10 +63,10 @@ class PlaintextDataset(BaseDataset):
 
         super(PlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_name"], params["memory_only"])
 
-        if not params["data_path"] and not params["data_pair"]:
-            raise AttributeError("data_path or data_pair must provided.")
+        if not params["data_path"] and not params["data_package"]:
+            raise AttributeError("data_path or data_package must provided.")
 
-        self._data_pair = params["data_pair"]
+        self._data_package = params["data_package"]
 
         self._target_name = params["target_name"]
         self.__type_doc = params["data_file_type"]
@@ -94,7 +94,7 @@ class PlaintextDataset(BaseDataset):
         # This value is a bool value, and true means plaindataset has missing values and need to clear.
         self._need_data_clear = False
 
-        assert params["data_path"] is not None or params["data_pair"] is not None
+        assert params["data_path"] is not None or params["data_package"] is not None
         if params["data_path"] is not None and isinstance(params["data_path"], str):
             self._bunch = self.load_data()
 
@@ -109,7 +109,7 @@ class PlaintextDataset(BaseDataset):
                                 val_dataset=self.load_data(data_path=params["data_path"]["val_dataset"]))
 
         else:
-            self._bunch = self._data_pair
+            self._bunch = self._data_package
 
     def __repr__(self):
         data = self._bunch.data
@@ -120,8 +120,8 @@ class PlaintextDataset(BaseDataset):
     def get_dataset(self):
         return self._bunch
 
-    def set_dataset(self, data_pair):
-        self._bunch = data_pair
+    def set_dataset(self, data_package):
+        self._bunch = data_package
         return self
 
     def load_data(self, data_path=None):
@@ -408,22 +408,22 @@ class PlaintextDataset(BaseDataset):
         val_data = val_data.reset_index(drop=True)
         val_target = val_target.reset_index(drop=True)
 
-        data_pair = Bunch(data=val_data, target=val_target)
+        data_package = Bunch(data=val_data, target=val_target)
 
         if "feature_names" in self._bunch.keys():
-            data_pair.target_names = self._bunch.target_names
-            data_pair.feature_names = self._bunch.feature_names
+            data_package.target_names = self._bunch.target_names
+            data_package.feature_names = self._bunch.feature_names
 
         if ConstantValues.dataset_weight in self._bunch.keys():
-            data_pair.dataset_weight = self._bunch.dataset_weight
+            data_package.dataset_weight = self._bunch.dataset_weight
 
-        data_pair.proportion = self._bunch.proportion
+        data_package.proportion = self._bunch.proportion
 
         return PlaintextDataset(name="train_data",
                                 task_type="train",
                                 weight_column_flag=self._weight_column_flag,
                                 weight_column_name=self._weight_column_name,
-                                data_pair=data_pair)
+                                data_package=data_package)
 
     @property
     def need_data_clear(self):

@@ -959,13 +959,10 @@ class GaussLightgbm(SingleProcessModelWrapper):
         inference_result = pd.DataFrame({"result": inference_result})
         return inference_result
 
-    def preprocess(self):
-        pass
-
     def _train_preprocess(self):
         pass
 
-    def _predict_process(self):
+    def _predict_preprocess(self):
         pass
 
     def eval(self,

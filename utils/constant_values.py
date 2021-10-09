@@ -32,7 +32,7 @@ class ConstantValues:
                      "dataset_weight",
                      "proportion",
                      "categorical_list",
-                     "label_class",]
+                     "label_class"]
     # train_flag:
     train = "train"
     increment = "increment"
