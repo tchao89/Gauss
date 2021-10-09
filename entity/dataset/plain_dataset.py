@@ -74,13 +74,19 @@ class PlaintextDataset(BaseDataset):
         assert isinstance(self._target_name, List) or self._target_name is None, "Value: target_name is {}".format(self._target_name)
         self._column_size = 0
         self._row_size = 0
+
         self._default_print_size = 5
         # Bunch object, including features, target,
         # feature_names[optional], target_names[optional]
         self._bunch = None
 
         assert isinstance(params["weight_column_flag"], bool)
+        if params["weight_column_name"]:
+            assert isinstance(params["weight_column_name"], str)
+
         self._weight_column_flag = params["weight_column_flag"]
+        self._weight_column_name = params["weight_column_name"]
+
         # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
         # by the length of validation dataset.
@@ -142,6 +148,7 @@ class PlaintextDataset(BaseDataset):
         weight = None
 
         if self.__type_doc == "csv":
+
             try:
                 data, target, feature_names, target_name, weight = self.load_csv()
             except IOError:
@@ -169,6 +176,10 @@ class PlaintextDataset(BaseDataset):
                                                            target=target)
 
             if self._weight_column_flag is True:
+                assert self._weight_column_name == "-1", \
+                    "When type of dataset file is libsvm, " \
+                    "value: self._weight_column_name should be set -1."
+
                 weight = data.iloc[:, -1]
                 data.drop(data.columns[-1], axis=1, inplace=True)
             else:
@@ -198,6 +209,9 @@ class PlaintextDataset(BaseDataset):
                                                            target=target)
 
             if self._weight_column_flag is True:
+                assert self._weight_column_name == "-1", \
+                    "When type of dataset file is txt, " \
+                    "value: self._weight_column_name should be set -1."
                 weight = data.iloc[:, -1]
                 data.drop(data.columns[-1], axis=1, inplace=True)
             else:
@@ -234,6 +248,7 @@ class PlaintextDataset(BaseDataset):
         count = 0
         proportion_dict = {}
         label_class_dict = {}
+
         for index, value in target[target_names].value_counts().iteritems():
             proportion_dict[index] = value
             count += 1
@@ -259,8 +274,10 @@ class PlaintextDataset(BaseDataset):
 
         # there must exist a column named dataset_weight
         if self._weight_column_flag is True:
-            weight = data[ConstantValues.dataset_weight]
-            data.drop([ConstantValues.dataset_weight], axis=1, inplace=True)
+            if self._weight_column_name not in data.columns:
+                raise ValueError("Column: {} doesn't exist in dataset file.".format(self._weight_column_name))
+            weight = data[self._weight_column_name]
+            data.drop([self._weight_column_name], axis=1, inplace=True)
         else:
             weight = None
         return data, target, feature_names, target_name, weight
@@ -405,6 +422,7 @@ class PlaintextDataset(BaseDataset):
         return PlaintextDataset(name="train_data",
                                 task_type="train",
                                 weight_column_flag=self._weight_column_flag,
+                                weight_column_name=self._weight_column_name,
                                 data_pair=data_pair)
 
     @property
