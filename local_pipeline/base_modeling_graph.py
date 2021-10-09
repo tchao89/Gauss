@@ -83,6 +83,7 @@ class BaseModelingGraph:
             dataset_weight=params["dataset_weight"],
             use_weight_flag=params["use_weight_flag"],
             weight_column_flag=params["weight_column_flag"],
+            weight_column_name=params["weight_column_name"],
             data_file_type=params["data_file_type"],
             selector_trial_num=params["selector_trial_num"],
             auto_ml_trial_num=params["auto_ml_trial_num"],
