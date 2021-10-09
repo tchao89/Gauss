@@ -204,6 +204,7 @@ class FeatureConf(Entity):
 
             if self._feature_dict[feature].index not in feature_list:
                 self._feature_dict[feature].used = False
+
             else:
                 assert self._feature_dict[feature].used is True
 

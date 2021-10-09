@@ -110,27 +110,53 @@ class CoreRoute(Component):
             )
 
             if self._feature_selector_flag is True:
-                # auto_ml_path and selector_configure_path are fixed configuration files.
-                s_params = Bunch(
-                    name=params["supervised_selector_name"],
-                    train_flag=self._train_flag,
-                    enable=self.enable,
-                    metric_name=self._metric_name,
-                    task_name=params["task_name"],
-                    model_root_path=params["model_root_path"],
-                    feature_configure_path=params["pre_feature_configure_path"],
-                    final_file_path=params["target_feature_configure_path"],
-                    feature_selector_model_names=params["feature_selector_model_names"],
-                    selector_trial_num=params["selector_trial_num"],
-                    selector_configure_path=self.__selector_configure_path,
-                    model_name=self._model_name,
-                    auto_ml_path=params["auto_ml_path"],
-                )
+                assert params["supervised_selector_mode"] in ['model_select', 'topk_select']
+                if params["supervised_selector_mode"] == "model_select":
+                    # auto_ml_path and selector_configure_path are fixed configuration files.
+                    s_params = Bunch(
+                        name=params["supervised_selector_name"],
+                        train_flag=self._train_flag,
+                        enable=self.enable,
+                        metric_name=self._metric_name,
+                        task_name=params["task_name"],
+                        model_root_path=params["model_root_path"],
+                        feature_configure_path=params["pre_feature_configure_path"],
+                        final_file_path=params["target_feature_configure_path"],
+                        feature_selector_model_names=params["feature_selector_model_names"],
+                        selector_trial_num=params["selector_trial_num"],
+                        selector_configure_path=self.__selector_configure_path,
+                        model_name=self._model_name,
+                        auto_ml_path=params["auto_ml_path"],
+                    )
 
-                self.feature_selector = self.create_component(
-                    component_name=params["supervised_selector_name"],
-                    **s_params
-                )
+                    self.feature_selector = self.create_component(
+                        component_name=params["supervised_selector_name"],
+                        **s_params
+                    )
+                else:
+                    # auto_ml_path and selector_configure_path are fixed configuration files.
+                    s_params = Bunch(
+                        name=params["supervised_selector_name"],
+                        train_flag=self._train_flag,
+                        enable=self.enable,
+                        metric_name=self._metric_name,
+                        task_name=params["task_name"],
+                        model_root_path=params["model_root_path"],
+                        feature_configure_path=params["pre_feature_configure_path"],
+                        final_file_path=params["target_feature_configure_path"],
+                        feature_selector_model_names=params["feature_selector_model_names"],
+                        improved_selector_configure_path=params["improved_selector_configure_path"],
+                        feature_model_trial=params["feature_model_trial"],
+                        selector_trial_num=params["selector_trial_num"],
+                        selector_configure_path=self.__selector_configure_path,
+                        model_name=self._model_name,
+                        auto_ml_path=params["auto_ml_path"],
+                    )
+
+                    self.feature_selector = self.create_component(
+                        component_name=params["improved_supervised_selector_name"],
+                        **s_params
+                    )
         else:
             self._result = None
             self._feature_conf = None

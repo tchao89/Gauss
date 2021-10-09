@@ -230,8 +230,8 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         train_dataset = entity["train_dataset"].get_dataset()
         val_dataset = entity["val_dataset"].get_dataset()
 
-        train_dataset = lgb.Dataset(train_dataset.data, train_dataset.target, feature_name=train_dataset.data.columns)
-        val_dataset = lgb.Dataset(val_dataset.data, val_dataset.target, feature_name=val_dataset.data.columns)
+        lgb_train = lgb.Dataset(train_dataset.data, train_dataset.target, feature_name=list(train_dataset.data.columns))
+        lgb_eval = lgb.Dataset(val_dataset.data, val_dataset.target, feature_name=list(val_dataset.data.columns))
 
         tuner = HyperoptTuner(
             algorithm_name="tpe",
@@ -256,6 +256,9 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         tuner.update_search_space(search_space=search_space.get("lightgbm"))
 
         selector = None
+        num_boost_round = -1
+        early_stopping_rounds = -1
+
         for trial in range(self.__feature_model_trial):
             if default_parameters is not None:
                 params = default_parameters.get("lightgbm")
@@ -263,15 +266,17 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
 
                 receive_params = tuner.generate_parameters(trial)
                 params.update(receive_params)
+
                 if self._task_name == "binary_classification":
                     params["objective"] = "binary"
                     params["metric"] = "binary_logloss"
                 elif self._task_name == "multiclass_classification":
-                    params["objective"] = "binary"
-                    params["metric"] = "binary_logloss"
+                    params["objective"] = "multiclass"
+                    params["metric"] = "multi_logloss"
+                    params["num_class"] = train_dataset.label_class
                 elif self._task_name == "regression":
-                    params["objective"] = "binary"
-                    params["metric"] = "binary_logloss"
+                    params["objective"] = "regression"
+                    params["metric"] = "mse"
                 else:
                     raise ValueError(
                         "Value: task name must be one of binary_classification, "
@@ -280,17 +285,32 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
                         ))
 
                 eval_result = dict()
-                num_boost_round = params.pop("num_boost_round")
-                early_stopping_rounds = params.pop("early_stopping_rounds")
+
+                if "num_boost_round" in params:
+                    num_boost_round = params.pop("num_boost_round")
+                if "early_stopping_rounds" in params:
+                    early_stopping_rounds = params.pop("early_stopping_rounds")
+
                 selector = lgb.train(params=params,
-                                     train_set=train_dataset,
-                                     valid_sets=val_dataset,
+                                     train_set=lgb_train,
+                                     valid_sets=lgb_eval,
                                      num_boost_round=num_boost_round,
                                      early_stopping_rounds=early_stopping_rounds,
-                                     callbacks=lgb.record_evaluation(eval_result=eval_result),
+                                     callbacks=[lgb.record_evaluation(eval_result=eval_result)],
                                      verbose_eval=False)
 
-                metric_result = min(eval_result["eval"]["logloss"])
+                if self._task_name == "binary_classification":
+                    metric_result = min(eval_result["valid_0"]["binary_logloss"])
+                elif self._task_name == "multiclass_classification":
+                    metric_result = min(eval_result["valid_0"]["multi_logloss"])
+                elif self._task_name == "regression":
+                    metric_result = min(eval_result["valid_0"]["mse"])
+                else:
+                    raise ValueError(
+                        "Value: task name must be one of binary_classification, "
+                        "multiclass_classification or regression, but get {} instead.".format(
+                            self._task_name
+                        ))
                 tuner.receive_trial_result(trial, receive_params, metric_result)
             else:
                 raise ValueError("Default parameters is None.")

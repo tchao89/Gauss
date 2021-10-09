@@ -10,10 +10,12 @@ opt_model_names:
 - anneal
 - evolution
 supervised_feature_selector_name: supervised_feature_selector
+improved_supervised_feature_selector_name: improved_supervised_feature_selector
 supervised_selector_model_names:
 - GBDTSelector
 selector_trial_num: 5
 auto_ml_trial_num: 15
+feature_model_trial: 15
 max_exec_duration: 36000
 type_inference_name: plain_type_inference
 unsupervised_feature_selector_name: unsupervised_feature_selector
