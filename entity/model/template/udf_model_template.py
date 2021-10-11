@@ -10,7 +10,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import annotations
 
-from entity.model.single_process_model import SingleProcessModelWrapper
+from entity.model.package_dataset import SingleProcessModelWrapper
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric
 

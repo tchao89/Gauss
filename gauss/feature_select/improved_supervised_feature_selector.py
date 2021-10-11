@@ -11,9 +11,8 @@ import json
 import numpy as np
 import pandas as pd
 
-from entity.model.single_process_model import SingleProcessModelWrapper
-from entity.model.multiprocess_model import MultiprocessModelWrapper
 from entity.metrics.base_metric import MetricResult
+from entity.model.model import ModelWrapper
 
 from gauss.feature_select.base_feature_selector import BaseFeatureSelector
 
@@ -119,7 +118,7 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         model_tuner.is_final_set = False
 
         model = entity["model"]
-        assert isinstance(model, (SingleProcessModelWrapper, MultiprocessModelWrapper))
+        assert isinstance(model, ModelWrapper)
 
         selector_tuner = HyperoptTuner(
             algorithm_name="tpe",

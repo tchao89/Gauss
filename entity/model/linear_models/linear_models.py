@@ -17,14 +17,13 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 
-from entity.model.single_process_model import SingleProcessModelWrapper
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from utils.bunch import Bunch
 from utils.base import mkdir
 
 
-class GaussLinearModels(SingleProcessModelWrapper):
+class GaussLinearModels:
     need_data_clear = True
 
     def __init__(self, **params):

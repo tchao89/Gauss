@@ -77,7 +77,7 @@ class TabularAutoML(BaseAutoML):
                 opt_tuner = self._chose_tuner(opt_name)
                 self.__opt_tuners.append(opt_tuner)
         else:
-            logger.info("Opt tuners have set.")
+            logger.info("Opt tuners have set successfully.")
 
     def _chose_tuner(self, algorithms_name: str):
 
@@ -183,6 +183,7 @@ class TabularAutoML(BaseAutoML):
                             get_current_memory_gb()["memory_usage"]
                         )
                     )
+                    print(entity.keys())
                     self.__model.eval(**entity)
 
                     logger.info(

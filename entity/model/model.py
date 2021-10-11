@@ -16,6 +16,7 @@ from entity.metrics.base_metric import MetricResult
 
 from utils.bunch import Bunch
 from utils.constant_values import ConstantValues
+from utils.feature_name_exec import generate_feature_list, generate_categorical_list
 
 
 class ModelWrapper(Entity):
@@ -23,31 +24,44 @@ class ModelWrapper(Entity):
     This object is a base class for all machine learning
     model which doesn't use multiprocess.
     """
+
     def __init__(self, **params):
-        self._model_root_path = params["model_root_path"]
+        self._model_root_path = params[ConstantValues.model_root_path]
         self._feature_config_root = os.path.join(
-            params["model_root_path"],
+            params[ConstantValues.model_root_path],
             ConstantValues.feature_configure
         )
 
         self._model_config_root = os.path.join(
-            params["model_root_path"],
-            "model_parameters"
+            params[ConstantValues.model_root_path],
+            ConstantValues.model_parameters
         )
 
         self._model_save_root = os.path.join(
-            params["model_root_path"],
-            "model_save"
+            params[ConstantValues.model_root_path],
+            ConstantValues.model_save
         )
 
-        self._task_name = params["task_name"]
-        self._train_flag = params["train_flag"]
+        self._task_name = params[ConstantValues.task_name]
+        self._train_flag = params[ConstantValues.train_flag]
 
-        assert isinstance(params["metric_eval_used_flag"], bool)
-        self._metric_eval_used_flag = params["metric_eval_used_flag"]
-        self._use_weight_flag = params["use_weight_flag"]
+        assert isinstance(params[ConstantValues.metric_eval_used_flag], bool), \
+            "Value: metric_eval_used_flag must be bool type, but get {} instead.".format(
+                type(params[ConstantValues.metric_eval_used_flag])
+            )
+        self._metric_eval_used_flag = params[ConstantValues.metric_eval_used_flag]
+
+        assert isinstance(params[ConstantValues.use_weight_flag], bool), \
+            "Value: use_weight_flag must be bool type, but get {} instead.".format(
+                type(params[ConstantValues.use_weight_flag])
+            )
+
+        self._use_weight_flag = params[ConstantValues.use_weight_flag]
 
         self._init_model_path = params["init_model_path"]
+        assert os.path.isfile(self._init_model_path), \
+            "Value: init_model_path({}) is not a valid model path.".format(
+                self._init_model_path)
 
         # model_config is a dict containing all features and these attributes used in the model.
         # This dict will write to yaml file.
@@ -82,7 +96,7 @@ class ModelWrapper(Entity):
         self.metric_history = []
 
         super().__init__(
-            name=params["name"],
+            name=params[ConstantValues.name],
         )
 
     @property
@@ -144,6 +158,21 @@ class ModelWrapper(Entity):
             self._best_feature_list = self._feature_list
 
         self.update_best()
+
+    def update_feature_conf(self, feature_conf=None):
+        """
+        This method will update feature conf and transfer feature configure to feature list.
+        :param feature_conf: FeatureConfig object
+        :return:
+        """
+        if feature_conf is not None:
+            self._feature_conf = feature_conf
+            self._feature_list = generate_feature_list(feature_conf=self._feature_conf)
+            self._categorical_list = generate_categorical_list(feature_conf=self._feature_conf)
+            assert self._feature_list is not None
+            return self._feature_list
+
+        return None
 
     @abc.abstractmethod
     def update_best(self):

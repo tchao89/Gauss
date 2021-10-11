@@ -22,7 +22,7 @@ class Component(metaclass=abc.ABCMeta):
 
     def __init__(self,
                  name: str,
-                 train_flag: bool = True,
+                 train_flag: str,
                  enable: bool = True,
                  task_name: str = None):
         """Construct a Component.
@@ -36,8 +36,12 @@ class Component(metaclass=abc.ABCMeta):
 
         self._task_name = task_name
         self._name = name
+
         self._train_flag = train_flag
+        assert isinstance(self._train_flag, str)
+
         self._enable = enable
+        assert isinstance(self._enable, bool)
 
     @property
     def name(self):
@@ -78,10 +82,16 @@ class Component(metaclass=abc.ABCMeta):
         """
         if self._train_flag == ConstantValues.train:
             self._train_run(**entity)
-        if self._train_flag == ConstantValues.inference:
+        elif self._train_flag == ConstantValues.inference:
             self._predict_run(**entity)
-        if self._train_flag == ConstantValues.increment:
+        elif self._train_flag == ConstantValues.increment:
             self._increment_run(**entity)
+        else:
+            raise ValueError(
+                "Value: train_flag is illegal, and it can be in "
+                "[train, inference, increment], but get {} instead.".format(
+                    self._train_flag)
+            )
 
     @abc.abstractmethod
     def _train_run(self, **entity):
