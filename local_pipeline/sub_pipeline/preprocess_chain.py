@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2021, Citic-Lab. All rights reserved.
-# Authors: Lab
-"""
+"""-*- coding: utf-8 -*-
+
+Copyright (c) 2021, Citic-Lab. All rights reserved.
+Authors: Lab
 preprocessing pipeline, used for type inference, data clear,
-feature generation and unsupervised feature selector.
-"""
+feature generation and unsupervised feature selector."""
 from __future__ import annotations
 
 import os.path
@@ -51,9 +49,9 @@ class PreprocessRoute(Component):
                                                     ConstantValues.regression]
 
         super().__init__(
-            name=params["name"],
-            train_flag=params["train_flag"],
-            task_name=params["task_name"]
+            name=params[ConstantValues.name],
+            train_flag=params[ConstantValues.train_flag],
+            task_name=params[ConstantValues.task_name]
         )
 
         # 用户提供的特征说明文件
@@ -71,85 +69,84 @@ class PreprocessRoute(Component):
 
         self._entity_dict = None
 
-        self._feature_generator_flag = params["feature_generator_flag"]
+        self._feature_generator_flag = params[ConstantValues.feature_generator_flag]
         self._already_data_clear = None
 
-        self._val_data_path = params["val_data_path"]
-        self._train_data_path = params["train_data_path"]
-        self._test_data_path = params["test_data_path"]
-        self._data_file_type = params.get("data_file_type")
-        self._target_names = params.get("target_names")
-        self._dataset_name = params["dataset_name"]
-        self._weight_column_flag = params["weight_column_flag"]
-        self._weight_column_name = params["weight_column_name"]
+        self._val_data_path = params[ConstantValues.val_data_path]
+        self._train_data_path = params[ConstantValues.train_data_path]
+        self._inference_data_path = params[ConstantValues.inference_data_path]
+        self._data_file_type = params[ConstantValues.data_file_type]
+        self._target_names = params[ConstantValues.target_names]
+        self._dataset_name = params[ConstantValues.dataset_name]
+        self._weight_column_flag = params[ConstantValues.weight_column_flag]
+        self._weight_column_name = params[ConstantValues.weight_column_name]
 
         # Create component algorithms.
         logger.info("Creating type inference object.")
         self.type_inference = self.create_component(
-            component_name=params["type_inference_name"],
+            component_name=params[ConstantValues.type_inference_name],
             **Bunch(
-                name=params["type_inference_name"],
-                task_name=params["task_name"],
+                name=params[ConstantValues.type_inference_name],
+                task_name=params[ConstantValues.task_name],
                 train_flag=self._train_flag,
-                source_file_path=params["feature_path_dict"][ConstantValues.user_feature_path],
-                final_file_path=params["feature_path_dict"][ConstantValues.type_inference_feature_path],
-                final_file_prefix="final"
+                source_file_path=params[ConstantValues.feature_path_dict][ConstantValues.user_feature_path],
+                final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.type_inference_feature_path]
             )
         )
 
         logger.info("Creating data clear object.")
         self.data_clear = self.create_component(
-            component_name=params["data_clear_name"],
+            component_name=params[ConstantValues.data_clear_name],
             **Bunch(
-                name=params["data_clear_name"],
+                name=params[ConstantValues.data_clear_name],
                 train_flag=self._train_flag,
-                enable=params["data_clear_flag"],
-                task_name=params["task_name"],
-                feature_configure_path=params["feature_path_dict"][ConstantValues.type_inference_feature_path],
-                data_clear_configure_path=params["feature_path_dict"][ConstantValues.impute_models_path],
-                final_file_path=params["feature_path_dict"][ConstantValues.data_clear_feature_path],
+                enable=params[ConstantValues.data_clear_flag],
+                task_name=params[ConstantValues.task_name],
+                feature_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.type_inference_feature_path],
+                data_clear_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.impute_models_path],
+                final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.data_clear_feature_path],
                 strategy_dict=None
             )
         )
 
         logger.info("Creating label encoding object.")
         self.label_encoder = self.create_component(
-            component_name=params["label_encoder_name"],
+            component_name=params[ConstantValues.label_encoder_name],
             **Bunch(
-                name=params["label_encoder_name"],
+                name=params[ConstantValues.label_encoder_name],
                 train_flag=self._train_flag,
-                enable=params["label_encoder_flag"],
-                task_name=params["task_name"],
-                feature_config_path=params["feature_path_dict"][ConstantValues.data_clear_feature_path],
-                final_file_path=params["feature_path_dict"][ConstantValues.label_encoder_feature_path],
-                label_encoding_configure_path=params["feature_path_dict"][ConstantValues.label_encoding_models_path],
-                dataset_weight=params["dataset_weight"],
+                enable=params[ConstantValues.label_encoder_flag],
+                task_name=params[ConstantValues.task_name],
+                feature_config_path=params[ConstantValues.feature_path_dict][ConstantValues.data_clear_feature_path],
+                final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.label_encoder_feature_path],
+                label_encoding_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.label_encoding_models_path],
+                dataset_weight=params[ConstantValues.dataset_weight],
             )
         )
 
         logger.info("Creating feature generator object")
         self.feature_generator = self.create_component(
-            component_name=params["feature_generator_name"],
+            component_name=params[ConstantValues.feature_generator_name],
             **Bunch(
-                name=params["feature_generator_name"],
+                name=params[ConstantValues.feature_generator_name],
                 train_flag=self._train_flag,
-                enable=params["feature_generator_flag"],
-                task_name=params["task_name"],
-                feature_config_path=params["feature_path_dict"][ConstantValues.label_encoder_feature_path],
-                final_file_path=params["feature_path_dict"][ConstantValues.feature_generator_feature_path]
+                enable=params[ConstantValues.feature_generator_flag],
+                task_name=params[ConstantValues.task_name],
+                feature_config_path=params[ConstantValues.feature_path_dict][ConstantValues.label_encoder_feature_path],
+                final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.feature_generator_feature_path]
             )
         )
 
         logger.info("Creating unsupervised feature selector object.")
         self.unsupervised_feature_selector = self.create_component(
-            component_name=params["unsupervised_feature_selector_name"],
+            component_name=params[ConstantValues.unsupervised_feature_selector_name],
             **Bunch(
-                name=params["unsupervised_feature_selector_name"],
+                name=params[ConstantValues.unsupervised_feature_selector_name],
                 train_flag=self._train_flag,
-                enable=params["unsupervised_feature_selector_flag"],
-                task_name=params["task_name"],
-                feature_config_path=params["feature_path_dict"][ConstantValues.feature_generator_feature_path],
-                final_file_path=params["feature_path_dict"][ConstantValues.unsupervised_feature_path]
+                enable=params[ConstantValues.unsupervised_feature_selector_flag],
+                task_name=params[ConstantValues.task_name],
+                feature_config_path=params[ConstantValues.feature_path_dict][ConstantValues.feature_generator_feature_path],
+                final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.unsupervised_feature_path]
             )
         )
 
@@ -310,15 +307,15 @@ class PreprocessRoute(Component):
     def _predict_run(self, **entity):
         entity_dict = {}
 
-        assert self._test_data_path is not None
-        assert os.path.isfile(self._test_data_path)
+        assert self._inference_data_path is not None
+        assert os.path.isfile(self._inference_data_path)
         assert self._train_flag is ConstantValues.inference
 
         dataset_params = Bunch(
             name="test",
             task_name=self._task_name,
             data_pair=None,
-            data_path=self._test_data_path,
+            data_path=self._inference_data_path,
             target_name=self._target_names,
             memory_only=True
         )

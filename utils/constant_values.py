@@ -24,6 +24,7 @@ class ConstantValues:
     dataset_weight = "dataset_weight"
     use_weight_flag = "use_weight_flag"
     weight_column_flag = "weight_column_flag"
+    weight_column_name = "weight_column_name"
     dataset_items = ["data",
                      "target",
                      "feature_names",
@@ -78,6 +79,7 @@ class ConstantValues:
     final_file_path = "final_file_path"
     train_data_path = "train_data_path"
     val_data_path = "val_data_path"
+    inference_data_path = "inference_data_path"
     user_feature_path = "user_feature_path"
     type_inference_feature_path = "type_inference_feature_path"
     data_clear_feature_path = "data_clear_feature_path"

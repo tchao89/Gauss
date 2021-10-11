@@ -1,14 +1,10 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic Inc. All rights reserved.
-# Authors: Lab
-"""
+"""-*- coding: utf-8 -*-
 
-"""
+Copyright (c) 2020, Citic Inc. All rights reserved.
+Authors: Lab"""
 from gauss_factory.abstarct_guass import AbstractGauss
 
 from entity.dataset.plain_dataset import PlaintextDataset
-from entity.dataset.multiprocess_plain_dataset import MultiprocessPlaintextDataset
 from entity.feature_configuration.feature_config import FeatureConf
 from entity.model.tree_model.gauss_lightgbm import GaussLightgbm
 from entity.model.tree_model.multiprocess_lightgbm import MultiprocessGaussLightgbm
@@ -21,7 +17,7 @@ from entity.losses.udf_loss import MSELoss
 from entity.losses.udf_loss import BinaryLogLoss
 
 """
-This class will be used in local_pipeline
+This class will be used in local_pipeline.
 """
 class EntityFactory(AbstractGauss):
     def get_entity(self, entity_name: str, **params):
@@ -30,9 +26,6 @@ class EntityFactory(AbstractGauss):
         if entity_name.lower() == "plaindataset":
             # parameters: name: str, task_type: str, data_pair: Bunch, data_path: str, target_name: str, memory_only: bool
             return PlaintextDataset(**params)
-        if entity_name.lower() == "multiprocess_plaindataset":
-            # parameters: name: str, task_type: str, data_pair: Bunch, data_path: str, target_name: str, memory_only: bool
-            return MultiprocessPlaintextDataset(**params)
         elif entity_name.lower() == "feature_configure":
             # parameters: name: str, file_path: str
             return FeatureConf(**params)

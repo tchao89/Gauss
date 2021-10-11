@@ -19,8 +19,8 @@ from scipy import special
 
 import core.lightgbm as lgb
 
-from entity.model.single_process_model import SingleProcessModelWrapper
-from entity.model.single_process_model import choose_features
+from entity.model.model import ModelWrapper
+from entity.model.package_dataset import PackageDataset
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from entity.losses.base_loss import LossResult
@@ -33,7 +33,7 @@ from utils.yaml_exec import yaml_read
 from utils.Logger import logger
 
 
-class GaussLightgbm(SingleProcessModelWrapper):
+class GaussLightgbm(ModelWrapper):
     """
     lightgbm object.
     """
@@ -103,17 +103,17 @@ class GaussLightgbm(SingleProcessModelWrapper):
         else:
             raise ValueError("Value: (increment) task name is invalid.")
 
-    @choose_features
+    @PackageDataset
     def __load_data(self, **kwargs):
         """
         :param dataset:
         :return: lgb.Dataset
         """
-        dataset = kwargs.get("dataset")
+        dataset_bunch = kwargs.get("dataset")
         train_flag = kwargs.get("train_flag")
 
-        dataset_bunch = dataset.get_dataset()
         categorical_list = dataset_bunch.categorical_list
+        target_names = dataset_bunch.target_names[0]
         # dataset is a BaseDataset object, you can use get_dataset() method to get a Bunch object,
         # including data, target, feature_names, target_names, generated_feature_names.
         assert isinstance(dataset_bunch.data, pd.DataFrame)
@@ -125,7 +125,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
 
             if dataset_bunch.dataset_weight is not None:
                 if isinstance(dataset_bunch.dataset_weight, dict):
-                    weight_dict = dataset_bunch.dataset_weight["target_A"]
+                    weight_dict = dataset_bunch.dataset_weight[target_names]
                     weight = [weight_dict[item] for item in dataset_bunch.target.values.flatten()]
                 else:
                     weight = dataset_bunch.dataset_weight
@@ -146,7 +146,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
                     get_current_memory_gb()["memory_usage"]
                 )
             )
-            return lgb_data
+            return lgb_data, dataset_bunch
 
         return dataset_bunch.data
 
@@ -213,7 +213,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
             )
         )
 
-        lgb_train = self.__load_data(
+        lgb_train, _ = self.__load_data(
             label_name=self._target_names,
             dataset=train_dataset,
             use_weight_flag=self._use_weight_flag,
@@ -232,7 +232,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
             )
         )
 
-        lgb_eval = self.__load_data(
+        lgb_eval, _ = self.__load_data(
             label_name=self._target_names,
             dataset=val_dataset,
             use_weight_flag=False,
@@ -750,7 +750,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_train = self.__load_data(
             label_name=self._target_names,
             dataset=train_dataset,
-            use_weight=self._use_weight_flag,
+            use_weight_flag=self._use_weight_flag,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
@@ -869,7 +869,7 @@ class GaussLightgbm(SingleProcessModelWrapper):
         lgb_train = self.__load_data(
             label_name=self._target_names,
             dataset=increment_dataset,
-            use_weight=self._use_weight_flag,
+            use_weight_flag=self._use_weight_flag,
             check_bunch=self._check_bunch,
             feature_list=self._feature_list,
             categorical_list=self._categorical_list,
@@ -977,8 +977,8 @@ class GaussLightgbm(SingleProcessModelWrapper):
              ):
         """
         Evaluating
-        :param train_dataset: BaseDataset object, used to get training metric and loss.
         :param val_dataset: BaseDataset object, used to get validation metric and loss.
+        :param train_dataset: BaseDataset object, used to get training metric and loss.
         :param metric: BaseMetric object, used to calculate metric.
         :param entity: dict object, including other entity.
         :return: None
@@ -993,17 +993,28 @@ class GaussLightgbm(SingleProcessModelWrapper):
         assert "data" in train_dataset.get_dataset() and "target" in train_dataset.get_dataset()
         assert "data" in val_dataset.get_dataset() and "target" in val_dataset.get_dataset()
 
-        train_dataset = self._generate_sub_dataset(dataset=train_dataset)
-        val_dataset = self._generate_sub_dataset(dataset=val_dataset)
+        _, train_dataset = self.__load_data(
+            label_name=self._target_names,
+            dataset=train_dataset,
+            use_weight_flag=self._use_weight_flag,
+            check_bunch=self._check_bunch,
+            feature_list=self._feature_list,
+            categorical_list=self._categorical_list,
+            train_flag=self._train_flag,
+            task_name=self._task_name)
 
-        train_data = train_dataset.get("data")
-        eval_data = val_dataset.get("data")
+        _, eval_dataset = self.__load_data(
+            label_name=self._target_names,
+            dataset=val_dataset,
+            use_weight_flag=self._use_weight_flag,
+            check_bunch=self._check_bunch,
+            feature_list=self._feature_list,
+            categorical_list=self._categorical_list,
+            train_flag=self._train_flag,
+            task_name=self._task_name)
 
-        train_label = train_dataset.get("target")
-        eval_label = val_dataset.get("target")
-
-        train_target_names = train_dataset.get("target_names")
-        eval_target_names = val_dataset.get("target_names")
+        train_data, train_label, train_target_names = train_dataset.data, train_dataset.target, train_dataset.target_names
+        eval_data, eval_label, eval_target_names = eval_dataset.data, eval_dataset.target, eval_dataset.target_names
 
         assert operator.eq(train_target_names, eval_target_names), \
             "Value: target_names is different between train_dataset and validation dataset."

@@ -45,17 +45,17 @@ class BaseModelingGraph:
         assert params["opt_model_names"] is not None
 
         self._attributes_names = Bunch(
-            name=params["name"],
-            task_name=params["task_name"],
-            target_names=params["target_names"],
-            metric_eval_used_flag=params["metric_eval_used_flag"]
+            name=params[ConstantValues.name],
+            task_name=params[ConstantValues.task_name],
+            target_names=params[ConstantValues.target_names],
+            metric_eval_used_flag=params[ConstantValues.metric_eval_used_flag]
         )
 
         self._work_paths = Bunch(
-            work_root=params["work_root"],
-            train_data_path=params["train_data_path"],
-            val_data_path=params["val_data_path"],
-            feature_configure_path=params["feature_configure_path"],
+            work_root=params[ConstantValues.work_root],
+            train_data_path=params[ConstantValues.train_data_path],
+            val_data_path=params[ConstantValues.val_data_path],
+            feature_configure_path=params[ConstantValues.feature_configure_path],
             auto_ml_path=params["auto_ml_path"],
             selector_configure_path=params["selector_configure_path"],
             improved_selector_configure_path=params["improved_selector_configure_path"],

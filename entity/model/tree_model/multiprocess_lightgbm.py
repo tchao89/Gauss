@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import core.lightgbm as lgb
 
-from entity.model.multiprocess_model import MultiprocessModelWrapper
+from wormhole.multiprocess_model import MultiprocessModelWrapper
 from entity.dataset.base_dataset import BaseDataset
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from utils.base import mkdir

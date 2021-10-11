@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic Inc. All rights reserved.
-# Authors: Lab
+"""-*- coding: utf-8 -*-
+
+Copyright (c) 2020, Citic Inc. All rights reserved.
+Authors: Lab"""
 from __future__ import annotations
 
 import os

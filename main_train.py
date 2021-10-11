@@ -8,7 +8,6 @@ import argparse
 
 from local_pipeline.singleprocess.auto_modeling_graph import AutoModelingGraph
 from local_pipeline.singleprocess.udf_modeling_graph import UdfModelingGraph
-from local_pipeline.multiprocess.multiprocess_udf_graph import MultiprocessUdfModelingGraph
 from utils.yaml_exec import yaml_read
 
 # --------------- this block just for test ---------------
@@ -26,7 +25,7 @@ pipeline_dict = Bunch()
 pipeline_dict.mode = "udf"
 # initial model path, optional: str or None, and it's different from increment model setting.
 # This is used to train a better model instead of increment.
-pipeline_dict.init_model_path = "/home/liangqian/Gauss/experiments/mRjEC0/model/lightgbm/model_save/lightgbm.txt"
+pipeline_dict.init_model_path = None
 # choose different supervised selector, optional: ["model_select", "topk_select"]
 pipeline_dict.supervised_selector_mode = "model_select"
 # Because udf metric using in model evaluation may reduce bad results,
@@ -90,20 +89,12 @@ def main(config=config_path):
         model_graph = AutoModelingGraph(name="auto", **pipeline_configure)
 
         model_graph.run()
-
     elif pipeline_configure.mode == "udf":
         model_graph = UdfModelingGraph(name="udf", **pipeline_configure)
 
         model_graph.run()
-
-    elif pipeline_configure.mode == "multi_udf":
-
-        pipeline_configure.dataset_name = "multiprocess_" + pipeline_dict.dataset_name
-        pipeline_configure.model_zoo = ["multiprocess_" + model_name for model_name in pipeline_configure.model_zoo]
-
-        model_graph = MultiprocessUdfModelingGraph(name="udf", **pipeline_configure)
-
-        model_graph.run()
+    else:
+        raise ValueError("Value: pipeline_configure.mode is illegal.")
 
 
 if __name__ == "__main__":
