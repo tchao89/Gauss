@@ -66,9 +66,9 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         self._optimize_mode = None
 
         # max trail num for selector tuner
-        self.selector_trial_num = params["selector_trial_num"]
-        self.__improved_selector_configure_path = params["improved_selector_configure_path"]
-        self.__feature_model_trial = params["feature_model_trial"]
+        self.selector_trial_num = params[ConstantValues.selector_trial_num]
+        self.__improved_selector_configure_path = params[ConstantValues.improved_selector_configure_path]
+        self.__feature_model_trial = params[ConstantValues.feature_model_trial]
         # default parameters concludes tree selector parameters and gradient parameters.
         # format: {"gradient_feature_selector": {"order": 4, "n_epochs": 100},
         # "GBDTSelector": {"lgb_params": {}, "eval_ratio", 0.3, "importance_type":
@@ -104,20 +104,20 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         # use auto ml component to train a lightgbm model and get feature_importance_pair
         feature_importance_pair = self.__feature_select(**entity)
 
-        original_dataset = entity["train_dataset"]
-        original_val_dataset = entity["val_dataset"]
-        feature_configure = entity["feature_configure"]
-        metric = entity["metric"]
-        loss = entity["loss"]
+        original_dataset = entity[ConstantValues.train_dataset]
+        original_val_dataset = entity[ConstantValues.val_dataset]
+        feature_configure = entity[ConstantValues.feature_configure]
+        metric = entity[ConstantValues.metric]
+        loss = entity[ConstantValues.loss]
 
         self._optimize_mode = metric.optimize_mode
         columns = original_dataset.get_dataset().data.shape[1]
 
         # 创建自动机器学习对象
-        model_tuner = entity["auto_ml"]
+        model_tuner = entity[ConstantValues.auto_ml]
         model_tuner.is_final_set = False
 
-        model = entity["model"]
+        model = entity[ConstantValues.model]
         assert isinstance(model, ModelWrapper)
 
         selector_tuner = HyperoptTuner(

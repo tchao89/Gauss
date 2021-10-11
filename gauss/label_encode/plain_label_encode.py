@@ -27,11 +27,11 @@ class PlainLabelEncode(BaseLabelEncode):
     def __init__(self, **params):
 
         super().__init__(
-            name=params["name"],
-            train_flag=params["train_flag"],
-            enable=params["enable"],
-            task_name=params["task_name"],
-            feature_configure_path=params["feature_config_path"]
+            name=params[ConstantValues.name],
+            train_flag=params[ConstantValues.train_flag],
+            enable=params[ConstantValues.enable],
+            task_name=params[ConstantValues.task_name],
+            feature_configure_path=params[ConstantValues.feature_configure_path]
         )
 
         self.__final_file_path = params["final_file_path"]
@@ -211,7 +211,6 @@ class PlainLabelEncode(BaseLabelEncode):
         reduce_data(dataframe=dataset.get_dataset().data)
 
     def __reset_dataset_attributes(self, dataset: BaseDataset):
-        target = dataset.get_dataset().target
         target_names = dataset.get_dataset().target_names
 
         encoding_weight = None

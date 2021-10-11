@@ -18,6 +18,7 @@ from entity.losses.base_loss import BaseLoss
 
 from utils.Logger import logger
 from utils.base import get_current_memory_gb
+from utils.constant_values import ConstantValues
 
 
 class TabularAutoML(BaseAutoML):
@@ -34,21 +35,21 @@ class TabularAutoML(BaseAutoML):
         and can includes tpe, random_search, anneal and evolution.
         """
         super().__init__(
-            name=params["name"],
-            train_flag=params["train_flag"],
-            enable=params["enable"],
-            task_name=params["task_name"],
-            opt_model_names=params["opt_model_names"])
+            name=params[ConstantValues.name],
+            train_flag=params[ConstantValues.train_flag],
+            enable=params[ConstantValues.enable],
+            task_name=params[ConstantValues.task_name],
+            opt_model_names=params[ConstantValues.opt_model_names])
 
-        assert "optimize_mode" in params
-        assert params["optimize_mode"] in ["minimize", "maximize"]
+        assert params[ConstantValues.optimize_mode] in [ConstantValues.minimize,
+                                                        ConstantValues.maximize]
 
         self.__opt_tuners = []
         # optional: "maximize", "minimize", depends on metrics for auto ml.
-        self.__optimize_mode = params["optimize_mode"]
+        self.__optimize_mode = params[ConstantValues.optimize_mode]
         # trial num for auto ml.
-        self.__trial_num = params["auto_ml_trial_num"]
-        self.__auto_ml_path = params["auto_ml_path"]
+        self.__trial_num = params[ConstantValues.auto_ml_trial_num]
+        self.__auto_ml_path = params[ConstantValues.auto_ml_path]
         self.__default_parameters = None
         self.__search_space = None
 

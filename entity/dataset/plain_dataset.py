@@ -50,28 +50,27 @@ class PlaintextDataset(BaseDataset):
         :param target_name: A `list` containing label names in string format.
         :param memory_only: a boolean value, true for memory, false for others, default True.
         """
-        for item in ["name",
-                     "task_name",
-                     "data_package",
-                     "data_path",
-                     "target_name",
-                     "memory_only",
-                     "data_file_type",
-                     "proportion"]:
+        for item in ConstantValues.dataset_items:
             if params.get(item) is None:
                 params[item] = None
 
-        super(PlaintextDataset, self).__init__(params["name"], params["data_path"], params["task_name"], params["memory_only"])
+        super().__init__(
+            params[ConstantValues.name],
+            params[ConstantValues.data_path],
+            params[ConstantValues.task_name],
+            params[ConstantValues.memory_only]
+        )
 
-        if not params["data_path"] and not params["data_package"]:
+        if params[ConstantValues.data_path] ^ params[ConstantValues.data_package]:
             raise AttributeError("data_path or data_package must provided.")
 
-        self._data_package = params["data_package"]
+        self._data_package = params[ConstantValues.data_package]
 
-        self._target_name = params["target_name"]
-        self.__type_doc = params["data_file_type"]
+        self._target_name = params[ConstantValues.target_names]
+        self.__type_doc = params[ConstantValues.data_file_type]
 
-        assert isinstance(self._target_name, List) or self._target_name is None, "Value: target_name is {}".format(self._target_name)
+        assert isinstance(self._target_name, List) or self._target_name is None, "Value: target_name is {}".format(
+            self._target_name)
         self._column_size = 0
         self._row_size = 0
 
@@ -94,14 +93,15 @@ class PlaintextDataset(BaseDataset):
         # This value is a bool value, and true means plaindataset has missing values and need to clear.
         self._need_data_clear = False
 
-        assert params["data_path"] is not None or params["data_package"] is not None
-        if params["data_path"] is not None and isinstance(params["data_path"], str):
+        assert params["data_path"] is not None or params[ConstantValues.data_package] is not None
+        if params["data_path"] is not None and isinstance(params[ConstantValues.data_path], str):
             self._bunch = self.load_data()
 
         # if params["data_path] is a dict, it's format must be
         # {"train_dataset": "./t_data.csv", "val_dataset": "./v_data.csv"}
-        elif isinstance(params["data_path"], dict):
-            if not (self._data_path.get("train_dataset") and self._data_path.get("val_dataset")):
+        elif isinstance(params[ConstantValues.data_path], dict):
+            if not (self._data_path.get(ConstantValues.train_data_path)
+                    and self._data_path.get(ConstantValues.val_data_path)):
                 raise ValueError(
                     "data_path must include `train_dataset` and `val_dataset` when pass a dictionary."
                 )
@@ -115,7 +115,7 @@ class PlaintextDataset(BaseDataset):
         data = self._bunch.data
         target = self._bunch.target
         df = pd.concat((data, target), axis=1)
-        return str(df.head()) + str(df.info())
+        return str(df.head(self._default_print_size)) + str(df.info())
 
     def get_dataset(self):
         return self._bunch
