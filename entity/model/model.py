@@ -59,9 +59,10 @@ class ModelWrapper(Entity):
         self._use_weight_flag = params[ConstantValues.use_weight_flag]
 
         self._init_model_path = params["init_model_path"]
-        assert os.path.isfile(self._init_model_path), \
-            "Value: init_model_path({}) is not a valid model path.".format(
-                self._init_model_path)
+        if self._init_model_path:
+            assert os.path.isfile(self._init_model_path), \
+                "Value: init_model_path({}) is not a valid model path.".format(
+                    self._init_model_path)
 
         # model_config is a dict containing all features and these attributes used in the model.
         # This dict will write to yaml file.

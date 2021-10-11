@@ -41,8 +41,7 @@ class PlainTypeInference(BaseTypeInference):
             train_flag=params["train_flag"],
             task_name=params["task_name"],
             source_file_path=params["source_file_path"],
-            final_file_path=params["final_file_path"],
-            final_file_prefix=params["final_file_prefix"]
+            final_file_path=params["final_file_path"]
         )
 
         assert params[ConstantValues.task_name] in [ConstantValues.binary_classification,

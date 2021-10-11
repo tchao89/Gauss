@@ -69,9 +69,9 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         self._optimize_mode = None
 
         # selector names
-        self._feature_selector_names = params["feature_selector_model_names"]
+        self._feature_selector_names = params[ConstantValues.feature_selector_model_names]
         # max trail num for selector tuner
-        self.selector_trial_num = params["selector_trial_num"]
+        self.selector_trial_num = params[ConstantValues.selector_trial_num]
         # default parameters concludes tree selector parameters and gradient parameters.
         # format: {"gradient_feature_selector": {"order": 4, "n_epochs": 100},
         # "GBDTSelector": {"lgb_params": {}, "eval_ratio", 0.3, "importance_type":

@@ -117,7 +117,7 @@ class PreprocessRoute(Component):
                 train_flag=self._train_flag,
                 enable=params[ConstantValues.label_encoder_flag],
                 task_name=params[ConstantValues.task_name],
-                feature_config_path=params[ConstantValues.feature_path_dict][ConstantValues.data_clear_feature_path],
+                feature_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.data_clear_feature_path],
                 final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.label_encoder_feature_path],
                 label_encoding_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.label_encoding_models_path],
                 dataset_weight=params[ConstantValues.dataset_weight],
