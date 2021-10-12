@@ -22,6 +22,7 @@ class CoreRoute(Component):
     """
     CoreRoute object.
     """
+
     def __init__(self, **params):
         super().__init__(
             name=params["name"],
@@ -75,24 +76,22 @@ class CoreRoute(Component):
         )
         self._optimize_mode = self.metric.optimize_mode
 
+        self._best_metric = None
         # create model
         model_params = Bunch(
             name=self._model_name,
             model_root_path=params["model_root_path"],
             train_flag=self._train_flag,
             task_name=self._task_name,
-            use_weight_flag=params["use_weight_flag"],
-            metric_eval_used_flag=params["metric_eval_used_flag"],
-            init_model_path=params["init_model_path"]
+            metric_eval_used_flag=params["metric_eval_used_flag"]
         )
 
-        self.model = self.create_entity(entity_name=self._model_name, **model_params)
-
-        self._best_metric = None
-
-        if self._train_flag:
+        if self._train_flag == ConstantValues.train:
             self.__auto_ml_path = params["auto_ml_path"]
             self.__selector_configure_path = params["selector_configure_path"]
+
+            model_params.use_weight_flag = params["use_weight_flag"]
+            model_params.init_model_path = params["init_model_path"]
 
             tuner_params = Bunch(
                 name=self.auto_ml_name,
@@ -159,8 +158,11 @@ class CoreRoute(Component):
                         **s_params
                     )
         else:
+            model_params.use_weight_flag = False
             self._result = None
             self._feature_conf = None
+
+        self.model = self.create_entity(entity_name=self._model_name, **model_params)
 
     def _train_run(self, **entity):
         assert "train_dataset" in entity.keys()
@@ -248,7 +250,6 @@ class CoreRoute(Component):
 
         entity["model"] = self.model
         entity["metric"] = self.metric
-        entity["auto_ml"] = self.auto_ml
         entity["feature_configure"] = self.feature_conf
         entity["loss"] = self.loss
 
@@ -270,7 +271,7 @@ class CoreRoute(Component):
             )
         )
 
-        entity["model"].increment(**entity)
+        entity["model"].run(**entity)
 
         yaml_write(yaml_dict=feature_conf, yaml_file=self._final_file_path)
 

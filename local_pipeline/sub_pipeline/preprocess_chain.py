@@ -72,14 +72,34 @@ class PreprocessRoute(Component):
         self._feature_generator_flag = params[ConstantValues.feature_generator_flag]
         self._already_data_clear = None
 
-        self._val_data_path = params[ConstantValues.val_data_path]
-        self._train_data_path = params[ConstantValues.train_data_path]
-        self._inference_data_path = params[ConstantValues.inference_data_path]
         self._data_file_type = params[ConstantValues.data_file_type]
         self._target_names = params[ConstantValues.target_names]
         self._dataset_name = params[ConstantValues.dataset_name]
-        self._weight_column_flag = params[ConstantValues.weight_column_flag]
-        self._weight_column_name = params[ConstantValues.weight_column_name]
+
+        label_encoder_params = Bunch(
+            name=params[ConstantValues.label_encoder_name],
+            train_flag=self._train_flag,
+            enable=params[ConstantValues.label_encoder_flag],
+            task_name=params[ConstantValues.task_name],
+            feature_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.data_clear_feature_path],
+            final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.label_encoder_feature_path],
+            label_encoding_configure_path=params[ConstantValues.feature_path_dict][
+                ConstantValues.label_encoding_models_path]
+        )
+        if self._train_flag == ConstantValues.train:
+            self._weight_column_flag = params[ConstantValues.weight_column_flag]
+            self._weight_column_name = params[ConstantValues.weight_column_name]
+            self._val_data_path = params[ConstantValues.val_data_path]
+            self._train_data_path = params[ConstantValues.train_data_path]
+
+            label_encoder_params.dataset_weight = params[ConstantValues.dataset_weight]
+        elif self._train_flag == ConstantValues.increment:
+            self._train_data_path = params[ConstantValues.train_data_path]
+        elif self._train_flag == ConstantValues.inference:
+            self._inference_data_path = params[ConstantValues.inference_data_path]
+        else:
+            raise ValueError("Value: train_flag should be train, "
+                             "increment or inference, but get {}".format(self._train_flag))
 
         # Create component algorithms.
         logger.info("Creating type inference object.")
@@ -102,7 +122,8 @@ class PreprocessRoute(Component):
                 train_flag=self._train_flag,
                 enable=params[ConstantValues.data_clear_flag],
                 task_name=params[ConstantValues.task_name],
-                feature_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.type_inference_feature_path],
+                feature_configure_path=params[ConstantValues.feature_path_dict][
+                    ConstantValues.type_inference_feature_path],
                 data_clear_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.impute_models_path],
                 final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.data_clear_feature_path],
                 strategy_dict=None
@@ -112,16 +133,7 @@ class PreprocessRoute(Component):
         logger.info("Creating label encoding object.")
         self.label_encoder = self.create_component(
             component_name=params[ConstantValues.label_encoder_name],
-            **Bunch(
-                name=params[ConstantValues.label_encoder_name],
-                train_flag=self._train_flag,
-                enable=params[ConstantValues.label_encoder_flag],
-                task_name=params[ConstantValues.task_name],
-                feature_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.data_clear_feature_path],
-                final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.label_encoder_feature_path],
-                label_encoding_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.label_encoding_models_path],
-                dataset_weight=params[ConstantValues.dataset_weight],
-            )
+            **label_encoder_params
         )
 
         logger.info("Creating feature generator object")
@@ -145,7 +157,8 @@ class PreprocessRoute(Component):
                 train_flag=self._train_flag,
                 enable=params[ConstantValues.unsupervised_feature_selector_flag],
                 task_name=params[ConstantValues.task_name],
-                feature_config_path=params[ConstantValues.feature_path_dict][ConstantValues.feature_generator_feature_path],
+                feature_config_path=params[ConstantValues.feature_path_dict][
+                    ConstantValues.feature_generator_feature_path],
                 final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.unsupervised_feature_path]
             )
         )
@@ -191,7 +204,7 @@ class PreprocessRoute(Component):
         dataset_params = Bunch(
             name=self._dataset_name,
             task_name=self._task_name,
-            data_pair=None,
+            data_package=None,
             data_path=self._train_data_path,
             data_file_type=self._data_file_type,
             target_name=self._target_names,
@@ -208,7 +221,7 @@ class PreprocessRoute(Component):
             val_dataset_params = Bunch(
                 name=self._dataset_name,
                 task_name=self._task_name,
-                data_pair=None,
+                data_package=None,
                 data_path=self._val_data_path,
                 data_file_type=self._data_file_type,
                 target_name=self._target_names,
@@ -264,7 +277,7 @@ class PreprocessRoute(Component):
         dataset_params = Bunch(
             name=self._dataset_name,
             task_name=self._task_name,
-            data_pair=None,
+            data_package=None,
             data_path=self._train_data_path,
             data_file_type=self._data_file_type,
             target_name=self._target_names,

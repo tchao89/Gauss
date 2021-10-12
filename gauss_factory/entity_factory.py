@@ -7,7 +7,6 @@ from gauss_factory.abstarct_guass import AbstractGauss
 from entity.dataset.plain_dataset import PlaintextDataset
 from entity.feature_configuration.feature_config import FeatureConf
 from entity.model.tree_model.gauss_lightgbm import GaussLightgbm
-from entity.model.tree_model.multiprocess_lightgbm import MultiprocessGaussLightgbm
 from entity.model.linear_models.linear_models import GaussLinearModels
 from entity.metrics.udf_metric import AUC
 from entity.metrics.udf_metric import BinaryF1

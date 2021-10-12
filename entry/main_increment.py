@@ -24,17 +24,14 @@ environ_configure = EnvironmentConfigure(work_root="/home/liangqian/Gauss/experi
                                          user_feature=None)
 
 pipeline_dict = Bunch()
-# Because udf metric using in model evaluation may reduce bad results,
-# this bool value is used to avoid this.
-pipeline_dict.metric_eval_used = False
 # new work root for increment task
 pipeline_dict.work_root = environ_configure.work_root
 logger.info("work_root: %s", pipeline_dict.work_root)
 # optional: ["libsvm", "txt", "csv"]
 pipeline_dict.data_file_type = "libsvm"
 # increment dataset
-pipeline_dict.init_work_root = "/home/liangqian/Gauss/experiments/Vf0ajs"
-pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/eunite2001/eunite2001"
+pipeline_dict.init_work_root = "/home/liangqian/Gauss/experiments/C1Ackz"
+pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/a9a/a9a.t"
 
 # user must set a specific model for increment
 pipeline_dict.model_zoo = ["lightgbm"]

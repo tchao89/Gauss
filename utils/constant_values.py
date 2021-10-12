@@ -13,6 +13,7 @@ class ConstantValues:
     task_name = "task_name"
     target_names = "target_names"
     memory_only = "memory_only"
+    proportion = "proportion"
     data_file_type = "data_file_type"
     data_package = "data_package"
     supervised_selector_model_names = "supervised_selector_model_names"

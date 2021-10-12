@@ -323,7 +323,7 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         return feature_importance_pair
 
     def _increment_run(self, **entity):
-        self._train_run(**entity)
+        pass
 
     @property
     def optimal_metric(self):
@@ -438,7 +438,7 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
 
     @classmethod
     def __load_default_params(cls, json_dict: dict, res=None):
-        """
+        """a
         Read default parameters.
         :param json_dict:
         :param res:
