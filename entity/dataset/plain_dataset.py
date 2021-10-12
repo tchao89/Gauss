@@ -50,7 +50,14 @@ class PlaintextDataset(BaseDataset):
         :param target_name: A `list` containing label names in string format.
         :param memory_only: a boolean value, true for memory, false for others, default True.
         """
-        for item in ConstantValues.dataset_items:
+        for item in [ConstantValues.name,
+                     ConstantValues.task_name,
+                     ConstantValues.data_package,
+                     ConstantValues.data_path,
+                     ConstantValues.target_names,
+                     ConstantValues.memory_only,
+                     ConstantValues.data_file_type,
+                     ConstantValues.proportion]:
             if params.get(item) is None:
                 params[item] = None
 
@@ -61,16 +68,16 @@ class PlaintextDataset(BaseDataset):
             params[ConstantValues.memory_only]
         )
 
-        if params[ConstantValues.data_path] ^ params[ConstantValues.data_package]:
-            raise AttributeError("data_path or data_package must provided.")
+        if bool(params[ConstantValues.data_path]) == bool(params[ConstantValues.data_package]):
+            raise AttributeError("data_path or data_package must be provided.")
 
         self._data_package = params[ConstantValues.data_package]
 
-        self._target_name = params[ConstantValues.target_names]
+        self._target_names = params[ConstantValues.target_names]
         self.__type_doc = params[ConstantValues.data_file_type]
 
-        assert isinstance(self._target_name, List) or self._target_name is None, "Value: target_name is {}".format(
-            self._target_name)
+        assert isinstance(self._target_names, List) or self._target_names is None, "Value: target_name is {}".format(
+            self._target_names)
         self._column_size = 0
         self._row_size = 0
 
@@ -79,12 +86,15 @@ class PlaintextDataset(BaseDataset):
         # feature_names[optional], target_names[optional]
         self._bunch = None
 
-        assert isinstance(params["weight_column_flag"], bool)
-        if params["weight_column_name"]:
-            assert isinstance(params["weight_column_name"], str)
+        if params.get(ConstantValues.weight_column_flag):
+            assert isinstance(params["weight_column_flag"], bool)
+            if params["weight_column_name"]:
+                assert isinstance(params["weight_column_name"], str)
+                self._weight_column_name = params["weight_column_name"]
 
-        self._weight_column_flag = params["weight_column_flag"]
-        self._weight_column_name = params["weight_column_name"]
+            self._weight_column_flag = params["weight_column_flag"]
+        else:
+            self._weight_column_flag = False
 
         # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
@@ -265,11 +275,11 @@ class PlaintextDataset(BaseDataset):
         feature_names = data.columns
         self._row_size = data.shape[0]
 
-        if self._target_name is not None:
-            target = data[self._target_name]
-            data = data.drop(self._target_name, axis=1)
+        if self._target_names is not None:
+            target = data[self._target_names]
+            data = data.drop(self._target_names, axis=1)
             feature_names = data.columns
-            target_name = self._target_name
+            target_name = self._target_names
             self._column_size = data.shape[1] + target.shape[1]
 
         # there must exist a column named dataset_weight
@@ -332,7 +342,7 @@ class PlaintextDataset(BaseDataset):
         return self._row_size
 
     def get_target_name(self):
-        return self._target_name
+        return self._target_names
 
     @classmethod
     def _convert_data_dataframe(cls, data, target,
@@ -442,8 +452,8 @@ class PlaintextDataset(BaseDataset):
         return self._row_size
 
     @property
-    def target_name(self):
-        return self._target_name
+    def target_names(self):
+        return self._target_names
 
     @property
     def default_print_size(self):

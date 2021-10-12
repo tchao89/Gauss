@@ -12,7 +12,7 @@ from os.path import join
 from local_pipeline.sub_pipeline.core_chain import CoreRoute
 from local_pipeline.sub_pipeline.preprocess_chain import PreprocessRoute
 from local_pipeline.pipeline_utils.mapping import EnvironmentConfigure
-from local_pipeline.base_modeling_graph import BaseModelingGraph
+from utils.bunch import Bunch
 
 from utils.yaml_exec import yaml_write
 from utils.exception import PipeLineLogicError, NoResultReturnException
@@ -20,7 +20,7 @@ from utils.Logger import logger
 from utils.constant_values import ConstantValues
 
 
-class IncrementModelingGraph(BaseModelingGraph):
+class IncrementModelingGraph:
     """
     Increment object.
     In this pipeline, value: train_flag will be set "increment"
@@ -53,40 +53,7 @@ class IncrementModelingGraph(BaseModelingGraph):
         :param auto_ml_path:
         :param selector_configure_path:
         """
-        super().__init__(
-            name=name,
-            metric_eval_used=params[ConstantValues.metric_eval_used],
-            data_file_type=params[ConstantValues.data_file_type],
-            work_root=params[ConstantValues.work_root],
-            task_name=params[ConstantValues.task_name],
-            metric_name=params[ConstantValues.metric_name],
-            loss_name=params[ConstantValues.loss_name],
-            train_data_path=params[ConstantValues.train_data_path],
-            val_data_path=params[ConstantValues.val_data_path],
-            target_names=params[ConstantValues.target_names],
-            model_need_clear_flag=params[ConstantValues.model_need_clear_flag],
-            feature_configure_path=params[ConstantValues.feature_configure_path],
-            feature_configure_name=params[ConstantValues.feature_configure_name],
-            dataset_name=params[ConstantValues.dataset_name],
-            type_inference_name=params[ConstantValues.type_inference_name],
-            label_encoder_name=params[ConstantValues.label_encoder_name],
-            label_encoder_flag=params[ConstantValues.label_encoder_flag],
-            data_clear_name=params[ConstantValues.data_clear_name],
-            data_clear_flag=params[ConstantValues.data_clear_flag],
-            feature_generator_name=params[ConstantValues.feature_generator_name],
-            feature_generator_flag=params[ConstantValues.feature_generator_flag],
-            unsupervised_feature_selector_name=params[ConstantValues.unsupervised_feature_selector_name],
-            unsupervised_feature_selector_flag=params[ConstantValues.unsupervised_feature_selector_flag],
-            supervised_feature_selector_name=params[ConstantValues.supervised_feature_selector_name],
-            supervised_feature_selector_flag=params[ConstantValues.supervised_feature_selector_flag],
-            supervised_selector_model_names=params[ConstantValues.supervised_selector_model_names],
-            selector_trial_num=params[ConstantValues.selector_trial_num],
-            auto_ml_name=params[ConstantValues.auto_ml_name],
-            auto_ml_trial_num=params[ConstantValues.auto_ml_trial_num],
-            opt_model_names=params[ConstantValues.opt_model_names],
-            auto_ml_path=params[ConstantValues.auto_ml_path],
-            selector_configure_path=params[ConstantValues.selector_configure_path]
-        )
+        self._name = name
 
         if params[ConstantValues.model_zoo] is None:
             params[ConstantValues.model_zoo] = ["xgboost", "lightgbm", "catboost", "lr_lightgbm", "dnn"]
@@ -103,6 +70,61 @@ class IncrementModelingGraph(BaseModelingGraph):
         if params[ConstantValues.data_clear_flag] is None:
             params[ConstantValues.data_clear_flag] = True
 
+        self._attributes_names = Bunch(
+            task_name=params[ConstantValues.task_name],
+            target_names=params[ConstantValues.target_names],
+            metric_eval_used_flag=params[ConstantValues.metric_eval_used_flag]
+        )
+
+        self._work_paths = Bunch(
+            work_root=params[ConstantValues.work_root],
+            train_data_path=params[ConstantValues.train_data_path],
+            val_data_path=params[ConstantValues.val_data_path],
+            feature_configure_path=params[ConstantValues.feature_configure_path],
+            auto_ml_path=params["auto_ml_path"],
+            selector_configure_path=params["selector_configure_path"],
+            init_model_path=params["init_model_path"]
+        )
+
+        self._entity_names = Bunch(
+            dataset_name=params["dataset_name"],
+            metric_name=params["metric_name"],
+            loss_name=params[ConstantValues.loss_name],
+            feature_configure_name=params["feature_configure_name"]
+        )
+
+        self._component_names = Bunch(
+            type_inference_name=params["type_inference_name"],
+            data_clear_name=params["data_clear_name"],
+            label_encoder_name=params["label_encoder_name"],
+            feature_generator_name=params["feature_generator_name"],
+            unsupervised_feature_selector_name=params["unsupervised_feature_selector_name"],
+            supervised_feature_selector_name=params["supervised_feature_selector_name"],
+            improved_supervised_feature_selector_name=params["improved_supervised_feature_selector_name"],
+            auto_ml_name=params["auto_ml_name"]
+        )
+
+        self._global_values = Bunch(
+            dataset_weight=params["dataset_weight"],
+            use_weight_flag=params["use_weight_flag"],
+            weight_column_flag=params["weight_column_flag"],
+            weight_column_name=params["weight_column_name"],
+            data_file_type=params["data_file_type"],
+            selector_trial_num=params["selector_trial_num"],
+            auto_ml_trial_num=params["auto_ml_trial_num"],
+            opt_model_names=params["opt_model_names"],
+            supervised_selector_mode=params["supervised_selector_mode"],
+            feature_model_trial=params["feature_model_trial"],
+            supervised_selector_model_names=params["supervised_selector_model_names"]
+        )
+
+        self._flag_dict = Bunch(
+            data_clear_flag=params["data_clear_flag"],
+            label_encoder_flag=params["label_encoder_flag"],
+            feature_generator_flag=params["feature_generator_flag"],
+            unsupervised_feature_selector_flag=params["unsupervised_feature_selector_flag"],
+            supervised_feature_selector_flag=params["supervised_feature_selector_flag"]
+        )
         self._model_zoo = params[ConstantValues.model_zoo]
 
         self.__pipeline_configure = \
@@ -135,6 +157,14 @@ class IncrementModelingGraph(BaseModelingGraph):
              ConstantValues.type_inference_name:
                  self._component_names[ConstantValues.type_inference_name]
              }
+
+    def run(self):
+        """
+        Start training model with pipeline.
+        :return:
+        """
+        self._run()
+        self._set_pipeline_config()
 
     def __path_register(self):
         pass
@@ -200,8 +230,8 @@ class IncrementModelingGraph(BaseModelingGraph):
             task_name=self._attributes_names[ConstantValues.task_name],
             train_flag=ConstantValues.increment,
             train_data_path=self._work_paths[ConstantValues.train_data_path],
-            val_data_path=self._work_paths[ConstantValues.val_data_path],
-            test_data_path=None,
+            val_data_path=None,
+            inference_data_path=None,
             target_names=self._attributes_names[ConstantValues.target_names],
             dataset_name=self._entity_names[ConstantValues.dataset_name],
             type_inference_name=self._component_names[ConstantValues.type_inference_name],
@@ -233,7 +263,7 @@ class IncrementModelingGraph(BaseModelingGraph):
             target_feature_configure_path=feature_dict[ConstantValues.final_feature_configure],
             pre_feature_configure_path=feature_dict[ConstantValues.unsupervised_feature_path],
             model_name=params.get(ConstantValues.model_name),
-            metric_eval_used=self._attributes_names.metric_eval_used,
+            metric_eval_used_flag=self._attributes_names.metric_eval_used_flag,
             feature_configure_name=self._entity_names[ConstantValues.feature_configure_name],
             label_encoding_path=feature_dict[ConstantValues.label_encoding_models_path],
             metric_name=self._entity_names[ConstantValues.metric_name],

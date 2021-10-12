@@ -58,12 +58,6 @@ class ModelWrapper(Entity):
 
         self._use_weight_flag = params[ConstantValues.use_weight_flag]
 
-        self._init_model_path = params["init_model_path"]
-        if self._init_model_path:
-            assert os.path.isfile(self._init_model_path), \
-                "Value: init_model_path({}) is not a valid model path.".format(
-                    self._init_model_path)
-
         # model_config is a dict containing all features and these attributes used in the model.
         # This dict will write to yaml file.
         # This parameters contains model parameters and preprocessing flags.
@@ -202,9 +196,10 @@ class ModelWrapper(Entity):
         """
 
     @abc.abstractmethod
-    def binary_train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
+    def binary_train(self, init_model_path: str, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
         """
         Training model, and this method doesn't contain evaluation.
+        :param init_model_path:
         :param train_dataset: BaseDataset object, training dataset.
         :param val_dataset: BaseDataset object, validation dataset.
         :param entity: dict object, including other entity, such as Metric... etc.

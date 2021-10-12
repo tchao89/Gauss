@@ -40,7 +40,11 @@ class PlainLabelEncode(BaseLabelEncode):
 
         self.__label_encoding_configure_path = params["label_encoding_configure_path"]
         self.__label_encoding = {}
-        self.__dataset_weight = params["dataset_weight"]
+
+        if self._train_flag == ConstantValues.train:
+            self.__dataset_weight = params["dataset_weight"]
+        else:
+            self.__dataset_weight = None
 
     def _train_run(self, **entity):
         assert "train_dataset" in entity.keys()
@@ -74,6 +78,7 @@ class PlainLabelEncode(BaseLabelEncode):
 
         with shelve.open(self.__label_encoding_configure_path) as shelve_open:
             le_model_list = shelve_open['label_encoding']
+            self.__label_encoding = le_model_list
 
             for col in feature_names:
                 if not isinstance(self.__feature_configure, dict):
@@ -219,7 +224,7 @@ class PlainLabelEncode(BaseLabelEncode):
                 or self._task_name == ConstantValues.multiclass_classification:
             for label in target_names:
                 proportion = {}
-                if self.__dataset_weight is not None:
+                if self.__dataset_weight:
                     weight = {}
                     encoding_weight = {}
                     for label_value, label_weight in self.__dataset_weight[label].copy().items():
