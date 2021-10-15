@@ -9,10 +9,10 @@ from __future__ import annotations
 
 from os.path import join
 
-from local_pipeline.sub_pipeline.core_chain import CoreRoute
-from local_pipeline.sub_pipeline.preprocess_chain import PreprocessRoute
-from local_pipeline.pipeline_utils.mapping import EnvironmentConfigure
-from local_pipeline.base_modeling_graph import BaseModelingGraph
+from pipeline.local_pipeline.core_chain import CoreRoute
+from pipeline.local_pipeline.preprocess_chain import PreprocessRoute
+from pipeline.local_pipeline.mapping import EnvironmentConfigure
+from pipeline.local_pipeline.base_modeling_graph import BaseModelingGraph
 
 from utils.check_dataset import check_data
 from utils.yaml_exec import yaml_write
@@ -66,7 +66,7 @@ class UdfModelingGraph(BaseModelingGraph):
             weight_column_name=params[ConstantValues.weight_column_name],
             use_weight_flag=params[ConstantValues.use_weight_flag],
             metric_name=params[ConstantValues.metric_name],
-            init_model_path=params[ConstantValues.init_model_path],
+            init_model_root=params[ConstantValues.init_model_root],
             loss_name=params[ConstantValues.loss_name],
             train_data_path=params[ConstantValues.train_data_path],
             val_data_path=params[ConstantValues.val_data_path],
@@ -255,7 +255,7 @@ class UdfModelingGraph(BaseModelingGraph):
             target_feature_configure_path=feature_dict[ConstantValues.final_feature_configure],
             pre_feature_configure_path=feature_dict[ConstantValues.unsupervised_feature_path],
             model_name=params[ConstantValues.model_name],
-            init_model_path=self._work_paths[ConstantValues.init_model_path],
+            init_model_root=self._work_paths[ConstantValues.init_model_root],
             metric_eval_used_flag=self._attributes_names.metric_eval_used_flag,
             feature_configure_name=self._entity_names[ConstantValues.feature_configure_name],
             label_encoding_path=feature_dict[ConstantValues.label_encoding_models_path],

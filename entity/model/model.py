@@ -26,6 +26,10 @@ class ModelWrapper(Entity):
     """
 
     def __init__(self, **params):
+        super().__init__(
+            name=params[ConstantValues.name],
+        )
+
         self._model_root_path = params[ConstantValues.model_root_path]
         self._feature_config_root = os.path.join(
             params[ConstantValues.model_root_path],
@@ -44,6 +48,22 @@ class ModelWrapper(Entity):
 
         self._task_name = params[ConstantValues.task_name]
         self._train_flag = params[ConstantValues.train_flag]
+
+        if self._train_flag == ConstantValues.train:
+            self._init_model_root = params[ConstantValues.init_model_root]
+            if self._init_model_root is not None:
+                self._init_model_path = os.path.join(self._init_model_root, self._name)
+            else:
+                self._init_model_path = None
+        elif self._train_flag == ConstantValues.increment:
+            self._init_model_root = params[ConstantValues.init_model_root]
+            assert os.path.isdir(self._init_model_root), "Value: init_model_path is an invalid path."
+
+            self._decay_rate = params[ConstantValues.decay_rate]
+        elif self._train_flag == ConstantValues.inference:
+            pass
+        else:
+            raise ValueError("Value: train flag is invalid.")
 
         assert isinstance(params[ConstantValues.metric_eval_used_flag], bool), \
             "Value: metric_eval_used_flag must be bool type, but get {} instead.".format(
@@ -89,10 +109,7 @@ class ModelWrapper(Entity):
 
         # recording all metric results.
         self.metric_history = []
-
-        super().__init__(
-            name=params[ConstantValues.name],
-        )
+        self._model_file_name = None
 
     @property
     def val_best_metric_result(self):
@@ -152,7 +169,7 @@ class ModelWrapper(Entity):
             )
             self._best_feature_list = self._feature_list
 
-        self.update_best()
+        self._update_best()
 
     def update_feature_conf(self, feature_conf=None):
         """
@@ -170,33 +187,67 @@ class ModelWrapper(Entity):
         return None
 
     @abc.abstractmethod
-    def update_best(self):
+    def _update_best(self):
         """
         This method is designed to customize values to update_best_model()
         :return: None
         """
 
-    @abc.abstractmethod
+    def run(self, **entity):
+        if self._train_flag == ConstantValues.train:
+            self.train(**entity)
+        elif self._train_flag == ConstantValues.inference:
+            self.inference(**entity)
+        elif self._train_flag == ConstantValues.increment:
+            self.increment(**entity)
+        else:
+            raise ValueError("Value: train flag is invalid.")
+
     def train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
-        """
-        Training model, and this method doesn't contain evaluation.
-        :param train_dataset: BaseDataset object, training dataset.
-        :param val_dataset: BaseDataset object, validation dataset.
-        :param entity: dict object, including other entity, such as Metric... etc.
-        :return:
-        """
+        dataset = train_dataset.get_dataset()
+        self._check_bunch(dataset=dataset)
+        if self._task_name in [ConstantValues.binary_classification,
+                               ConstantValues.multiclass_classification,
+                               ConstantValues.regression]:
+            if self._task_name == ConstantValues.binary_classification:
+                self._binary_train(train_dataset=train_dataset, val_dataset=val_dataset, **entity)
+            elif self._task_name == ConstantValues.multiclass_classification:
+                self._multiclass_train(train_dataset=train_dataset, val_dataset=val_dataset, **entity)
+            elif self._task_name == ConstantValues.regression:
+                self._regression_train(train_dataset=train_dataset, val_dataset=val_dataset, **entity)
+            self._eval(train_dataset=train_dataset, val_dataset=val_dataset, **entity)
+        else:
+            raise ValueError("Value: (train) task name is invalid.")
 
-    @abc.abstractmethod
+    def inference(self, infer_type: str, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
+        assert infer_type in ["probability", "logit"], "Value: infer_type is invalid, get {}".format(infer_type)
+        if infer_type == "probability":
+            self._predict_prob(train_dataset, val_dataset, **entity)
+        else:
+            self._predict_logit(train_dataset, val_dataset, **entity)
+
     def increment(self, increment_dataset: BaseDataset, **entity):
-        """
-        incremental training model
-        :param increment_dataset: BaseDataset object, incremental dataset
-        :param entity: dict object, including other entity, such as Metric... etc.
-        :return: None
-        """
+        assert self._model_file_name is not None
+
+        dataset = increment_dataset.get_dataset()
+        self._check_bunch(dataset=dataset)
+        model_path = os.path.join(self._model_root_path, ConstantValues.model_save)
+        model_path = os.path.join(model_path, self._model_file_name)
+        if self._task_name == ConstantValues.binary_classification:
+            self._binary_increment(train_dataset=increment_dataset,
+                                   **entity)
+        elif self._task_name == ConstantValues.multiclass_classification:
+            self._multiclass_increment(train_dataset=increment_dataset,
+                                       **entity)
+        elif self._task_name == ConstantValues.regression:
+            self._regression_increment(model_path=model_path,
+                                       train_dataset=increment_dataset,
+                                       **entity)
+        else:
+            raise ValueError("Value: (increment) task name is invalid.")
 
     @abc.abstractmethod
-    def binary_train(self, init_model_path: str, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
+    def _binary_train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
         """
         Training model, and this method doesn't contain evaluation.
         :param init_model_path:
@@ -207,20 +258,84 @@ class ModelWrapper(Entity):
         """
 
     @abc.abstractmethod
-    def predict(self, infer_dataset: BaseDataset, **entity):
+    def _multiclass_train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
         """
-        Predicting and get inference result.
+        Training model, and this method doesn't contain evaluation.
+        :param init_model_path:
+        :param train_dataset: BaseDataset object, training dataset.
+        :param val_dataset: BaseDataset object, validation dataset.
+        :param entity: dict object, including other entity, such as Metric... etc.
+        :return:
+        """
+
+    @abc.abstractmethod
+    def _regression_train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
+        """
+        Training model, and this method doesn't contain evaluation.
+        :param init_model_path:
+        :param train_dataset: BaseDataset object, training dataset.
+        :param val_dataset: BaseDataset object, validation dataset.
+        :param entity: dict object, including other entity, such as Metric... etc.
+        :return:
+        """
+
+    @abc.abstractmethod
+    def _binary_increment(self, train_dataset: BaseDataset, **entity):
+        """
+        Training model, and this method doesn't contain evaluation.
+        :param init_model_path:
+        :param train_dataset: BaseDataset object, training dataset.
+        :param val_dataset: BaseDataset object, validation dataset.
+        :param entity: dict object, including other entity, such as Metric... etc.
+        :return:
+        """
+
+    @abc.abstractmethod
+    def _multiclass_increment(self, train_dataset: BaseDataset, **entity):
+        """
+        Training model, and this method doesn't contain evaluation.
+        :param init_model_path:
+        :param train_dataset: BaseDataset object, training dataset.
+        :param val_dataset: BaseDataset object, validation dataset.
+        :param entity: dict object, including other entity, such as Metric... etc.
+        :return:
+        """
+
+    @abc.abstractmethod
+    def _regression_increment(self, train_dataset: BaseDataset, **entity):
+        """
+        Training model, and this method doesn't contain evaluation.
+        :param init_model_path:
+        :param train_dataset: BaseDataset object, training dataset.
+        :param val_dataset: BaseDataset object, validation dataset.
+        :param entity: dict object, including other entity, such as Metric... etc.
+        :return:
+        """
+
+    @abc.abstractmethod
+    def _predict_prob(self, infer_dataset: BaseDataset, **entity):
+        """
+        Predicting probability and get inference result.
         :param infer_dataset: BaseDataset object, evaluating dataset.
         :param entity: dict object, including BaseDataset, Metric... etc.
         :return: None
         """
 
     @abc.abstractmethod
-    def eval(self,
-             train_dataset: BaseDataset,
-             val_dataset: BaseDataset,
-             metric: BaseMetric,
-             **entity):
+    def _predict_logit(self, infer_dataset: BaseDataset, **entity):
+        """
+        Predicting logit and get inference result.
+        :param infer_dataset: BaseDataset object, evaluating dataset.
+        :param entity: dict object, including BaseDataset, Metric... etc.
+        :return: None
+        """
+
+    @abc.abstractmethod
+    def _eval(self,
+              train_dataset: BaseDataset,
+              val_dataset: BaseDataset,
+              metric: BaseMetric,
+              **entity):
         """
         Evaluate after each training.
         :param train_dataset: BaseDataset object
@@ -322,7 +437,7 @@ class ModelWrapper(Entity):
         self._model_params.update(params)
 
     @abc.abstractmethod
-    def set_best(self):
+    def _set_best(self):
         """
         This method is designed to customize values to set_best_model()
         :return:
@@ -336,7 +451,7 @@ class ModelWrapper(Entity):
         self._model = self._best_model
         self._model_params = self._best_model_params
         self._feature_list = self._best_feature_list
-        self.set_best()
+        self._set_best()
 
     def preprocess(self):
         """

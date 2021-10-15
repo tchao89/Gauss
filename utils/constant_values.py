@@ -13,6 +13,7 @@ class ConstantValues:
     task_name = "task_name"
     target_names = "target_names"
     memory_only = "memory_only"
+    decay_rate = "decay_rate"
     proportion = "proportion"
     data_file_type = "data_file_type"
     data_package = "data_package"
@@ -86,7 +87,7 @@ class ConstantValues:
     # path name
     work_root = "work_root"
     data_path = "data_path"
-    init_model_path = "init_model_path"
+    init_model_root = "init_model_root"
     auto_ml_path = "auto_ml_path"
     improved_selector_configure_path = "improved_selector_configure_path"
     model_root_path = "model_root_path"

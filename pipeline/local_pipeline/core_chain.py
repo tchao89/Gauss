@@ -91,7 +91,7 @@ class CoreRoute(Component):
             self.__selector_configure_path = params["selector_configure_path"]
 
             model_params.use_weight_flag = params["use_weight_flag"]
-            model_params.init_model_path = params["init_model_path"]
+            model_params.init_model_root = params["init_model_root"]
 
             tuner_params = Bunch(
                 name=self.auto_ml_name,
@@ -111,6 +111,7 @@ class CoreRoute(Component):
 
             if self._feature_selector_flag is True:
                 assert params["supervised_selector_mode"] in ['model_select', 'topk_select']
+                self._supervised_selector_mode = params["supervised_selector_mode"]
                 if params["supervised_selector_mode"] == "model_select":
                     # auto_ml_path and selector_configure_path are fixed configuration files.
                     s_params = Bunch(
@@ -157,6 +158,41 @@ class CoreRoute(Component):
                         component_name=params["improved_supervised_selector_name"],
                         **s_params
                     )
+
+                    # This object is used in improved_supervised_selector
+                    selector_model_params = Bunch(
+                        name="lightgbm",
+                        model_root_path=params["model_root_path"],
+                        train_flag=self._train_flag,
+                        task_name=self._task_name,
+                        metric_eval_used_flag=params["metric_eval_used_flag"]
+                    )
+
+                    model_params.use_weight_flag = params["use_weight_flag"]
+                    model_params.init_model_root = params["init_model_root"]
+                    self.selector_model = self.create_entity(entity_name="lightgbm", **selector_model_params)
+
+                    selector_metric_params = Bunch(name=self._metric_name)
+                    self.selector_metric = self.create_entity(
+                        entity_name=self._metric_name,
+                        **selector_metric_params
+                    )
+
+                    selector_tuner_params = Bunch(
+                        name=self.auto_ml_name,
+                        train_flag=self._train_flag,
+                        enable=self.enable,
+                        task_name=params["task_name"],
+                        auto_ml_trial_num=params["auto_ml_trial_num"],
+                        opt_model_names=self._opt_model_names,
+                        optimize_mode=self._optimize_mode,
+                        auto_ml_path=self.__auto_ml_path
+                    )
+
+                    self.selector_auto_ml = self.create_component(
+                        component_name=params["auto_ml_name"],
+                        **selector_tuner_params
+                    )
         else:
             model_params.use_weight_flag = False
             self._result = None
@@ -175,9 +211,13 @@ class CoreRoute(Component):
         entity["loss"] = self.loss
 
         if self._feature_selector_flag is True:
-
-            self.feature_selector.run(**entity)
-
+            if self._supervised_selector_mode == "model_select":
+                self.feature_selector.run(**entity)
+            else:
+                entity["selector_model"] = self.selector_model
+                entity["selector_auto_ml"] = self.selector_auto_ml
+                entity["selector_metric"] = self.selector_metric
+                self.feature_selector.run(**entity)
         else:
             train_dataset = entity["train_dataset"]
             self.metric.label_name = train_dataset.get_dataset().target_names[0]
