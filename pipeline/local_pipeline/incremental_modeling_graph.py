@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from os.path import join
 
-from local_pipeline.sub_pipeline.core_chain import CoreRoute
-from local_pipeline.sub_pipeline.preprocess_chain import PreprocessRoute
-from local_pipeline.pipeline_utils.mapping import EnvironmentConfigure
+from pipeline.local_pipeline.core_chain import CoreRoute
+from pipeline.local_pipeline.preprocess_chain import PreprocessRoute
+from pipeline.local_pipeline.mapping import EnvironmentConfigure
 from utils.bunch import Bunch
 
 from utils.yaml_exec import yaml_write
@@ -300,7 +300,8 @@ class IncrementModelingGraph:
         yaml_write(yaml_dict=yaml_dict,
                    yaml_file=join(self._work_paths["work_root"], feature_dict.pipeline_configure))
 
-    def _find_best_result(self, train_results):
+    @classmethod
+    def _find_best_result(cls, train_results):
         if len(train_results) == 0:
             raise NoResultReturnException("No model is trained successfully.")
 

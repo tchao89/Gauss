@@ -95,6 +95,7 @@ class PlaintextDataset(BaseDataset):
             self._weight_column_flag = params["weight_column_flag"]
         else:
             self._weight_column_flag = False
+            self._weight_column_name = None
 
         # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate

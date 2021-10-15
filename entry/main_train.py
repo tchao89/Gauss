@@ -6,12 +6,12 @@ Authors: Lab
 """
 import argparse
 
-from local_pipeline.singleprocess.auto_modeling_graph import AutoModelingGraph
-from local_pipeline.singleprocess.udf_modeling_graph import UdfModelingGraph
+from pipeline.local_pipeline.auto_modeling_graph import AutoModelingGraph
+from pipeline.local_pipeline.udf_modeling_graph import UdfModelingGraph
 from utils.yaml_exec import yaml_read
 
 # --------------- this block just for test ---------------
-from local_pipeline.pipeline_utils.mapping import EnvironmentConfigure
+from pipeline.local_pipeline.mapping import EnvironmentConfigure
 from utils.bunch import Bunch
 from utils.yaml_exec import yaml_write
 from utils.Logger import logger
@@ -25,14 +25,15 @@ pipeline_dict = Bunch()
 pipeline_dict.mode = "udf"
 # initial model path, optional: str or None, and it's different from increment model setting.
 # This is used to train a better model instead of increment.
-pipeline_dict.init_model_path = None
+# if this value is not None, user can just use one model in value: model_zoo
+pipeline_dict.init_model_root = None
 # choose different supervised selector, optional: ["model_select", "topk_select"]
-pipeline_dict.supervised_selector_mode = "model_select"
+pipeline_dict.supervised_selector_mode = "topk_select"
 # Because udf metric using in model evaluation may reduce bad results,
 # this bool value is used to avoid this.
 pipeline_dict.metric_eval_used_flag = False
 # modify, 最外层
-pipeline_dict.use_weight_flag = True
+pipeline_dict.use_weight_flag = False
 # if this value is true and type of dataset file is csv, "data_weight" column will be seen as weight.
 pipeline_dict.weight_column_flag = False
 # weight_column_name is a string value, which means a specific column names weight_column_name in a csv file or last column in txt or libsvm

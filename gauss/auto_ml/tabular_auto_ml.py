@@ -53,7 +53,7 @@ class TabularAutoML(BaseAutoML):
         self.__default_parameters = None
         self.__search_space = None
 
-        self.__is_final_set = True
+        self.__automl_final_set = True
 
         # self._model should be entity.model.Model object
         self.__model = None
@@ -94,17 +94,17 @@ class TabularAutoML(BaseAutoML):
         raise RuntimeError('Not support tuner algorithm in tabular auto-ml algorithms.')
 
     @property
-    def is_final_set(self):
+    def automl_final_set(self):
         """
         Decide whether executing model.set_best_model() here, if True,
         this method will execute here, otherwise in supervised feature selector component.
         :return: bool
         """
-        return self.__is_final_set
+        return self.__automl_final_set
 
-    @is_final_set.setter
-    def is_final_set(self, final_set: bool):
-        self.__is_final_set = final_set
+    @automl_final_set.setter
+    def automl_final_set(self, final_set: bool):
+        self.__automl_final_set = final_set
 
     def _train_run(self, **entity):
         self._train_method_count += 1
@@ -177,15 +177,7 @@ class TabularAutoML(BaseAutoML):
                             params.keys()
                         )
                     )
-                    self.__model.train(**entity)
-
-                    logger.info(
-                        "Evaluate model, with current memory usage: {:.2f} GiB".format(
-                            get_current_memory_gb()["memory_usage"]
-                        )
-                    )
-                    print(entity.keys())
-                    self.__model.eval(**entity)
+                    self.__model.run(**entity)
 
                     logger.info(
                         "Update best model, with current memory usage: {:.2f} GiB".format(
@@ -202,7 +194,7 @@ class TabularAutoML(BaseAutoML):
                 else:
                     raise ValueError("Default parameters is None.")
 
-        if self.__is_final_set is True:
+        if self.__automl_final_set is True:
             self.__model.set_best_model()
         self.__best_metric = self.__model.val_best_metric_result.result
 

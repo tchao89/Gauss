@@ -20,6 +20,7 @@ import core.lightgbm as lgb
 from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
 
 from utils.base import get_current_memory_gb
+from utils.bunch import Bunch
 from utils.yaml_exec import yaml_read
 from utils.yaml_exec import yaml_write
 from utils.Logger import logger
@@ -101,8 +102,27 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         assert "feature_configure" in entity.keys()
         assert "loss" in entity.keys()
 
+        assert "selector_model" in entity.keys()
+        assert "selector_auto_ml" in entity.keys()
+        assert "selector_metric" in entity.keys()
+
         # use auto ml component to train a lightgbm model and get feature_importance_pair
-        feature_importance_pair = self.__feature_select(**entity)
+        selector_model_tuner = entity["selector_auto_ml"]
+
+        selector_entity = Bunch(model=entity["selector_model"],
+                                train_dataset=entity["train_dataset"],
+                                val_dataset=entity["val_dataset"],
+                                metric=entity["selector_metric"])
+        selector_model_tuner.run(**selector_entity)
+
+        selector_entity["selector_model"].set_best_model()
+        selector = selector_entity["selector_model"].model
+
+        assert isinstance(selector, lgb.Booster)
+        feature_name_list = selector.feature_name()
+        importance_list = list(selector.feature_importance())
+        feature_importance_pair = [(fe, round(im, 2)) for fe, im in zip(feature_name_list, importance_list)]
+        feature_importance_pair = sorted(feature_importance_pair, key=lambda x: x[1], reverse=True)
 
         original_dataset = entity[ConstantValues.train_dataset]
         original_val_dataset = entity[ConstantValues.val_dataset]
@@ -222,130 +242,13 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         if isinstance(original_dataset.get_dataset().data, pd.DataFrame):
             self.final_configure_generation()
         else:
-            assert isinstance(original_dataset.get_dataset().data, np.ndarray)
-            self.multiprocess_final_configure_generation()
-
-    def __feature_select(self, **entity):
-        train_dataset = entity["train_dataset"].get_dataset()
-        val_dataset = entity["val_dataset"].get_dataset()
-
-        lgb_train = lgb.Dataset(train_dataset.data, train_dataset.target, feature_name=list(train_dataset.data.columns))
-        lgb_eval = lgb.Dataset(val_dataset.data, val_dataset.target, feature_name=list(val_dataset.data.columns))
-
-        tuner = HyperoptTuner(
-            algorithm_name="tpe",
-            optimize_mode="minimize"
-        )
-
-        def set_default_parameters():
-            default_params_path = os.path.join(self._auto_ml_path, "default_parameters.json")
-            with open(default_params_path, 'r', encoding="utf-8") as json_file:
-                _default_parameters = json.load(json_file)
-            return _default_parameters
-
-        def set_search_space():
-            search_space_path = os.path.join(self._auto_ml_path, "search_space.json")
-            with open(search_space_path, 'r', encoding="utf-8") as json_file:
-                _search_space = json.load(json_file)
-            return _search_space
-
-        default_parameters = set_default_parameters()
-        search_space = set_search_space()
-
-        tuner.update_search_space(search_space=search_space.get("lightgbm"))
-
-        selector = None
-        num_boost_round = -1
-        early_stopping_rounds = -1
-
-        for trial in range(self.__feature_model_trial):
-            if default_parameters is not None:
-                params = default_parameters.get("lightgbm")
-                assert params is not None
-
-                receive_params = tuner.generate_parameters(trial)
-                params.update(receive_params)
-
-                if self._task_name == "binary_classification":
-                    params["objective"] = "binary"
-                    params["metric"] = "binary_logloss"
-                elif self._task_name == "multiclass_classification":
-                    params["objective"] = "multiclass"
-                    params["metric"] = "multi_logloss"
-                    params["num_class"] = train_dataset.label_class
-                elif self._task_name == "regression":
-                    params["objective"] = "regression"
-                    params["metric"] = "mse"
-                else:
-                    raise ValueError(
-                        "Value: task name must be one of binary_classification, "
-                        "multiclass_classification or regression, but get {} instead.".format(
-                            self._task_name
-                        ))
-
-                eval_result = dict()
-
-                if "num_boost_round" in params:
-                    num_boost_round = params.pop("num_boost_round")
-                if "early_stopping_rounds" in params:
-                    early_stopping_rounds = params.pop("early_stopping_rounds")
-
-                selector = lgb.train(params=params,
-                                     train_set=lgb_train,
-                                     valid_sets=lgb_eval,
-                                     num_boost_round=num_boost_round,
-                                     early_stopping_rounds=early_stopping_rounds,
-                                     callbacks=[lgb.record_evaluation(eval_result=eval_result)],
-                                     verbose_eval=False)
-
-                if self._task_name == "binary_classification":
-                    metric_result = min(eval_result["valid_0"]["binary_logloss"])
-                elif self._task_name == "multiclass_classification":
-                    metric_result = min(eval_result["valid_0"]["multi_logloss"])
-                elif self._task_name == "regression":
-                    metric_result = min(eval_result["valid_0"]["mse"])
-                else:
-                    raise ValueError(
-                        "Value: task name must be one of binary_classification, "
-                        "multiclass_classification or regression, but get {} instead.".format(
-                            self._task_name
-                        ))
-                tuner.receive_trial_result(trial, receive_params, metric_result)
-            else:
-                raise ValueError("Default parameters is None.")
-
-        assert isinstance(selector, lgb.Booster)
-        feature_name_list = selector.feature_name()
-        importance_list = list(selector.feature_importance())
-        feature_importance_pair = [(fe, round(im, 2)) for fe, im in zip(feature_name_list, importance_list)]
-        feature_importance_pair = sorted(feature_importance_pair, key=lambda x: x[1], reverse=True)
-
-        return feature_importance_pair
+            raise TypeError(
+                "Training data must be type: pd.Dataframe but get {} instead".format(
+                    type(original_dataset.get_dataset().data))
+            )
 
     def _increment_run(self, **entity):
         pass
-
-    @property
-    def optimal_metric(self):
-        """
-        Get optimal metric.
-        :return:
-        """
-        return self._optimal_metric
-
-    @classmethod
-    def update_feature_conf(cls, feature_conf, feature_list):
-        """
-        Update feature configure dict.
-        :param feature_conf:
-        :param feature_list:
-        :return:
-        """
-        for feature in feature_conf.keys():
-            if feature_conf[feature]["index"] not in feature_list:
-                feature_conf[feature]["used"] = False
-
-        return feature_conf
 
     def _predict_run(self, **entity):
         pass
@@ -359,20 +262,6 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         logger.info("final_feature_names: %s", str(self._final_feature_names))
         for item in feature_conf.keys():
             if item not in self._final_feature_names:
-                feature_conf[item]["used"] = False
-
-        yaml_write(yaml_file=self._final_file_path, yaml_dict=feature_conf)
-
-    def multiprocess_final_configure_generation(self):
-        """
-        Write configure file in multiprocess mode.
-        :return:
-        """
-        feature_conf = yaml_read(yaml_file=self._feature_configure_path)
-        logger.info("final_feature_names: %s", str(self._final_feature_names))
-
-        for item in feature_conf.keys():
-            if feature_conf[item]["index"] not in self._final_feature_names:
                 feature_conf[item]["used"] = False
 
         yaml_write(yaml_file=self._final_file_path, yaml_dict=feature_conf)

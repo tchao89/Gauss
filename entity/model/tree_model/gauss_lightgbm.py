@@ -41,16 +41,17 @@ class GaussLightgbm(ModelWrapper):
     def __init__(self, **params):
         super().__init__(
             name=params["name"],
-            model_root_path=params["model_root_path"],
-            task_name=params["task_name"],
+            model_root_path=params[ConstantValues.model_root_path],
+            init_model_root=params[ConstantValues.init_model_root],
+            task_name=params[ConstantValues.task_name],
             train_flag=params["train_flag"],
             use_weight_flag=params["use_weight_flag"],
             metric_eval_used_flag=params["metric_eval_used_flag"]
         )
 
-        self.__model_file_name = self.name + ".txt"
-        self.__model_config_file_name = self.name + ".yaml"
-        self.__feature_config_file_name = self.name + ".yaml"
+        self._model_file_name = self._name + ".txt"
+        self._model_config_file_name = self._name + ".yaml"
+        self._feature_config_file_name = self._name + ".yaml"
 
         self._loss_function = None
         self._eval_function = None
@@ -59,52 +60,6 @@ class GaussLightgbm(ModelWrapper):
 
     def __repr__(self):
         pass
-
-    def run(self, **entity):
-        if self._train_flag == ConstantValues.train:
-            self.train(**entity)
-        elif self._train_flag == ConstantValues.inference:
-            self.inference(**entity)
-        elif self._train_flag == ConstantValues.increment:
-            self.increment(**entity)
-        else:
-            raise ValueError("Value: train flag is invalid.")
-
-    def train(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
-        dataset = train_dataset.get_dataset()
-        self._check_bunch(dataset=dataset)
-
-        if self._task_name == ConstantValues.binary_classification:
-            self.binary_train(train_dataset=train_dataset, val_dataset=val_dataset, **entity)
-        elif self._task_name == ConstantValues.multiclass_classification:
-            self.multiclass_train(train_dataset=train_dataset, val_dataset=val_dataset, **entity)
-        elif self._task_name == ConstantValues.regression:
-            self.regression_train(train_dataset=train_dataset, val_dataset=val_dataset, **entity)
-        else:
-            raise ValueError("Value: (train) task name is invalid.")
-
-    def inference(self, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
-        pass
-
-    def increment(self, increment_dataset: BaseDataset, **entity):
-        dataset = increment_dataset.get_dataset()
-        self._check_bunch(dataset=dataset)
-        model_path = os.path.join(self._model_root_path, ConstantValues.model_save)
-        model_path = os.path.join(model_path, self.__model_file_name)
-        if self._task_name == ConstantValues.binary_classification:
-            self.binary_increment(init_model_path=model_path,
-                                  train_dataset=increment_dataset,
-                                  **entity)
-        elif self._task_name == ConstantValues.multiclass_classification:
-            self.multiclass_increment(init_model_path=model_path,
-                                      train_dataset=increment_dataset,
-                                      **entity)
-        elif self._task_name == ConstantValues.regression:
-            self.regression_increment(model_path=model_path,
-                                      train_dataset=increment_dataset,
-                                      **entity)
-        else:
-            raise ValueError("Value: (increment) task name is invalid.")
 
     @PackageDataset
     def __load_data(self, **kwargs):
@@ -156,15 +111,13 @@ class GaussLightgbm(ModelWrapper):
     def _initialize_model(self):
         pass
 
-    def binary_train(self,
-                     init_model_path: str,
-                     train_dataset: BaseDataset,
-                     val_dataset: BaseDataset,
-                     **entity):
+    def _binary_train(self,
+                      train_dataset: BaseDataset,
+                      val_dataset: BaseDataset,
+                      **entity):
         """
         This method is used to train lightgbm
         model in binary classification.
-        :param init_model_path:
         :param train_dataset:
         :param val_dataset:
         :param entity:
@@ -172,6 +125,7 @@ class GaussLightgbm(ModelWrapper):
         """
         assert self._train_flag == ConstantValues.train
         assert self._task_name == ConstantValues.binary_classification
+        init_model_path = self._init_model_root
 
         if init_model_path:
             assert os.path.isfile(init_model_path), \
@@ -291,12 +245,12 @@ class GaussLightgbm(ModelWrapper):
             raise ValueError("Model parameters is None.")
         self.count += 1
 
-    def multiclass_train(self,
-                         init_model_path: str,
-                         train_dataset: BaseDataset,
-                         val_dataset: BaseDataset,
-                         **entity):
+    def _multiclass_train(self,
+                          train_dataset: BaseDataset,
+                          val_dataset: BaseDataset,
+                          **entity):
         assert self._train_flag == ConstantValues.train
+        init_model_path = self._init_model_root
 
         params = self._model_params
         params["objective"] = "multiclass"
@@ -415,12 +369,12 @@ class GaussLightgbm(ModelWrapper):
             raise ValueError("Model parameters is None.")
         self.count += 1
 
-    def regression_train(self,
-                         init_model_path: str,
-                         train_dataset: BaseDataset,
-                         val_dataset: BaseDataset,
-                         **entity):
+    def _regression_train(self,
+                          train_dataset: BaseDataset,
+                          val_dataset: BaseDataset,
+                          **entity):
         assert self._task_name == ConstantValues.regression
+        init_model_path = self._init_model_root
 
         params = self._model_params
         params["objective"] = "regression"
@@ -525,22 +479,17 @@ class GaussLightgbm(ModelWrapper):
             raise ValueError("Model parameters is None.")
         self.count += 1
 
-    def binary_increment(self,
-                         decay_rate: int,
-                         init_model_path: str,
-                         train_dataset: BaseDataset,
-                         **entity
-                         ):
+    def _binary_increment(self, train_dataset: BaseDataset, *entity):
         """
         This method is used to train lightgbm (booster)
         model in binary classification.
-        :param decay_rate:
-        :param init_model_path: origin model path, usually it's a txt file.
         :param train_dataset: new boosting train dataset.
-        :param entity: other entity objects.
         :return: None
         """
+        init_model_path = self._init_model_root
+        decay_rate = self._decay_rate
         assert os.path.isfile(init_model_path)
+
         assert self._train_flag == ConstantValues.increment
         assert self._task_name == ConstantValues.binary_classification
 
@@ -553,21 +502,17 @@ class GaussLightgbm(ModelWrapper):
                                        label=dataset_bunch.target,
                                        decay_rate=decay_rate)
 
-    def multiclass_increment(self,
-                             decay_rate: int,
-                             init_model_path: str,
-                             train_dataset: BaseDataset,
-                             **entity):
+    def _multiclass_increment(self, train_dataset: BaseDataset, *entity):
         """
         This method is used to train lightgbm (booster)
         model in binary classification.
-        :param decay_rate:
-        :param init_model_path: origin model path, usually it's a txt file.
         :param train_dataset: new boosting train dataset.
-        :param entity: other entity objects.
         :return: None
         """
+        init_model_path = self._init_model_root
+        decay_rate = self._decay_rate
         assert os.path.isfile(init_model_path)
+
         assert self._train_flag == ConstantValues.increment
         assert self._task_name == ConstantValues.binary_classification
 
@@ -580,21 +525,17 @@ class GaussLightgbm(ModelWrapper):
                                        label=dataset_bunch.target,
                                        decay_rate=decay_rate)
 
-    def regression_increment(self,
-                             decay_rate: int,
-                             init_model_path: str,
-                             train_dataset: BaseDataset,
-                             **entity):
+    def _regression_increment(self, train_dataset: BaseDataset, **entity):
         """
         This method is used to train lightgbm (booster)
         model in binary classification.
-        :param decay_rate:
-        :param init_model_path: origin model path, usually it's a txt file.
         :param train_dataset: new boosting train dataset.
-        :param entity: other entity objects.
         :return: None
         """
+        init_model_path = self._init_model_root
+        decay_rate = self._decay_rate
         assert os.path.isfile(init_model_path)
+
         assert self._train_flag == ConstantValues.increment
         assert self._task_name == ConstantValues.binary_classification
 
@@ -607,10 +548,7 @@ class GaussLightgbm(ModelWrapper):
                                        label=dataset_bunch.target,
                                        decay_rate=decay_rate)
 
-    def predict(self,
-                infer_dataset: BaseDataset,
-                **entity
-                ):
+    def _predict_prob(self, infer_dataset: BaseDataset, **entity):
         assert self._train_flag == ConstantValues.inference
 
         lgb_entity = self.__lgb_preprocessing(
@@ -630,12 +568,15 @@ class GaussLightgbm(ModelWrapper):
         assert "data" in infer_dataset
 
         self._model = lgb.Booster(
-            model_file=self._model_save_root + "/" + self.__model_file_name
+            model_file=self._model_save_root + "/" + self._model_file_name
         )
 
         inference_result = self._model.predict(infer_dataset.data)
         inference_result = pd.DataFrame({"result": inference_result})
         return inference_result
+
+    def _predict_logit(self, infer_dataset: BaseDataset, **entity):
+        pass
 
     def _train_preprocess(self):
         pass
@@ -643,18 +584,16 @@ class GaussLightgbm(ModelWrapper):
     def _predict_preprocess(self):
         pass
 
-    def eval(self,
-             train_dataset: BaseDataset,
-             val_dataset: BaseDataset,
-             metric: BaseMetric,
-             **entity
-             ):
+    def _eval(self,
+              train_dataset: BaseDataset,
+              val_dataset: BaseDataset,
+              metric: BaseMetric,
+              **entity):
         """
         Evaluating
         :param val_dataset: BaseDataset object, used to get validation metric and loss.
         :param train_dataset: BaseDataset object, used to get training metric and loss.
         :param metric: BaseMetric object, used to calculate metric.
-        :param entity: dict object, including other entity.
         :return: None
         """
         logger.info(
@@ -757,31 +696,31 @@ class GaussLightgbm(ModelWrapper):
         self._model.save_model(
             os.path.join(
                 self._model_save_root,
-                self.__model_file_name
+                self._model_file_name
             )
         )
 
         yaml_write(yaml_dict=self._model_config,
                    yaml_file=os.path.join(
                        self._model_config_root,
-                       self.__model_config_file_name
+                       self._model_config_file_name
                    )
                    )
 
         yaml_write(yaml_dict={"features": self._feature_list},
                    yaml_file=os.path.join(
                        self._feature_config_root,
-                       self.__feature_config_file_name
+                       self._feature_config_file_name
                    )
                    )
 
-    def update_best(self):
+    def _update_best(self):
         """
         Do not need to operate.
         :return: None
         """
 
-    def set_best(self):
+    def _set_best(self):
         """
         Do not need to operate.
         :return: None
