@@ -50,6 +50,6 @@ class BaseDataset(Entity):
         pass
 
     @abc.abstractmethod
-    def feature_choose(self, feature_list):
+    def feature_choose(self, feature_list, use_index_flag):
         """eliminate features which are not selected."""
         pass

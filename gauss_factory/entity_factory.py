@@ -45,8 +45,6 @@ class EntityFactory(AbstractGauss):
         elif entity_name.lower() == "lightgbm":
             # parameters: name: str, label_name: str
             return GaussLightgbm(**params)
-        elif entity_name.lower() == "multiprocess_lightgbm":
-            return MultiprocessGaussLightgbm(**params)
         elif entity_name.lower() == "lr":
             return GaussLinearModels(**params)
         elif entity_name.lower() == "multiprocess_lr":

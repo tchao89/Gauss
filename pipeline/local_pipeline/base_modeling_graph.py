@@ -56,8 +56,8 @@ class BaseModelingGraph:
             train_data_path=params[ConstantValues.train_data_path],
             val_data_path=params[ConstantValues.val_data_path],
             feature_configure_path=params[ConstantValues.feature_configure_path],
-            auto_ml_path=params["auto_ml_path"],
-            selector_configure_path=params["selector_configure_path"],
+            auto_ml_path=params[ConstantValues.auto_ml_path],
+            selector_configure_path=params[ConstantValues.selector_configure_path],
             improved_selector_configure_path=params["improved_selector_configure_path"],
             init_model_root=params["init_model_root"]
         )
@@ -85,6 +85,8 @@ class BaseModelingGraph:
             use_weight_flag=params["use_weight_flag"],
             weight_column_flag=params["weight_column_flag"],
             weight_column_name=params["weight_column_name"],
+            train_column_name_flag=params["train_column_name_flag"],
+            val_column_name_flag=params["val_column_name_flag"],
             data_file_type=params["data_file_type"],
             selector_trial_num=params["selector_trial_num"],
             auto_ml_trial_num=params["auto_ml_trial_num"],

@@ -62,6 +62,8 @@ class UdfModelingGraph(BaseModelingGraph):
             work_root=params[ConstantValues.work_root],
             task_name=params[ConstantValues.task_name],
             dataset_weight=params[ConstantValues.dataset_weight],
+            train_column_name_flag=params[ConstantValues.train_column_name_flag],
+            val_column_name_flag=params[ConstantValues.val_column_name_flag],
             weight_column_flag=params[ConstantValues.weight_column_flag],
             weight_column_name=params[ConstantValues.weight_column_name],
             use_weight_flag=params[ConstantValues.use_weight_flag],
@@ -207,6 +209,8 @@ class UdfModelingGraph(BaseModelingGraph):
         preprocess_chain = PreprocessRoute(
             name=ConstantValues.PreprocessRoute,
             feature_path_dict=feature_dict,
+            train_column_name_flag=self._global_values[ConstantValues.train_column_name_flag],
+            val_column_name_flag=self._global_values[ConstantValues.val_column_name_flag],
             data_file_type=self._global_values[ConstantValues.data_file_type],
             task_name=self._attributes_names[ConstantValues.task_name],
             train_flag=ConstantValues.train,
@@ -230,12 +234,11 @@ class UdfModelingGraph(BaseModelingGraph):
         )
 
         try:
-            preprocess_chain.run()
+            entity_dict = preprocess_chain.run()
         except PipeLineLogicError as error:
             logger.info(error)
             return None
 
-        entity_dict = preprocess_chain.entity_dict
         self._already_data_clear = preprocess_chain.already_data_clear
 
         assert params.get(ConstantValues.model_name) is not None

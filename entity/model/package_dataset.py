@@ -47,7 +47,8 @@ class PackageDataset:
                 data[feature] = data[feature].astype("category")
 
         if feature_list is not None:
-            data = dataset.feature_choose(feature_list)
+            # check type of feature_choose
+            data = dataset.feature_choose(feature_list, use_index_flag=False)
             target = dataset.get_dataset().target
 
             data_package = Bunch(

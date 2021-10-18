@@ -83,6 +83,35 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         self.__set_default_params()
         self.__set_search_space()
 
+    def __train_selector(self, **entity):
+        assert "train_dataset" in entity.keys()
+        assert "val_dataset" in entity.keys()
+
+        # use auto ml component to train a lightgbm model and get feature_importance_pair
+        selector_model_tuner = entity["selector_auto_ml"]
+        feature_configure = entity["feature_configure"]
+
+        feature_configure.file_path = self._feature_configure_path
+        feature_configure.parse(method="system")
+
+        selector_entity = Bunch(model=entity["selector_model"],
+                                feature_configure=entity["feature_configure"],
+                                train_dataset=entity["train_dataset"],
+                                val_dataset=entity["val_dataset"],
+                                metric=entity["selector_metric"],
+                                loss=entity["loss"])
+        selector_model_tuner.run(**selector_entity)
+
+        selector_entity["model"].set_best_model()
+        selector = selector_entity["model"].model
+
+        assert isinstance(selector, lgb.Booster)
+        feature_name_list = selector.feature_name()
+        importance_list = list(selector.feature_importance())
+        feature_importance_pair = [(fe, round(im, 2)) for fe, im in zip(feature_name_list, importance_list)]
+        feature_importance_pair = sorted(feature_importance_pair, key=lambda x: x[1], reverse=True)
+        return feature_importance_pair
+
     def _train_run(self, **entity):
         """
         feature_select
@@ -101,41 +130,25 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         assert "auto_ml" in entity.keys()
         assert "feature_configure" in entity.keys()
         assert "loss" in entity.keys()
-
         assert "selector_model" in entity.keys()
         assert "selector_auto_ml" in entity.keys()
         assert "selector_metric" in entity.keys()
 
-        # use auto ml component to train a lightgbm model and get feature_importance_pair
-        selector_model_tuner = entity["selector_auto_ml"]
+        feature_importance_pair = self.__train_selector(**entity)
 
-        selector_entity = Bunch(model=entity["selector_model"],
-                                train_dataset=entity["train_dataset"],
-                                val_dataset=entity["val_dataset"],
-                                metric=entity["selector_metric"])
-        selector_model_tuner.run(**selector_entity)
+        train_dataset = entity[ConstantValues.train_dataset]
+        val_dataset = entity[ConstantValues.val_dataset]
 
-        selector_entity["selector_model"].set_best_model()
-        selector = selector_entity["selector_model"].model
-
-        assert isinstance(selector, lgb.Booster)
-        feature_name_list = selector.feature_name()
-        importance_list = list(selector.feature_importance())
-        feature_importance_pair = [(fe, round(im, 2)) for fe, im in zip(feature_name_list, importance_list)]
-        feature_importance_pair = sorted(feature_importance_pair, key=lambda x: x[1], reverse=True)
-
-        original_dataset = entity[ConstantValues.train_dataset]
-        original_val_dataset = entity[ConstantValues.val_dataset]
         feature_configure = entity[ConstantValues.feature_configure]
         metric = entity[ConstantValues.metric]
         loss = entity[ConstantValues.loss]
 
         self._optimize_mode = metric.optimize_mode
-        columns = original_dataset.get_dataset().data.shape[1]
+        columns = train_dataset.get_dataset().data.shape[1]
 
         # 创建自动机器学习对象
         model_tuner = entity[ConstantValues.auto_ml]
-        model_tuner.is_final_set = False
+        model_tuner.automl_final_set = False
 
         model = entity[ConstantValues.model]
         assert isinstance(model, ModelWrapper)
@@ -189,7 +202,7 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
                 )
             )
 
-            metric.label_name = original_dataset.get_dataset().target_names[0]
+            metric.label_name = train_dataset.get_dataset().target_names[0]
 
             logger.info(
                 "Parse feature configure and generate feature configure object, "
@@ -210,8 +223,8 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
             # 返回训练好的最佳模型
             model_tuner.run(
                 model=model,
-                train_dataset=original_dataset,
-                val_dataset=original_val_dataset,
+                train_dataset=train_dataset,
+                val_dataset=val_dataset,
                 metric=metric,
                 loss=loss,
                 feature_configure=feature_configure
@@ -232,19 +245,19 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
                 local_optimal_metric.result
             )
 
-        if model_tuner.is_final_set is False:
+        if model_tuner.automl_final_set is False:
             model.set_best_model()
 
         self._optimal_metric = model.val_best_metric_result.result
 
         # save features
         self._final_feature_names = model.feature_list
-        if isinstance(original_dataset.get_dataset().data, pd.DataFrame):
+        if isinstance(train_dataset.get_dataset().data, pd.DataFrame):
             self.final_configure_generation()
         else:
             raise TypeError(
                 "Training data must be type: pd.Dataframe but get {} instead".format(
-                    type(original_dataset.get_dataset().data))
+                    type(train_dataset.get_dataset().data))
             )
 
     def _increment_run(self, **entity):

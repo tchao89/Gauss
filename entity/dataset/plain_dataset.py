@@ -87,15 +87,15 @@ class PlaintextDataset(BaseDataset):
         self._bunch = None
 
         if params.get(ConstantValues.weight_column_flag):
-            assert isinstance(params["weight_column_flag"], bool)
-            if params["weight_column_name"]:
-                assert isinstance(params["weight_column_name"], str)
-                self._weight_column_name = params["weight_column_name"]
+            assert isinstance(params[ConstantValues.weight_column_flag], bool)
+            if params[ConstantValues.weight_column_name]:
+                assert isinstance(params[ConstantValues.weight_column_name], list)
+                self._weight_column_names = params[ConstantValues.weight_column_name]
 
-            self._weight_column_flag = params["weight_column_flag"]
+            self._weight_column_flag = params[ConstantValues.weight_column_flag]
         else:
             self._weight_column_flag = False
-            self._weight_column_name = None
+            self._weight_column_names = None
 
         # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
@@ -104,21 +104,10 @@ class PlaintextDataset(BaseDataset):
         # This value is a bool value, and true means plaindataset has missing values and need to clear.
         self._need_data_clear = False
 
-        assert params["data_path"] is not None or params[ConstantValues.data_package] is not None
         if params["data_path"] is not None and isinstance(params[ConstantValues.data_path], str):
+            self._column_name_flag = params[ConstantValues.column_name_flag]
+            assert isinstance(self._column_name_flag, bool)
             self._bunch = self.load_data()
-
-        # if params["data_path] is a dict, it's format must be
-        # {"train_dataset": "./t_data.csv", "val_dataset": "./v_data.csv"}
-        elif isinstance(params[ConstantValues.data_path], dict):
-            if not (self._data_path.get(ConstantValues.train_data_path)
-                    and self._data_path.get(ConstantValues.val_data_path)):
-                raise ValueError(
-                    "data_path must include `train_dataset` and `val_dataset` when pass a dictionary."
-                )
-            self._bunch = Bunch(train_dataset=self.load_data(data_path=params["data_path"]["train_dataset"]),
-                                val_dataset=self.load_data(data_path=params["data_path"]["val_dataset"]))
-
         else:
             self._bunch = self._data_package
 
@@ -176,6 +165,9 @@ class PlaintextDataset(BaseDataset):
                                 dataset_weight=weight)
 
         elif self.__type_doc == 'libsvm':
+            if self._column_name_flag:
+                raise ValueError(
+                    "Value: column_name_flag should be False, but get {} instead.".format(self._column_name_flag))
             try:
                 data, target = self.load_libsvm()
             except ValueError:
@@ -187,7 +179,7 @@ class PlaintextDataset(BaseDataset):
                                                            target=target)
 
             if self._weight_column_flag is True:
-                assert self._weight_column_name == "-1", \
+                assert self._weight_column_names == "-1", \
                     "When type of dataset file is libsvm, " \
                     "value: self._weight_column_name should be set -1."
 
@@ -209,6 +201,9 @@ class PlaintextDataset(BaseDataset):
             target.columns = self._bunch.target_names
 
         elif self.__type_doc == 'txt':
+            if self._column_name_flag:
+                raise ValueError(
+                    "Value: column_name_flag should be False, but get {} instead.".format(self._column_name_flag))
             try:
                 data, target = self.load_txt()
             except ValueError:
@@ -220,7 +215,7 @@ class PlaintextDataset(BaseDataset):
                                                            target=target)
 
             if self._weight_column_flag is True:
-                assert self._weight_column_name == "-1", \
+                assert self._weight_column_names == "-1", \
                     "When type of dataset file is txt, " \
                     "value: self._weight_column_name should be set -1."
                 weight = data.iloc[:, -1]
@@ -268,30 +263,57 @@ class PlaintextDataset(BaseDataset):
         self._bunch.proportion = {target_names: proportion_dict}
 
     def load_csv(self):
-        target = None
-        target_name = None
-
-        data = reduce_data(data_path=self._data_path)
-
-        feature_names = data.columns
+        data = reduce_data(data_path=self._data_path,
+                           column_name_flag=self._column_name_flag)
         self._row_size = data.shape[0]
 
-        if self._target_names is not None:
+        if self._target_names is None:
+            raise AttributeError("Value: target names should be set, not None.")
+
+        if self._column_name_flag:
             target = data[self._target_names]
             data = data.drop(self._target_names, axis=1)
             feature_names = data.columns
-            target_name = self._target_names
+            target_names = self._target_names
+
             self._column_size = data.shape[1] + target.shape[1]
 
-        # there must exist a column named dataset_weight
-        if self._weight_column_flag is True:
-            if self._weight_column_name not in data.columns:
-                raise ValueError("Column: {} doesn't exist in dataset file.".format(self._weight_column_name))
-            weight = data[self._weight_column_name]
-            data.drop([self._weight_column_name], axis=1, inplace=True)
+            if self._weight_column_flag is True:
+                if self._weight_column_names not in data.columns:
+                    raise ValueError("Column: {} doesn't exist in dataset file.".format(self._weight_column_names))
+                weight = data[self._weight_column_names]
+                data.drop(self._weight_column_names, axis=1, inplace=True)
+            else:
+                weight = None
         else:
-            weight = None
-        return data, target, feature_names, target_name, weight
+            target_columns = []
+            generated_columns = list(data.columns)
+
+            for target_index in self._target_names:
+                target_columns.append(generated_columns[target_index])
+            target_columns = list(set(target_columns))
+            target = data.iloc[:, target_columns]
+
+            if self._weight_column_flag is True:
+                if self._weight_column_names:
+                    weight_columns = []
+                    for weight_index in self._weight_column_names:
+                        weight_columns.append(generated_columns[weight_index])
+
+                    weight = data[weight_columns]
+                    data.drop(weight_columns, axis=1, inplace=True)
+                else:
+                    weight = None
+            else:
+                weight = None
+
+            data.drop(target_columns, axis=1, inplace=True)
+            target_names = ["target_" + string.ascii_uppercase[index]
+                            for index, _ in enumerate(target)]
+            feature_names = ["feature_" + str(index) for index, _ in enumerate(data)]
+            data.columns = feature_names
+            target.columns = target_names
+        return data, target, feature_names, target_names, weight
 
     def load_libsvm(self):
         data, target = load_svmlight_file(self._data_path)
@@ -355,13 +377,12 @@ class PlaintextDataset(BaseDataset):
 
         return combined_df, data_df, target_df
 
-    def feature_choose(self, feature_list):
-        try:
-            data = self._bunch.data.iloc[:, feature_list]
-        except IndexError:
-            logger.info("index method used.")
-            data = self._bunch.data.loc[:, feature_list]
-        return data
+    def feature_choose(self, feature_list: list, use_index_flag: bool):
+        assert isinstance(use_index_flag, bool)
+        if use_index_flag:
+            return self._bunch.data.iloc[:, feature_list]
+        else:
+            return self._bunch.data.loc[:, feature_list]
 
     # dataset is a PlainDataset object
     def union(self, val_dataset: PlaintextDataset):
@@ -421,6 +442,13 @@ class PlaintextDataset(BaseDataset):
 
         data_package = Bunch(data=val_data, target=val_target)
 
+        if self._weight_column_flag:
+            val_dataset_weight = self._bunch.dataset_weight.iloc[self._val_start:]
+            self._bunch.dataset_weight = self._bunch.dataset_weight.iloc[:self._val_start]
+            val_dataset_weight = val_dataset_weight.reset_index(drop=True)
+            self._bunch.dataset_weight.reset_index(drop=True, inplace=True)
+            data_package.dataset_weight = val_dataset_weight
+
         if "feature_names" in self._bunch.keys():
             data_package.target_names = self._bunch.target_names
             data_package.feature_names = self._bunch.feature_names
@@ -431,9 +459,9 @@ class PlaintextDataset(BaseDataset):
         data_package.proportion = self._bunch.proportion
 
         return PlaintextDataset(name="train_data",
-                                task_type="train",
+                                task_type=ConstantValues.train,
                                 weight_column_flag=self._weight_column_flag,
-                                weight_column_name=self._weight_column_name,
+                                weight_column_name=self._weight_column_names,
                                 data_package=data_package)
 
     @property

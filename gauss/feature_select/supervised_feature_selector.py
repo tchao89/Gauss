@@ -268,7 +268,8 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 feature_configure.file_path = self._feature_configure_path
 
                 feature_configure.parse(method="system")
-                feature_configure.feature_select(feature_list=feature_list)
+                feature_configure.feature_select(feature_list=feature_list,
+                                                 use_index_flag=True)
 
                 logger.info(
                     "Auto model training starts, with current memory usage: {:.2f} GiB".format(

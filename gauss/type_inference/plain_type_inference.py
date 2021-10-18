@@ -226,7 +226,8 @@ class PlainTypeInference(BaseTypeInference):
             if self._task_name == ConstantValues.binary_classification:
                 if "float" in str(target[label].dtypes):
                     target[label] = target[label].astype("int64")
-                assert "int" in str(target[label].dtypes) or "object" in str(target[label].dtypes)
+                assert "int" in str(target[label].dtypes) or "category" in str(target[label].dtypes), \
+                    "target types: {}".format(target[label].dtypes)
 
     def _check_init_final_conf(self):
         if self.init_feature_configure is None:
