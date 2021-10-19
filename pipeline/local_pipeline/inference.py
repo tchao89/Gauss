@@ -15,6 +15,7 @@ from pipeline.local_pipeline.core_chain import CoreRoute
 from pipeline.local_pipeline.mapping import EnvironmentConfigure
 from pipeline.local_pipeline.preprocess_chain import PreprocessRoute
 from utils.bunch import Bunch
+from utils.constant_values import ConstantValues
 
 
 class Inference:
@@ -30,7 +31,9 @@ class Inference:
         self.task_name = params["task_name"]
         self.metric_name = params["metric_name"]
         self.feature_configure_name = params["feature_configure_name"]
-        self.test_data_path = params["test_data_path"]
+        self.data_file_type = params["data_file_type"]
+        self.inference_column_name_flag = params["inference_column_name_flag"]
+        self.inference_data_path = params["inference_data_path"]
 
         self.dataset_name = params["dataset_name"]
         self.target_names = params["target_names"]
@@ -76,36 +79,36 @@ class Inference:
         work_feature_root = self.work_root + "/feature"
 
         feature_dict = EnvironmentConfigure.feature_dict()
-        feature_dict = {"user_feature": "null",
-                        "type_inference_feature": join(
+        feature_dict = {"user_feature_path": None,
+                        "type_inference_feature_path": join(
                             work_feature_root,
                             feature_dict.type_inference_feature),
 
-                        "data_clear_feature": join(
+                        "data_clear_feature_path": join(
                             work_feature_root,
                             feature_dict.data_clear_feature),
 
-                        "feature_generator_feature": join(
+                        "feature_generator_feature_path": join(
                             work_feature_root,
                             feature_dict.feature_generator_feature),
 
-                        "unsupervised_feature": join(
+                        "unsupervised_feature_path": join(
                             work_feature_root,
                             feature_dict.unsupervised_feature),
 
-                        "supervised_feature": join(
+                        "supervised_feature_path": join(
                             work_feature_root,
                             feature_dict.supervised_feature),
 
-                        "label_encoding_path": join(
+                        "label_encoding_models_path": join(
                             work_feature_root,
                             feature_dict.label_encoding_path),
 
-                        "impute_path": join(
+                        "impute_models_path": join(
                             work_feature_root,
                             feature_dict.impute_path),
 
-                        "label_encoder_feature": join(
+                        "label_encoder_feature_path": join(
                             work_feature_root,
                             feature_dict.label_encoder_feature)
                         }
@@ -113,10 +116,12 @@ class Inference:
             name="PreprocessRoute",
             feature_path_dict=feature_dict,
             task_name=self.task_name,
-            train_flag=False,
+            train_flag=ConstantValues.inference,
             train_data_path=None,
             val_data_path=None,
-            test_data_path=self.test_data_path,
+            inference_data_path=self.inference_data_path,
+            inference_column_name_flag=self.inference_column_name_flag,
+            data_file_type=self.data_file_type,
             dataset_name=self.dataset_name,
             type_inference_name=self.type_inference_name,
             data_clear_name=self.data_clear_name,
@@ -133,21 +138,16 @@ class Inference:
         entity_dict = preprocess_chain.run()
 
         assert "infer_dataset" in entity_dict
-        model_save_root = self.work_model_root + "/model_save"
-        model_config_root = self.work_model_root + "/model_config"
-        feature_config_root = self.work_model_root + "/feature_config"
 
         core_params = Bunch(
             name="core_route",
-            train_flag=False,
-            model_save_root=model_save_root,
-            model_config_root=model_config_root,
-            feature_config_root=feature_config_root,
+            train_flag=ConstantValues.inference,
+            model_root_path=self.work_model_root,
             target_feature_configure_path=self.final_file_path,
             pre_feature_configure_path=None,
             model_name=self.model_name,
             feature_configure_name=self.feature_configure_name,
-            label_encoding_path=feature_dict["label_encoding_path"],
+            label_encoding_path=feature_dict[ConstantValues.label_encoding_models_path],
             metrics_name=self.metric_name,
             task_name=self.task_name,
             supervised_feature_selector_flag=self.supervised_feature_selector_flag

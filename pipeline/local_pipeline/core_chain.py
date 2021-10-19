@@ -40,8 +40,6 @@ class CoreRoute(Component):
         self.auto_ml_name = params.get("auto_ml_name")
 
         self._task_name = params["task_name"]
-        self._metric_name = params["metric_name"]
-        self._loss_name = params["loss_name"]
         self._feature_selector_flag = params["supervised_feature_selector_flag"]
 
         self._opt_model_names = params.get("opt_model_names")
@@ -57,33 +55,12 @@ class CoreRoute(Component):
             **feature_conf_params
         )
 
-        if self._loss_name is not None:
-            loss_params = Bunch(
-                name=self._loss_name
-            )
-            self.loss = self.create_entity(
-                entity_name=self._loss_name,
-                **loss_params
-            )
-        else:
-            self.loss = None
-
-        # create metric and set optimize_mode
-        metric_params = Bunch(name=self._metric_name)
-        self.metric = self.create_entity(
-            entity_name=self._metric_name,
-            **metric_params
-        )
-        self._optimize_mode = self.metric.optimize_mode
-
         self._best_metric = None
-        # create model
         model_params = Bunch(
             name=self._model_name,
             model_root_path=params["model_root_path"],
             train_flag=self._train_flag,
-            task_name=self._task_name,
-            metric_eval_used_flag=params["metric_eval_used_flag"]
+            task_name=self._task_name
         )
 
         if self._train_flag == ConstantValues.train:
@@ -92,6 +69,28 @@ class CoreRoute(Component):
 
             model_params.use_weight_flag = params["use_weight_flag"]
             model_params.init_model_root = params["init_model_root"]
+            model_params.metric_eval_used_flag = params["metric_eval_used_flag"]
+
+            self._loss_name = params["loss_name"]
+            if self._loss_name is not None:
+                loss_params = Bunch(
+                    name=self._loss_name
+                )
+                self.loss = self.create_entity(
+                    entity_name=self._loss_name,
+                    **loss_params
+                )
+            else:
+                self.loss = None
+
+            self._metric_name = params["metric_name"]
+            # create metric and set optimize_mode
+            metric_params = Bunch(name=self._metric_name)
+            self.metric = self.create_entity(
+                entity_name=self._metric_name,
+                **metric_params
+            )
+            self._optimize_mode = self.metric.optimize_mode
 
             tuner_params = Bunch(
                 name=self.auto_ml_name,
@@ -197,6 +196,8 @@ class CoreRoute(Component):
                     )
         else:
             model_params.use_weight_flag = False
+            model_params.init_model_root = None
+            model_params.metric_eval_used_flag = False
             self._result = None
             self._feature_conf = None
 
@@ -328,10 +329,9 @@ class CoreRoute(Component):
         :return: This method will return predict result for test dataset.
         """
         assert "infer_dataset" in entity
-        assert self._train_flag is False
+        assert self._train_flag == ConstantValues.inference
 
         if self._feature_selector_flag:
-            assert self.train_flag is False
             entity["feature_configure"] = self.feature_conf
             entity["feature_configure"].file_path = self._final_file_path
             entity["feature_configure"].parse(method="system")
@@ -342,10 +342,10 @@ class CoreRoute(Component):
             assert self._final_file_path
 
             self.model.update_feature_conf(feature_conf=feature_config)
-            self._result = self.model.predict(infer_dataset=dataset)
+            self._result = self.model.run(infer_dataset=dataset)
 
         else:
-            self._result = self.model.predict(infer_dataset=entity.get("infer_dataset"))
+            self._result = self.model.run(infer_dataset=entity.get("infer_dataset"))
 
     @property
     def optimal_metric(self):
@@ -362,7 +362,7 @@ class CoreRoute(Component):
         """
         :return: inference result, pd.Dataframe
         """
-        assert not self._train_flag
+        assert self._train_flag == ConstantValues.inference
         assert self._result is not None
         return self._result
 

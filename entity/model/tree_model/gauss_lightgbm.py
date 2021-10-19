@@ -75,7 +75,7 @@ class GaussLightgbm(ModelWrapper):
         # dataset is a BaseDataset object, you can use get_dataset() method to get a Bunch object,
         # including data, target, feature_names, target_names, generated_feature_names.
         assert isinstance(dataset_bunch.data, pd.DataFrame)
-        if train_flag == ConstantValues.train or ConstantValues.increment:
+        if train_flag == ConstantValues.train or train_flag == ConstantValues.increment:
             data_shape = dataset_bunch.data.shape
             label_shape = dataset_bunch.target.shape
             logger.info("Data shape: {}, label shape: {}".format(data_shape, label_shape))
@@ -108,7 +108,6 @@ class GaussLightgbm(ModelWrapper):
                 )
             )
             return lgb_data, dataset_bunch
-
         return dataset_bunch
 
     def _initialize_model(self):

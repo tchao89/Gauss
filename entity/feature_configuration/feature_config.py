@@ -196,27 +196,22 @@ class FeatureConf(Entity):
         yaml_write(yaml_dict=features, yaml_file=save_path)
 
     def feature_select(self, feature_list=None, use_index_flag=None):
+        if feature_list is None:
+            for feature in self._feature_dict.keys():
+                self._feature_dict[feature].used = True
+            return
+
         assert isinstance(use_index_flag, bool)
         if use_index_flag is True:
             for feature in self._feature_dict.keys():
-                if feature_list is None:
-                    self._feature_dict[feature].used = True
-                    continue
-
                 if self._feature_dict[feature].index not in feature_list:
                     self._feature_dict[feature].used = False
-
                 else:
                     assert self._feature_dict[feature].used is True
         else:
             for feature in self._feature_dict.keys():
-                if feature_list is None:
-                    self._feature_dict[feature].used = True
-                    continue
-
                 if self._feature_dict[feature].name not in feature_list:
                     self._feature_dict[feature].used = False
-
                 else:
                     assert self._feature_dict[feature].used is True
 

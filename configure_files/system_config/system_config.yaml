@@ -1,3 +1,6 @@
+auto_ml_path: /home/liangqian/Gauss/configure_files/automl_params
+selector_configure_path: /home/liangqian/Gauss/configure_files/selector_params
+improved_selector_configure_path: /home/liangqian/Gauss/configure_files/improved_selector_params
 auto_ml_name: tabular_auto_ml
 data_clear_name: plain_data_clear
 feature_generator_name: featuretools_generation

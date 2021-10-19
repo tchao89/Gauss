@@ -71,10 +71,7 @@ class PreprocessRoute(Component):
         self._already_data_clear = None
 
         self._data_file_type = params[ConstantValues.data_file_type]
-        self._target_names = params[ConstantValues.target_names]
         self._dataset_name = params[ConstantValues.dataset_name]
-        self._train_column_name_flag = params[ConstantValues.train_column_name_flag]
-        self._val_column_name_flag = params[ConstantValues.val_column_name_flag]
 
         label_encoder_params = Bunch(
             name=params[ConstantValues.label_encoder_name],
@@ -87,15 +84,22 @@ class PreprocessRoute(Component):
                 ConstantValues.label_encoding_models_path]
         )
         if self._train_flag == ConstantValues.train:
+            self._target_names = params[ConstantValues.target_names]
             self._weight_column_flag = params[ConstantValues.weight_column_flag]
             self._weight_column_name = params[ConstantValues.weight_column_name]
+            self._train_column_name_flag = params[ConstantValues.train_column_name_flag]
+            self._val_column_name_flag = params[ConstantValues.val_column_name_flag]
             self._val_data_path = params[ConstantValues.val_data_path]
             self._train_data_path = params[ConstantValues.train_data_path]
 
             label_encoder_params.dataset_weight = params[ConstantValues.dataset_weight]
         elif self._train_flag == ConstantValues.increment:
+            self._increment_column_name_flag = params[ConstantValues.increment_column_name_flag]
+            self._target_names = params[ConstantValues.target_names]
             self._train_data_path = params[ConstantValues.train_data_path]
         elif self._train_flag == ConstantValues.inference:
+            self._inference_column_name_flag = params[ConstantValues.inference_column_name_flag]
+            assert isinstance(self._inference_column_name_flag, bool)
             self._inference_data_path = params[ConstantValues.inference_data_path]
         else:
             raise ValueError("Value: train_flag should be train, "
@@ -327,11 +331,12 @@ class PreprocessRoute(Component):
         assert self._train_flag is ConstantValues.inference
 
         dataset_params = Bunch(
-            name="test",
+            name="inference",
             task_name=self._task_name,
             data_pair=None,
             data_path=self._inference_data_path,
-            target_name=self._target_names,
+            data_file_type=self._data_file_type,
+            column_name_flag=self._inference_column_name_flag,
             memory_only=True
         )
         test_dataset = self.create_entity(

@@ -34,6 +34,8 @@ class ConstantValues:
     use_weight_flag = "use_weight_flag"
     train_column_name_flag = "train_column_name_flag"
     val_column_name_flag = "val_column_name_flag"
+    inference_column_name_flag = "inference_column_name_flag"
+    increment_column_name_flag = "increment_column_name_flag"
     column_name_flag = "column_name_flag"
     weight_column_flag = "weight_column_flag"
     weight_column_name = "weight_column_name"
