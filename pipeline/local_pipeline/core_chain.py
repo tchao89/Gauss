@@ -163,6 +163,8 @@ class CoreRoute(Component):
                     selector_model_params = Bunch(
                         name="lightgbm",
                         model_root_path=params["model_root_path"],
+                        use_weight_flag=False,
+                        init_model_root=None,
                         train_flag=self._train_flag,
                         task_name=self._task_name,
                         metric_eval_used_flag=params["metric_eval_used_flag"]

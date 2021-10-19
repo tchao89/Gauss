@@ -7,7 +7,7 @@ Authors: Lab
 import argparse
 
 from utils.yaml_exec import yaml_read, yaml_write
-from local_pipeline.inference import Inference
+from pipeline.local_pipeline.inference import Inference
 from utils.Logger import logger
 from utils.bunch import Bunch
 

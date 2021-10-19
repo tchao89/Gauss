@@ -195,7 +195,7 @@ class FeatureConf(Entity):
             features[item_conf.name] = item_dict
         yaml_write(yaml_dict=features, yaml_file=save_path)
 
-    def feature_select(self, feature_list=None, use_index_flag=True):
+    def feature_select(self, feature_list=None, use_index_flag=None):
         assert isinstance(use_index_flag, bool)
         if use_index_flag is True:
             for feature in self._feature_dict.keys():

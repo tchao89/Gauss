@@ -11,9 +11,9 @@ from os.path import join
 
 import pandas as pd
 
-from local_pipeline.sub_pipeline.core_chain import CoreRoute
-from local_pipeline.pipeline_utils.mapping import EnvironmentConfigure
-from local_pipeline.sub_pipeline.preprocess_chain import PreprocessRoute
+from pipeline.local_pipeline.core_chain import CoreRoute
+from pipeline.local_pipeline.mapping import EnvironmentConfigure
+from pipeline.local_pipeline.preprocess_chain import PreprocessRoute
 from utils.bunch import Bunch
 
 
@@ -130,8 +130,7 @@ class Inference:
         )
         preprocess_chain = PreprocessRoute(**preprocessing_params)
 
-        preprocess_chain.run()
-        entity_dict = preprocess_chain.entity_dict
+        entity_dict = preprocess_chain.run()
 
         assert "infer_dataset" in entity_dict
         model_save_root = self.work_model_root + "/model_save"

@@ -67,14 +67,14 @@ class PreprocessRoute(Component):
         # label encoding file path, .db文件
         assert ConstantValues.label_encoding_models_path in params[ConstantValues.feature_path_dict]
 
-        self._entity_dict = None
-
         self._feature_generator_flag = params[ConstantValues.feature_generator_flag]
         self._already_data_clear = None
 
         self._data_file_type = params[ConstantValues.data_file_type]
         self._target_names = params[ConstantValues.target_names]
         self._dataset_name = params[ConstantValues.dataset_name]
+        self._train_column_name_flag = params[ConstantValues.train_column_name_flag]
+        self._val_column_name_flag = params[ConstantValues.val_column_name_flag]
 
         label_encoder_params = Bunch(
             name=params[ConstantValues.label_encoder_name],
@@ -207,9 +207,10 @@ class PreprocessRoute(Component):
             data_package=None,
             data_path=self._train_data_path,
             data_file_type=self._data_file_type,
-            target_name=self._target_names,
+            target_names=self._target_names,
             weight_column_flag=self._weight_column_flag,
             weight_column_name=self._weight_column_name,
+            column_name_flag=self._train_column_name_flag,
             memory_only=True
         )
         logger.info("Starting loading data.")
@@ -224,9 +225,10 @@ class PreprocessRoute(Component):
                 data_package=None,
                 data_path=self._val_data_path,
                 data_file_type=self._data_file_type,
-                target_name=self._target_names,
+                target_names=self._target_names,
                 weight_column_flag=self._weight_column_flag,
                 weight_column_name=self._weight_column_name,
+                column_name_flag=self._val_column_name_flag,
                 memory_only=True
             )
             val_dataset = self.create_entity(
@@ -263,8 +265,8 @@ class PreprocessRoute(Component):
         # 数据拆分
         val_dataset = train_dataset.split()
         entity_dict["val_dataset"] = val_dataset
-        self._entity_dict = entity_dict
         logger.info("Dataset preprocessing has finished.")
+        return entity_dict
 
     def _increment_run(self, **entity):
         entity_dict = {}
@@ -314,8 +316,8 @@ class PreprocessRoute(Component):
         logger.info("Starting unsupervised feature selector.")
         # 无监督特征选择
         self.unsupervised_feature_selector.run(**entity_dict)
-        self._entity_dict = entity_dict
         logger.info("Dataset preprocessing has finished.")
+        return entity_dict
 
     def _predict_run(self, **entity):
         entity_dict = {}
@@ -345,8 +347,7 @@ class PreprocessRoute(Component):
         self.feature_generator.run(**entity_dict)
         # 无监督特征选择
         self.unsupervised_feature_selector.run(**entity_dict)
-
-        self._entity_dict = entity_dict
+        return entity_dict
 
     @property
     def already_data_clear(self):
@@ -355,10 +356,21 @@ class PreprocessRoute(Component):
         """
         return self._already_data_clear
 
-    @property
-    def entity_dict(self):
+    def run(self, **entity):
         """
-
-        :return: dict
+        Run component.
+        :param entity:
+        :return:
         """
-        return self._entity_dict
+        if self._train_flag == ConstantValues.train:
+            return self._train_run(**entity)
+        elif self._train_flag == ConstantValues.inference:
+            return self._predict_run(**entity)
+        elif self._train_flag == ConstantValues.increment:
+            return self._increment_run(**entity)
+        else:
+            raise ValueError(
+                "Value: train_flag is illegal, and it can be in "
+                "[train, inference, increment], but get {} instead.".format(
+                    self._train_flag)
+            )

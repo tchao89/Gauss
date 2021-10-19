@@ -1,6 +1,6 @@
 {"lightgbm": {
-    "num_leaves": {"_type": "choice",
-                 "_value": [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]
+    "num_leaves": {"_type": "randint",
+                 "_value": [8, 4096]
                  },
   "learning_rate": {"_type": "choice",
                     "_value": [0.01, 0.02, 0.03, 0.05, 0.1, 0.2]
@@ -14,11 +14,12 @@
   "feature_fraction": {"_type": "uniform",
                        "_value": [0.7, 1.0]
                        },
-  "bagging_freq": {"_type": "choice",
-                   "_value": [1, 2, 4, 5, 6, 7, 8, 9, 10]
-                   },
-  "max_depth": {"_type": "choice",
-                "_value": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  "min_data_in_leaf": {
+                       "_type": "randint",
+                       "_value": [20, 1000]
+                      },
+  "max_depth": {"_type": "randint",
+                "_value": [3, 12]
                 },
   "lambda_l2": {
       "_type": "uniform",

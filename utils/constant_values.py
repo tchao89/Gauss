@@ -32,6 +32,9 @@ class ConstantValues:
     metric_eval_used_flag = "metric_eval_used_flag"
     dataset_weight = "dataset_weight"
     use_weight_flag = "use_weight_flag"
+    train_column_name_flag = "train_column_name_flag"
+    val_column_name_flag = "val_column_name_flag"
+    column_name_flag = "column_name_flag"
     weight_column_flag = "weight_column_flag"
     weight_column_name = "weight_column_name"
     dataset_items = ["data",

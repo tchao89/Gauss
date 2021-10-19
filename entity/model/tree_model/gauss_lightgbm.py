@@ -90,6 +90,9 @@ class GaussLightgbm(ModelWrapper):
             else:
                 weight = None
 
+            if isinstance(weight, pd.DataFrame):
+                weight = weight.values.flatten()
+
             lgb_data = lgb.Dataset(
                 data=dataset_bunch.data,
                 label=dataset_bunch.target,
@@ -126,7 +129,6 @@ class GaussLightgbm(ModelWrapper):
         assert self._train_flag == ConstantValues.train
         assert self._task_name == ConstantValues.binary_classification
         init_model_path = self._init_model_root
-
         if init_model_path:
             assert os.path.isfile(init_model_path), \
                 "Value: init_model_path({}) is not a valid model path.".format(
@@ -220,6 +222,7 @@ class GaussLightgbm(ModelWrapper):
 
             num_boost_round = params.pop("num_boost_round")
             early_stopping_rounds = params.pop("early_stopping_rounds")
+            assert isinstance(lgb_train, lgb.Dataset)
 
             self._model = lgb.train(
                 params=params,

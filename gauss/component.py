@@ -67,6 +67,7 @@ class Component(metaclass=abc.ABCMeta):
         """
         return self._train_flag
 
+    @property
     def task_name(self):
         """
         Get task name.

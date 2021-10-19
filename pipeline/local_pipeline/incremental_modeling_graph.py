@@ -246,12 +246,11 @@ class IncrementModelingGraph:
         )
 
         try:
-            preprocess_chain.run()
+            entity_dict = preprocess_chain.run()
         except PipeLineLogicError as error:
             logger.info(error)
             return None
 
-        entity_dict = preprocess_chain.entity_dict
         self._already_data_clear = preprocess_chain.already_data_clear
 
         assert ConstantValues.increment_dataset in entity_dict
