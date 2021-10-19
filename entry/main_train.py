@@ -28,17 +28,17 @@ pipeline_dict.mode = "udf"
 # if this value is not None, user can just use one model in value: model_zoo
 pipeline_dict.init_model_root = None
 # choose different supervised selector, optional: ["model_select", "topk_select"]
-pipeline_dict.supervised_selector_mode = "model_select"
+pipeline_dict.supervised_selector_mode = "topk_select"
 # Because udf metric using in model evaluation may reduce bad results,
 # this bool value is used to avoid this.
 pipeline_dict.metric_eval_used_flag = False
 # modify, 最外层
 pipeline_dict.use_weight_flag = True
 # if this value is true and type of dataset file is csv, "data_weight" column will be seen as weight.
-pipeline_dict.weight_column_flag = True
+pipeline_dict.weight_column_flag = False
 # weight_column_name is a string value, which means a specific column names weight_column_name in a csv file or last column in txt or libsvm
 # using as sample weight. this value should be set "-1" if dataset file type is libsvm or txt.
-pipeline_dict.weight_column_name = [-1]
+pipeline_dict.weight_column_name = None
 pipeline_dict.work_root = environ_configure.work_root
 # optional: ["binary_classification", "multiclass_classification", "regression"]
 pipeline_dict.task_name = "binary_classification"
@@ -55,46 +55,43 @@ pipeline_dict.dataset_weight = None
 # if None, default loss will be chosen.
 pipeline_dict.loss_name = None
 # optional: ["libsvm", "txt", "csv"]
-pipeline_dict.data_file_type = "csv"
+pipeline_dict.data_file_type = "libsvm"
 # distinguish
 pipeline_dict.train_column_name_flag = False
-pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/bank/test.csv"
+pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/a9a/a9a"
 pipeline_dict.val_column_name_flag = False
-pipeline_dict.val_data_path = None
+pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/a9a/a9a.t"
 # pipeline do not need to get target names in libsvm and txt file.
-pipeline_dict.target_names = [-2]
+pipeline_dict.target_names = None
 pipeline_dict.feature_configure_path = environ_configure.user_feature_path
 pipeline_dict.dataset_name = "plaindataset"
 pipeline_dict.model_zoo = ["lightgbm"]
-pipeline_dict.data_clear_flag = True
-pipeline_dict.feature_generator_flag = True
-pipeline_dict.unsupervised_feature_selector_flag = True
+pipeline_dict.data_clear_flag = False
+pipeline_dict.feature_generator_flag = False
+pipeline_dict.unsupervised_feature_selector_flag = False
 pipeline_dict.supervised_feature_selector_flag = True
-config_path = environ_configure.work_root + "/train_user_config.yaml"
-yaml_write(yaml_dict=dict(pipeline_dict), yaml_file=config_path)
+user_config_path = environ_configure.work_root + "/train_user_config.yaml"
+yaml_write(yaml_dict=dict(pipeline_dict), yaml_file=user_config_path)
+
+system_config_path = "/home/liangqian/Gauss/configure_files/system_config/system_config.yaml"
 # --------------- test block end ---------------
 
 
-def main(config=config_path):
-    pipeline_configure = yaml_read(config)
-    pipeline_configure = Bunch(**pipeline_configure)
+def main(user_configure_path=user_config_path, system_configure_path=system_config_path):
+    user_configure = yaml_read(user_configure_path)
+    user_configure = Bunch(**user_configure)
 
-    pipeline_configure.system_configure_root = "/home/liangqian/Gauss/configure_files"
-    pipeline_configure.auto_ml_path = pipeline_configure.system_configure_root + "/" + "automl_params"
-    pipeline_configure.selector_configure_path = pipeline_configure.system_configure_root + "/" + "selector_params"
-    pipeline_configure.improved_selector_configure_path = pipeline_configure.system_configure_root + "/" + "improved_selector_params"
+    system_configure = yaml_read(system_configure_path)
+    system_configure = Bunch(**system_configure)
 
-    system_config = yaml_read(pipeline_configure.system_configure_root + "/" + "system_config/system_config.yaml")
-    system_config = Bunch(**system_config)
-
-    pipeline_configure.update(system_config)
-
-    if pipeline_configure.mode == "auto":
-        model_graph = AutoModelingGraph(name="auto", **pipeline_configure)
+    if user_configure.mode == "auto":
+        model_graph = AutoModelingGraph(name="auto", **user_configure)
 
         model_graph.run()
-    elif pipeline_configure.mode == "udf":
-        model_graph = UdfModelingGraph(name="udf", **pipeline_configure)
+    elif user_configure.mode == "udf":
+        model_graph = UdfModelingGraph(name="udf",
+                                       user_configure=user_configure,
+                                       system_configure=system_configure)
 
         model_graph.run()
     else:

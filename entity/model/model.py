@@ -195,11 +195,11 @@ class ModelWrapper(Entity):
 
     def run(self, **entity):
         if self._train_flag == ConstantValues.train:
-            self.train(**entity)
+            return self.train(**entity)
         elif self._train_flag == ConstantValues.inference:
-            self.inference(**entity)
+            return self.inference(**entity)
         elif self._train_flag == ConstantValues.increment:
-            self.increment(**entity)
+            return self.increment(**entity)
         else:
             raise ValueError("Value: train flag is invalid.")
 
@@ -219,12 +219,12 @@ class ModelWrapper(Entity):
         else:
             raise ValueError("Value: (train) task name is invalid.")
 
-    def inference(self, infer_type: str, train_dataset: BaseDataset, val_dataset: BaseDataset, **entity):
+    def inference(self, infer_dataset: BaseDataset, infer_type: str = "probability", **entity):
         assert infer_type in ["probability", "logit"], "Value: infer_type is invalid, get {}".format(infer_type)
         if infer_type == "probability":
-            self._predict_prob(train_dataset, val_dataset, **entity)
+            return self._predict_prob(infer_dataset, **entity)
         else:
-            self._predict_logit(train_dataset, val_dataset, **entity)
+            return self._predict_logit(infer_dataset, **entity)
 
     def increment(self, increment_dataset: BaseDataset, **entity):
         assert self._model_file_name is not None

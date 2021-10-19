@@ -13,11 +13,12 @@ from utils.bunch import Bunch
 
 
 # test programming
-pipeline_dict = yaml_read(yaml_file="/home/liangqian/PycharmProjects/Gauss/experiments/JLkpw2" + "/pipeline_config.yaml")
+pipeline_dict = yaml_read(yaml_file="/home/liangqian/Gauss/experiments/2daC8p/pipeline_configure.yaml")
 pipeline_dict["model_name"] = "lightgbm"
 work_root = pipeline_dict["work_root"]
-pipeline_dict.update(yaml_read(yaml_file=work_root + "/pipeline_config.yaml"))
-pipeline_dict["test_data_path"] = "/home/liangqian/PycharmProjects/Gauss/test_dataset/bank_numerical_test_realdata.csv"
+pipeline_dict["data_file_type"] = "libsvm"
+pipeline_dict["inference_column_name_flag"] = False
+pipeline_dict["inference_data_path"] = "/home/liangqian/文档/公开数据集/a9a/a9a.t"
 pipeline_dict["out_put_path"] = pipeline_dict["work_root"]
 
 yaml_write(yaml_dict=pipeline_dict, yaml_file=work_root + "/inference_user_config.yaml")
