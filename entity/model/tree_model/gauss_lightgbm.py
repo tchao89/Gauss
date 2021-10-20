@@ -39,15 +39,43 @@ class GaussLightgbm(ModelWrapper):
     """
 
     def __init__(self, **params):
-        super().__init__(
-            name=params["name"],
-            model_root_path=params[ConstantValues.model_root_path],
-            init_model_root=params[ConstantValues.init_model_root],
-            task_name=params[ConstantValues.task_name],
-            train_flag=params["train_flag"],
-            use_weight_flag=params["use_weight_flag"],
-            metric_eval_used_flag=params["metric_eval_used_flag"]
-        )
+        assert params[ConstantValues.train_flag] in [ConstantValues.train,
+                                                     ConstantValues.increment,
+                                                     ConstantValues.inference]
+        if params[ConstantValues.train_flag] == ConstantValues.train:
+            super().__init__(
+                name=params[ConstantValues.name],
+                model_root_path=params[ConstantValues.model_root_path],
+                init_model_root=params[ConstantValues.init_model_root],
+                task_name=params[ConstantValues.task_name],
+                train_flag=params[ConstantValues.train_flag],
+                use_weight_flag=params[ConstantValues.use_weight_flag],
+                metric_eval_used_flag=params[ConstantValues.metric_eval_used_flag]
+            )
+        elif params[ConstantValues.train_flag] == ConstantValues.increment:
+            super().__init__(
+                name=params[ConstantValues.name],
+                model_root_path=params[ConstantValues.model_root_path],
+                init_model_root=params[ConstantValues.init_model_root],
+                task_name=params[ConstantValues.task_name],
+                train_flag=params[ConstantValues.train_flag],
+                use_weight_flag=params[ConstantValues.use_weight_flag],
+                decay_rate=params[ConstantValues.decay_rate],
+                metric_eval_used_flag=params[ConstantValues.metric_eval_used_flag]
+            )
+        else:
+            assert params[ConstantValues.train_flag] == ConstantValues.inference
+            super().__init__(
+                name=params[ConstantValues.name],
+                model_root_path=params[ConstantValues.model_root_path],
+                init_model_root=params[ConstantValues.init_model_root],
+                increment_flag=params[ConstantValues.increment_flag],
+                infer_result_type=params[ConstantValues.infer_result_type],
+                task_name=params[ConstantValues.task_name],
+                train_flag=params[ConstantValues.train_flag],
+                use_weight_flag=params[ConstantValues.use_weight_flag],
+                metric_eval_used_flag=params[ConstantValues.metric_eval_used_flag]
+            )
 
         self._model_file_name = self._name + ".txt"
         self._model_config_file_name = self._name + ".yaml"
@@ -481,47 +509,78 @@ class GaussLightgbm(ModelWrapper):
             raise ValueError("Model parameters is None.")
         self.count += 1
 
-    def _binary_increment(self, train_dataset: BaseDataset, *entity):
+    def _binary_increment(self, train_dataset: BaseDataset, **entity):
         """
         This method is used to train lightgbm (booster)
         model in binary classification.
         :param train_dataset: new boosting train dataset.
         :return: None
         """
-        init_model_path = self._init_model_root
         decay_rate = self._decay_rate
+        init_model_path = os.path.join(self._model_save_root, self._model_file_name)
         assert os.path.isfile(init_model_path)
 
         assert self._train_flag == ConstantValues.increment
         assert self._task_name == ConstantValues.binary_classification
 
-        dataset_bunch = train_dataset.get_dataset()
+        lgb_entity = self.__lgb_preprocessing(
+            **Bunch(
+                label_name=self._target_names,
+                train_dataset=train_dataset,
+                val_dataset=None,
+                use_weight_flag=self._use_weight_flag,
+                check_bunch=self._check_bunch,
+                feature_list=self._feature_list,
+                categorical_list=self._categorical_list,
+                train_flag=self._train_flag,
+                task_name=self._task_name
+            )
+        )
 
+        dataset_bunch = lgb_entity.train_dataset
         init_model = lgb.Booster(model_file=init_model_path)
-        assert 0 < decay_rate < 1, "Value: decay_rate must in (0, 1)."
-
+        assert 0 < decay_rate < 1, "Value: decay_rate must in (0, 1), but get {} instead.".format(decay_rate)
         self._model = init_model.refit(data=dataset_bunch.data,
                                        label=dataset_bunch.target,
                                        decay_rate=decay_rate)
 
-    def _multiclass_increment(self, train_dataset: BaseDataset, *entity):
+    def _multiclass_increment(self, train_dataset: BaseDataset, **entity):
+        """
+        This method is used to train lightgbm (booster)
+        model in multiclass classification.
+        :param train_dataset: new boosting train dataset.
+        :return: None
+        """
         """
         This method is used to train lightgbm (booster)
         model in binary classification.
         :param train_dataset: new boosting train dataset.
         :return: None
         """
-        init_model_path = self._init_model_root
         decay_rate = self._decay_rate
+        init_model_path = os.path.join(self._model_save_root, self._model_file_name)
         assert os.path.isfile(init_model_path)
 
         assert self._train_flag == ConstantValues.increment
         assert self._task_name == ConstantValues.binary_classification
 
-        dataset_bunch = train_dataset.get_dataset()
+        lgb_entity = self.__lgb_preprocessing(
+            **Bunch(
+                label_name=self._target_names,
+                train_dataset=train_dataset,
+                val_dataset=None,
+                use_weight_flag=self._use_weight_flag,
+                check_bunch=self._check_bunch,
+                feature_list=self._feature_list,
+                categorical_list=self._categorical_list,
+                train_flag=self._train_flag,
+                task_name=self._task_name
+            )
+        )
 
+        dataset_bunch = lgb_entity.train_dataset
         init_model = lgb.Booster(model_file=init_model_path)
-        assert 0 < decay_rate < 1, "Value: decay_rate must in (0, 1)."
+        assert 0 < decay_rate < 1, "Value: decay_rate must in (0, 1), but get {} instead.".format(decay_rate)
 
         self._model = init_model.refit(data=dataset_bunch.data,
                                        label=dataset_bunch.target,
@@ -530,21 +589,40 @@ class GaussLightgbm(ModelWrapper):
     def _regression_increment(self, train_dataset: BaseDataset, **entity):
         """
         This method is used to train lightgbm (booster)
+        model in regression.
+        :param train_dataset: new boosting train dataset.
+        :return: None
+        """
+        """
+        This method is used to train lightgbm (booster)
         model in binary classification.
         :param train_dataset: new boosting train dataset.
         :return: None
         """
-        init_model_path = self._init_model_root
         decay_rate = self._decay_rate
+        init_model_path = os.path.join(self._model_save_root, self._model_file_name)
         assert os.path.isfile(init_model_path)
 
         assert self._train_flag == ConstantValues.increment
         assert self._task_name == ConstantValues.binary_classification
 
-        dataset_bunch = train_dataset.get_dataset()
+        lgb_entity = self.__lgb_preprocessing(
+            **Bunch(
+                label_name=self._target_names,
+                train_dataset=train_dataset,
+                val_dataset=None,
+                use_weight_flag=self._use_weight_flag,
+                check_bunch=self._check_bunch,
+                feature_list=self._feature_list,
+                categorical_list=self._categorical_list,
+                train_flag=self._train_flag,
+                task_name=self._task_name
+            )
+        )
 
+        dataset_bunch = lgb_entity.train_dataset
         init_model = lgb.Booster(model_file=init_model_path)
-        assert 0 < decay_rate < 1, "Value: decay_rate must in (0, 1)."
+        assert 0 < decay_rate < 1, "Value: decay_rate must in (0, 1), but get {} instead.".format(decay_rate)
 
         self._model = init_model.refit(data=dataset_bunch.data,
                                        label=dataset_bunch.target,
@@ -552,6 +630,9 @@ class GaussLightgbm(ModelWrapper):
 
     def _predict_prob(self, infer_dataset: BaseDataset, **entity):
         assert self._train_flag == ConstantValues.inference
+
+        model_file_path = os.path.join(self._model_save_root, self._model_file_name)
+        assert os.path.isfile(model_file_path)
 
         lgb_entity = self.__lgb_preprocessing(
             **Bunch(
@@ -570,15 +651,46 @@ class GaussLightgbm(ModelWrapper):
         assert "data" in infer_dataset
 
         self._model = lgb.Booster(
-            model_file=self._model_save_root + "/" + self._model_file_name
+            model_file=model_file_path
         )
 
-        inference_result = self._model.predict(infer_dataset.data)
+        if self._increment_flag is True:
+            inference_result = self._model.predict(data=infer_dataset.data, raw_score=False)
+            inference_result = special.expit(inference_result)
+        else:
+            inference_result = self._model.predict(data=infer_dataset.data, raw_score=False)
         inference_result = pd.DataFrame({"result": inference_result})
         return inference_result
 
     def _predict_logit(self, infer_dataset: BaseDataset, **entity):
-        pass
+        assert self._train_flag == ConstantValues.inference
+
+        model_file_path = os.path.join(self._model_save_root, self._model_file_name)
+        assert os.path.isfile(model_file_path)
+
+        lgb_entity = self.__lgb_preprocessing(
+            **Bunch(
+                label_name=self._target_names,
+                infer_dataset=infer_dataset,
+                use_weight_flag=self._use_weight_flag,
+                check_bunch=self._check_bunch,
+                feature_list=self._feature_list,
+                categorical_list=self._categorical_list,
+                train_flag=self._train_flag,
+                task_name=self._task_name
+            )
+        )
+
+        infer_dataset = lgb_entity.infer_dataset
+        assert "data" in infer_dataset
+
+        self._model = lgb.Booster(
+            model_file=model_file_path
+        )
+
+        inference_result = self._model.predict(data=infer_dataset.data, raw_score=True)
+        inference_result = pd.DataFrame({"result": inference_result})
+        return inference_result
 
     def _train_preprocess(self):
         pass
@@ -750,20 +862,20 @@ class GaussLightgbm(ModelWrapper):
 
     def __lgb_preprocessing(self, **params):
         lgb_entity = Bunch()
-        if "train_dataset" in params:
+        if "train_dataset" in params and params[ConstantValues.train_dataset]:
             params["dataset"] = params.pop("train_dataset")
             lgb_train, train_dataset = self.__load_data(**params)
             lgb_entity.lgb_train = lgb_train
             lgb_entity.train_dataset = train_dataset
 
-        if "val_dataset" in params:
+        if "val_dataset" in params and params[ConstantValues.val_dataset]:
             params["use_weight_flag"] = False
             params["dataset"] = params.pop("val_dataset")
             lgb_eval, eval_dataset = self.__load_data(**params)
             lgb_entity.lgb_eval = lgb_eval
             lgb_entity.eval_dataset = eval_dataset
 
-        if "infer_dataset" in params:
+        if "infer_dataset" in params and params[ConstantValues.infer_dataset]:
             params["use_weight_flag"] = False
             params["dataset"] = params.pop("infer_dataset")
             infer_dataset = self.__load_data(**params)

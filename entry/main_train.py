@@ -68,7 +68,7 @@ pipeline_dict.dataset_name = "plaindataset"
 pipeline_dict.model_zoo = ["lightgbm"]
 pipeline_dict.data_clear_flag = False
 pipeline_dict.feature_generator_flag = False
-pipeline_dict.unsupervised_feature_selector_flag = False
+pipeline_dict.unsupervised_feature_selector_flag = True
 pipeline_dict.supervised_feature_selector_flag = True
 user_config_path = environ_configure.work_root + "/train_user_config.yaml"
 yaml_write(yaml_dict=dict(pipeline_dict), yaml_file=user_config_path)

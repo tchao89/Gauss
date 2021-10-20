@@ -24,11 +24,12 @@ class Inference:
     """
 
     def __init__(self, **params):
-        self.name = params["name"]
-        self.model_name = params["model_name"]
-        self.work_root = params["work_root"]
+        self.name = params[ConstantValues.name]
+        self.model_name = params[ConstantValues.model_name]
+        self.work_root = params[ConstantValues.work_root]
 
-        self.task_name = params["task_name"]
+        self.task_name = params[ConstantValues.task_name]
+        self.infer_result_type = params[ConstantValues.infer_result_type]
         self.metric_name = params["metric_name"]
         self.feature_configure_name = params["feature_configure_name"]
         self.data_file_type = params["data_file_type"]
@@ -53,6 +54,9 @@ class Inference:
 
         self.final_file_path = params[self.model_name]["final_file_path"]
         self.work_model_root = params[self.model_name]["work_model_root"]
+        self.increment_flag = params[self.model_name]["increment_flag"]
+        assert isinstance(self.increment_flag, bool)
+
         self.out_put_path = params["out_put_path"]
 
     def output_result(self, predict_result: pd.DataFrame):
@@ -145,7 +149,9 @@ class Inference:
             model_root_path=self.work_model_root,
             target_feature_configure_path=self.final_file_path,
             pre_feature_configure_path=None,
+            infer_result_type=self.infer_result_type,
             model_name=self.model_name,
+            increment_flag=self.increment_flag,
             feature_configure_name=self.feature_configure_name,
             label_encoding_path=feature_dict[ConstantValues.label_encoding_models_path],
             metrics_name=self.metric_name,

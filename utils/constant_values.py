@@ -9,11 +9,13 @@ class ConstantValues:
     # system name
     name = "name"
     train_flag = "train_flag"
+    increment_flag = "increment_flag"
     enable = "enable"
     task_name = "task_name"
     target_names = "target_names"
     memory_only = "memory_only"
     decay_rate = "decay_rate"
+    infer_result_type = "infer_result_type"
     proportion = "proportion"
     data_file_type = "data_file_type"
     data_package = "data_package"

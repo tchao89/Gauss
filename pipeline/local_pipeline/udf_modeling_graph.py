@@ -50,7 +50,8 @@ class UdfModelingGraph(BaseModelingGraph):
         if user_configure[ConstantValues.data_clear_flag] is None:
             user_configure[ConstantValues.data_clear_flag] = True
 
-        self.init__ = super().__init__(name=name, metric_eval_used_flag=user_configure[ConstantValues.metric_eval_used_flag],
+        self.init__ = super().__init__(name=name,
+                                       metric_eval_used_flag=user_configure[ConstantValues.metric_eval_used_flag],
                                        data_file_type=user_configure[ConstantValues.data_file_type],
                                        work_root=user_configure[ConstantValues.work_root],
                                        task_name=user_configure[ConstantValues.task_name],
@@ -268,8 +269,10 @@ class UdfModelingGraph(BaseModelingGraph):
         assert local_metric is not None
         return {"work_model_root": work_model_root,
                 "model_name": params.get(ConstantValues.model_name),
+                "increment_flag": False,
                 "metric_result": local_metric,
-                "final_file_path": feature_dict[ConstantValues.final_feature_configure]}
+                "final_file_path":
+                    feature_dict[ConstantValues.final_feature_configure]}
 
     def _run(self):
         train_results = []

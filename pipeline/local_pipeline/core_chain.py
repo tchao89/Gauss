@@ -194,9 +194,16 @@ class CoreRoute(Component):
                         component_name=params["auto_ml_name"],
                         **selector_tuner_params
                     )
-        else:
-            model_params.use_weight_flag = False
+        elif self._train_flag == ConstantValues.increment:
+            model_params.decay_rate = params[ConstantValues.decay_rate]
             model_params.init_model_root = None
+            model_params.use_weight_flag = False
+            model_params.metric_eval_used_flag = False
+        else:
+            model_params.init_model_root = None
+            model_params.increment_flag = params[ConstantValues.increment_flag]
+            model_params.infer_result_type = params[ConstantValues.infer_result_type]
+            model_params.use_weight_flag = False
             model_params.metric_eval_used_flag = False
             self._result = None
             self._feature_conf = None
@@ -292,12 +299,7 @@ class CoreRoute(Component):
         assert "increment_dataset" in entity.keys()
 
         entity["model"] = self.model
-        entity["metric"] = self.metric
         entity["feature_configure"] = self.feature_conf
-        entity["loss"] = self.loss
-
-        train_dataset = entity[ConstantValues.increment_dataset]
-        self.metric.label_name = train_dataset.get_dataset().target_names[0]
 
         feature_conf = yaml_read(self.__feature_configure_path)
         self.feature_conf.file_path = self.__feature_configure_path

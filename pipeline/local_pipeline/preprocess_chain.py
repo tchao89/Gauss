@@ -286,6 +286,7 @@ class PreprocessRoute(Component):
             data_package=None,
             data_path=self._train_data_path,
             data_file_type=self._data_file_type,
+            column_name_flag=self._increment_column_name_flag,
             target_name=self._target_names,
             memory_only=True
         )

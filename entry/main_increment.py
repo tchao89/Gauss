@@ -7,11 +7,11 @@ Authors: Lab
 import os
 import argparse
 
-from local_pipeline.singleprocess.incremental_modeling_graph import IncrementModelingGraph
+from pipeline.local_pipeline.incremental_modeling_graph import IncrementModelingGraph
 from utils.yaml_exec import yaml_read
 
 # --------------- this block just for test ---------------
-from local_pipeline.pipeline_utils.mapping import EnvironmentConfigure
+from pipeline.local_pipeline.mapping import EnvironmentConfigure
 from utils.bunch import Bunch
 from utils.yaml_exec import yaml_write
 from utils.Logger import logger
@@ -30,11 +30,11 @@ logger.info("work_root: %s", pipeline_dict.work_root)
 # optional: ["libsvm", "txt", "csv"]
 pipeline_dict.data_file_type = "libsvm"
 # increment dataset
-pipeline_dict.init_work_root = "/home/liangqian/Gauss/experiments/C1Ackz"
+pipeline_dict.init_work_root = "/home/liangqian/Gauss/experiments/qrgBal"
 pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/a9a/a9a.t"
-
 # user must set a specific model for increment
 pipeline_dict.model_zoo = ["lightgbm"]
+pipeline_dict.increment_column_name_flag = False
 pipeline_dict.init_folder_name = os.path.join(pipeline_dict.init_work_root).split("/")[-1]
 copy_folder(source_path=pipeline_dict.init_work_root, target_path=pipeline_dict.work_root)
 config_path = environ_configure.work_root + "/train_user_config.yaml"
@@ -55,7 +55,11 @@ def main(config=config_path):
     system_config = yaml_read(pipeline_configure.system_configure_root + "/" + "system_config/system_config.yaml")
     system_config = Bunch(**system_config)
 
+    increment_config = yaml_read(pipeline_configure.system_configure_root + "/" + "increment_params/increment_params.yaml")
+    increment_config = Bunch(**increment_config)
+
     pipeline_configure.update(system_config)
+    pipeline_configure.update(increment_config)
 
     model_graph = IncrementModelingGraph(name="increment", **pipeline_configure)
 

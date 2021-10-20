@@ -13,8 +13,10 @@ from utils.bunch import Bunch
 
 
 # test programming
-pipeline_dict = yaml_read(yaml_file="/home/liangqian/Gauss/experiments/2daC8p/pipeline_configure.yaml")
+pipeline_dict = yaml_read(yaml_file="/home/liangqian/Gauss/experiments/UouyKZ/pipeline_configure.yaml")
 pipeline_dict["model_name"] = "lightgbm"
+# ["probability", "logit"]
+pipeline_dict["infer_result_type"] = "probability"
 work_root = pipeline_dict["work_root"]
 pipeline_dict["data_file_type"] = "libsvm"
 pipeline_dict["inference_column_name_flag"] = False
