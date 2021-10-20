@@ -56,12 +56,10 @@ class ModelWrapper(Entity):
             else:
                 self._init_model_path = None
         elif self._train_flag == ConstantValues.increment:
-            self._init_model_root = params[ConstantValues.init_model_root]
-            assert os.path.isdir(self._init_model_root), "Value: init_model_path is an invalid path."
-
             self._decay_rate = params[ConstantValues.decay_rate]
         elif self._train_flag == ConstantValues.inference:
-            pass
+            self._increment_flag = params[ConstantValues.increment_flag]
+            self._infer_result_type = params[ConstantValues.infer_result_type]
         else:
             raise ValueError("Value: train flag is invalid.")
 
@@ -219,9 +217,9 @@ class ModelWrapper(Entity):
         else:
             raise ValueError("Value: (train) task name is invalid.")
 
-    def inference(self, infer_dataset: BaseDataset, infer_type: str = "probability", **entity):
-        assert infer_type in ["probability", "logit"], "Value: infer_type is invalid, get {}".format(infer_type)
-        if infer_type == "probability":
+    def inference(self, infer_dataset: BaseDataset, **entity):
+        assert self._infer_result_type in ["probability", "logit"], "Value: infer_type is invalid, get {}".format(self._infer_result_type)
+        if self._infer_result_type == "probability":
             return self._predict_prob(infer_dataset, **entity)
         else:
             return self._predict_logit(infer_dataset, **entity)

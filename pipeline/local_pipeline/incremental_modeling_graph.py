@@ -82,8 +82,7 @@ class IncrementModelingGraph:
             val_data_path=params[ConstantValues.val_data_path],
             feature_configure_path=params[ConstantValues.feature_configure_path],
             auto_ml_path=params["auto_ml_path"],
-            selector_configure_path=params["selector_configure_path"],
-            init_model_path=params["init_model_path"]
+            selector_configure_path=params["selector_configure_path"]
         )
 
         self._entity_names = Bunch(
@@ -109,6 +108,8 @@ class IncrementModelingGraph:
             use_weight_flag=params["use_weight_flag"],
             weight_column_flag=params["weight_column_flag"],
             weight_column_name=params["weight_column_name"],
+            decay_rate=params[ConstantValues.decay_rate],
+            increment_column_name_flag=params[ConstantValues.increment_column_name_flag],
             data_file_type=params["data_file_type"],
             selector_trial_num=params["selector_trial_num"],
             auto_ml_trial_num=params["auto_ml_trial_num"],
@@ -227,6 +228,7 @@ class IncrementModelingGraph:
             name=ConstantValues.PreprocessRoute,
             feature_path_dict=feature_dict,
             data_file_type=self._global_values[ConstantValues.data_file_type],
+            increment_column_name_flag=self._global_values[ConstantValues.increment_column_name_flag],
             task_name=self._attributes_names[ConstantValues.task_name],
             train_flag=ConstantValues.increment,
             train_data_path=self._work_paths[ConstantValues.train_data_path],
@@ -254,11 +256,13 @@ class IncrementModelingGraph:
         self._already_data_clear = preprocess_chain.already_data_clear
 
         assert ConstantValues.increment_dataset in entity_dict
+        decay_rate = params[ConstantValues.decay_rate]
 
         core_chain = CoreRoute(
             name=ConstantValues.CoreRoute,
             train_flag=ConstantValues.increment,
             model_root_path=work_model_root,
+            decay_rate=decay_rate,
             target_feature_configure_path=feature_dict[ConstantValues.final_feature_configure],
             pre_feature_configure_path=feature_dict[ConstantValues.unsupervised_feature_path],
             model_name=params.get(ConstantValues.model_name),
@@ -281,13 +285,21 @@ class IncrementModelingGraph:
 
         core_chain.run(**entity_dict)
         return {"work_model_root": work_model_root,
+                ConstantValues.increment_flag: True,
                 "model_name": params.get(ConstantValues.model_name),
                 "final_file_path": feature_dict[ConstantValues.final_feature_configure]}
 
     def _run(self):
-        for model in self._model_zoo:
-            local_result = self._run_route(model_name=model)
-            self.__pipeline_configure.update({"model": local_result})
+        assert isinstance(self._model_zoo, list)
+        if len(self._model_zoo) == 0:
+            raise ValueError("Value: model_zoo is empty.")
+        if len(self._model_zoo) > 1:
+            raise ValueError("Value: model_zoo can not contain more than one model name.")
+
+        for model_name in self._model_zoo:
+            decay_rate = self._global_values[ConstantValues.decay_rate][model_name]
+            local_result = self._run_route(model_name=model_name, decay_rate=decay_rate)
+            self.__pipeline_configure.update({model_name: local_result})
 
     def _set_pipeline_config(self):
         feature_dict = EnvironmentConfigure.feature_dict()
