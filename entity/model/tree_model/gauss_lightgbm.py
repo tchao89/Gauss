@@ -656,7 +656,12 @@ class GaussLightgbm(ModelWrapper):
 
         if self._increment_flag is True:
             inference_result = self._model.predict(data=infer_dataset.data, raw_score=False)
-            inference_result = special.expit(inference_result)
+            if self._task_name == ConstantValues.binary_classification:
+                inference_result = special.expit(inference_result)
+            elif self._task_name == ConstantValues.multiclass_classification:
+                inference_result = special.softmax(inference_result)
+            else:
+                assert self._task_name == ConstantValues.regression
         else:
             inference_result = self._model.predict(data=infer_dataset.data, raw_score=False)
         inference_result = pd.DataFrame({"result": inference_result})

@@ -96,7 +96,7 @@ class CoreRoute(Component):
                 name=self.auto_ml_name,
                 train_flag=self._train_flag,
                 enable=self.enable,
-                task_name=params["task_name"],
+                task_name=params[ConstantValues.task_name],
                 auto_ml_trial_num=params["auto_ml_trial_num"],
                 opt_model_names=self._opt_model_names,
                 optimize_mode=self._optimize_mode,

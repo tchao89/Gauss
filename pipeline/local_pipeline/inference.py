@@ -146,6 +146,7 @@ class Inference:
         core_params = Bunch(
             name="core_route",
             train_flag=ConstantValues.inference,
+            task_name=self.task_name,
             model_root_path=self.work_model_root,
             target_feature_configure_path=self.final_file_path,
             pre_feature_configure_path=None,
@@ -155,7 +156,6 @@ class Inference:
             feature_configure_name=self.feature_configure_name,
             label_encoding_path=feature_dict[ConstantValues.label_encoding_models_path],
             metrics_name=self.metric_name,
-            task_name=self.task_name,
             supervised_feature_selector_flag=self.supervised_feature_selector_flag
         )
         core_chain = CoreRoute(**core_params)
