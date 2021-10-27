@@ -168,6 +168,7 @@ class PlainLabelEncode(BaseLabelEncode):
 
                     label_dict = dict(zip(le_model.classes_, le_model.transform(le_model.classes_)))
                     status_list = data[col].unique()
+
                     for item in status_list:
                         try:
                             le_model.transform([item])
