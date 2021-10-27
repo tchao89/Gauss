@@ -13,7 +13,7 @@ class BaseLabelEncode(Component):
     """
     def __init__(self,
                  name: str,
-                 train_flag: bool,
+                 train_flag: str,
                  enable: bool,
                  task_name: str,
                  feature_configure_path

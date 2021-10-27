@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic Inc. All rights reserved.
-# Authors: Lab
+"""-*- coding: utf-8 -*-
+
+Copyright (c) 2020, Citic Inc. All rights reserved.
+Authors: Lab"""
 from __future__ import annotations
 
 import abc
 
-from typing import List
 from entity.entity import Entity
 
 
@@ -15,6 +14,7 @@ class BaseDataset(Entity):
                  name: str,
                  data_path: str,
                  task_name: str,
+                 train_flag: str,
                  memory_only=True):
 
         super(BaseDataset, self).__init__(name=name)
@@ -22,6 +22,7 @@ class BaseDataset(Entity):
         self._data_path = data_path
         self._memory_only = memory_only
         self._task_name = task_name
+        self._train_flag = train_flag
 
     @abc.abstractmethod
     def load_data(self):

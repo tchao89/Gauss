@@ -93,6 +93,7 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
 
         feature_configure.file_path = self._feature_configure_path
         feature_configure.parse(method="system")
+        entity[ConstantValues.selector_model].update_feature_conf(feature_conf=feature_configure)
 
         selector_entity = Bunch(model=entity["selector_model"],
                                 feature_configure=entity["feature_configure"],
@@ -213,7 +214,9 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
             feature_configure.file_path = self._feature_configure_path
 
             feature_configure.parse(method="system")
-            feature_configure.feature_select(feature_list=feature_list, use_index_flag=False)
+            feature_configure.feature_select(feature_list=feature_list,
+                                             use_index_flag=False)
+            entity[ConstantValues.model].update_feature_conf(feature_conf=feature_configure)
 
             logger.info(
                 "Auto model training starts, with current memory usage: {:.2f} GiB".format(
@@ -226,8 +229,7 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
                 metric=metric,
-                loss=loss,
-                feature_configure=feature_configure
+                loss=loss
             )
 
             assert isinstance(model.val_metric, MetricResult)

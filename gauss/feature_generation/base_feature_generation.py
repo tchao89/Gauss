@@ -6,8 +6,11 @@ from gauss.component import Component
 
 
 class BaseFeatureGenerator(Component):
-    def __init__(self, name: str, train_flag: bool, enable: bool, task_name: str, feature_configure_path):
-        super(BaseFeatureGenerator, self).__init__(name=name, train_flag=train_flag, enable=enable, task_name=task_name)
+    def __init__(self, name: str, train_flag: str, enable: bool, task_name: str, feature_configure_path):
+        super(BaseFeatureGenerator, self).__init__(name=name,
+                                                   train_flag=train_flag,
+                                                   enable=enable,
+                                                   task_name=task_name)
         self._feature_configure_path = feature_configure_path
 
     def _train_run(self, **entity):

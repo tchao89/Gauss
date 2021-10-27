@@ -13,19 +13,18 @@ from utils.bunch import Bunch
 
 
 # test programming
-pipeline_dict = yaml_read(yaml_file="/home/liangqian/Gauss/experiments/UouyKZ/pipeline_configure.yaml")
+pipeline_dict = yaml_read(yaml_file="/home/liangqian/Gauss/experiments/rVmYrK/pipeline_configure.yaml")
 pipeline_dict["model_name"] = "lightgbm"
 # ["probability", "logit"]
 pipeline_dict["infer_result_type"] = "probability"
-work_root = pipeline_dict["work_root"]
-pipeline_dict["data_file_type"] = "libsvm"
-pipeline_dict["inference_column_name_flag"] = False
-pipeline_dict["inference_data_path"] = "/home/liangqian/文档/公开数据集/a9a/a9a.t"
+pipeline_dict["data_file_type"] = "csv"
+pipeline_dict["inference_column_name_flag"] = True
+pipeline_dict["inference_data_path"] = "/home/liangqian/文档/公开数据集/test/test.csv"
 pipeline_dict["out_put_path"] = pipeline_dict["work_root"]
 
-yaml_write(yaml_dict=pipeline_dict, yaml_file=work_root + "/inference_user_config.yaml")
+yaml_write(yaml_dict=pipeline_dict, yaml_file=pipeline_dict["work_root"] + "/inference_user_config.yaml")
 
-def main(config=work_root + "/inference_user_config.yaml"):
+def main(config=pipeline_dict["work_root"] + "/inference_user_config.yaml"):
     logger.info("Reading inference configuration files.")
     pipeline_configure = yaml_read(config)
     pipeline_configure = Bunch(**pipeline_configure)

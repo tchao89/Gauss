@@ -188,7 +188,9 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         model_tuner.is_final_set = False
 
         model = entity["model"]
-        assert isinstance(model, ModelWrapper)
+        assert isinstance(model, ModelWrapper), \
+            "Object: model should be type ModelWrapper, but get {} instead.".format(
+                type(model))
 
         selector_tuner = HyperoptTuner(
             algorithm_name="tpe",
@@ -270,20 +272,19 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
                 feature_configure.parse(method="system")
                 feature_configure.feature_select(feature_list=feature_list,
                                                  use_index_flag=True)
+                entity[ConstantValues.model].update_feature_conf(feature_conf=feature_configure)
 
                 logger.info(
                     "Auto model training starts, with current memory usage: {:.2f} GiB".format(
                         get_current_memory_gb()["memory_usage"]
                     )
                 )
-                # 返回训练好的最佳模型
                 model_tuner.run(
                     model=model,
                     train_dataset=original_dataset,
                     val_dataset=original_val_dataset,
                     metric=metric,
-                    loss=loss,
-                    feature_configure=feature_configure
+                    loss=loss
                 )
 
                 assert isinstance(model.val_metric, MetricResult)
@@ -308,14 +309,13 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         # save features
         self._final_feature_names = model.feature_list
-        if isinstance(original_dataset.get_dataset().data, pd.DataFrame):
-            self.final_configure_generation()
-        else:
-            assert isinstance(original_dataset.get_dataset().data, np.ndarray)
-            self.multiprocess_final_configure_generation()
+        self.final_configure_generation()
 
     def _increment_run(self, **entity):
-        self._train_run(**entity)
+        raise RuntimeError("Class: SupervisedFeatureSelector has no increment function.")
+
+    def _predict_run(self, **entity):
+        raise RuntimeError("Class: SupervisedFeatureSelector has no predict function.")
 
     @property
     def optimal_metric(self):
@@ -324,23 +324,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         :return:
         """
         return self._optimal_metric
-
-    @classmethod
-    def update_feature_conf(cls, feature_conf, feature_list):
-        """
-        Update feature configure dict.
-        :param feature_conf:
-        :param feature_list:
-        :return:
-        """
-        for feature in feature_conf.keys():
-            if feature_conf[feature]["index"] not in feature_list:
-                feature_conf[feature]["used"] = False
-
-        return feature_conf
-
-    def _predict_run(self, **entity):
-        pass
 
     def final_configure_generation(self):
         """
@@ -351,20 +334,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         logger.info("final_feature_names: %s", str(self._final_feature_names))
         for item in feature_conf.keys():
             if item not in self._final_feature_names:
-                feature_conf[item]["used"] = False
-
-        yaml_write(yaml_file=self._final_file_path, yaml_dict=feature_conf)
-
-    def multiprocess_final_configure_generation(self):
-        """
-        Write configure file in multiprocess mode.
-        :return:
-        """
-        feature_conf = yaml_read(yaml_file=self._feature_configure_path)
-        logger.info("final_feature_names: %s", str(self._final_feature_names))
-
-        for item in feature_conf.keys():
-            if feature_conf[item]["index"] not in self._final_feature_names:
                 feature_conf[item]["used"] = False
 
         yaml_write(yaml_file=self._final_file_path, yaml_dict=feature_conf)
@@ -420,20 +389,12 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         params["topk"] = len_features(params["topk"])
 
         selector = GBDTSelector()
-        if isinstance(data, pd.DataFrame) and isinstance(target, pd.DataFrame):
-            selector.fit(data.values, target.values.flatten(),
-                         lgb_params=params["lgb_params"],
-                         eval_ratio=params["eval_ratio"],
-                         early_stopping_rounds=params["early_stopping_rounds"],
-                         importance_type=params["importance_type"],
-                         num_boost_round=params["num_boost_round"])
-        else:
-            selector.fit(data, target.flatten(),
-                         lgb_params=params["lgb_params"],
-                         eval_ratio=params["eval_ratio"],
-                         early_stopping_rounds=params["early_stopping_rounds"],
-                         importance_type=params["importance_type"],
-                         num_boost_round=params["num_boost_round"])
+        selector.fit(data.values, target.values.flatten(),
+                     lgb_params=params["lgb_params"],
+                     eval_ratio=params["eval_ratio"],
+                     early_stopping_rounds=params["early_stopping_rounds"],
+                     importance_type=params["importance_type"],
+                     num_boost_round=params["num_boost_round"])
         return selector.get_selected_features(topk=params["topk"])
 
     @classmethod

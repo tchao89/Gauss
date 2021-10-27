@@ -28,12 +28,15 @@ pipeline_dict.mode = "udf"
 # if this value is not None, user can just use one model in value: model_zoo
 pipeline_dict.init_model_root = None
 # choose different supervised selector, optional: ["model_select", "topk_select"]
-pipeline_dict.supervised_selector_mode = "topk_select"
+pipeline_dict.supervised_selector_mode = "model_select"
+# This value is used to set transform type in regression task, eg: {"target_name": "log"}
+# ["log", "exp", "pow", None] is supported for now.
+pipeline_dict.label_switch_type = None
 # Because udf metric using in model evaluation may reduce bad results,
 # this bool value is used to avoid this.
 pipeline_dict.metric_eval_used_flag = False
 # modify, 最外层
-pipeline_dict.use_weight_flag = True
+pipeline_dict.use_weight_flag = False
 # if this value is true and type of dataset file is csv, "data_weight" column will be seen as weight.
 pipeline_dict.weight_column_flag = False
 # weight_column_name is a string value, which means a specific column names weight_column_name in a csv file or last column in txt or libsvm
@@ -42,9 +45,9 @@ pipeline_dict.weight_column_name = None
 pipeline_dict.work_root = environ_configure.work_root
 # optional: ["binary_classification", "multiclass_classification", "regression"]
 pipeline_dict.task_name = "binary_classification"
-# optional: ["auc", "binary_f1", "multiclass_f1"]
+# optional: ["auc", "binary_f1", "multiclass_f1", "mse"]
 # This value will decided the way auto ml component chooses the best model.
-pipeline_dict.metric_name = "binary_f1"
+pipeline_dict.metric_name = "auc"
 # format: {"label_name": {label_value: weight_value, ...}}, if no label value, choose target_A, target_B, ... instead.
 # eg. {"target_A": {1: 1.9, -1: 1}}
 # this interface will be reserved because anyone who is good at weight setting could use it conveniently
@@ -55,21 +58,20 @@ pipeline_dict.dataset_weight = None
 # if None, default loss will be chosen.
 pipeline_dict.loss_name = None
 # optional: ["libsvm", "txt", "csv"]
-pipeline_dict.data_file_type = "libsvm"
-# distinguish
-pipeline_dict.train_column_name_flag = False
-pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/a9a/a9a"
-pipeline_dict.val_column_name_flag = False
-pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/a9a/a9a.t"
+pipeline_dict.data_file_type = "csv"
 # pipeline do not need to get target names in libsvm and txt file.
-pipeline_dict.target_names = None
+pipeline_dict.target_names = ["label"]
+pipeline_dict.train_column_name_flag = True
+pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/test/train.csv"
+pipeline_dict.val_column_name_flag = True
+pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/test/valid.csv"
 pipeline_dict.feature_configure_path = environ_configure.user_feature_path
 pipeline_dict.dataset_name = "plaindataset"
 pipeline_dict.model_zoo = ["lightgbm"]
 pipeline_dict.data_clear_flag = False
 pipeline_dict.feature_generator_flag = False
-pipeline_dict.unsupervised_feature_selector_flag = True
-pipeline_dict.supervised_feature_selector_flag = True
+pipeline_dict.unsupervised_feature_selector_flag = False
+pipeline_dict.supervised_feature_selector_flag = False
 user_config_path = environ_configure.work_root + "/train_user_config.yaml"
 yaml_write(yaml_dict=dict(pipeline_dict), yaml_file=user_config_path)
 

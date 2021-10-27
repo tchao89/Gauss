@@ -40,7 +40,6 @@ class PlaintextDataset(BaseDataset):
         content when exist.
             2. Pass a `data_package` wrapped by Bunch to the construct function, `data` and
         `target` must provided at least.
-
         ======
         :param name: A string to represent module's name.
         :param data_path:  A string or `dict`; if string, it can be directly used by load data
@@ -50,14 +49,11 @@ class PlaintextDataset(BaseDataset):
         :param target_name: A `list` containing label names in string format.
         :param memory_only: a boolean value, true for memory, false for others, default True.
         """
-        for item in [ConstantValues.name,
-                     ConstantValues.task_name,
-                     ConstantValues.data_package,
+        for item in [ConstantValues.data_package,
                      ConstantValues.data_path,
                      ConstantValues.target_names,
                      ConstantValues.memory_only,
-                     ConstantValues.data_file_type,
-                     ConstantValues.proportion]:
+                     ConstantValues.data_file_type]:
             if params.get(item) is None:
                 params[item] = None
 
@@ -65,6 +61,7 @@ class PlaintextDataset(BaseDataset):
             params[ConstantValues.name],
             params[ConstantValues.data_path],
             params[ConstantValues.task_name],
+            params[ConstantValues.train_flag],
             params[ConstantValues.memory_only]
         )
 
@@ -78,12 +75,8 @@ class PlaintextDataset(BaseDataset):
 
         assert isinstance(self._target_names, List) or self._target_names is None, "Value: target_name is {}".format(
             self._target_names)
-        self._column_size = 0
-        self._row_size = 0
 
         self._default_print_size = 5
-        # Bunch object, including features, target,
-        # feature_names[optional], target_names[optional]
         self._bunch = None
 
         if params.get(ConstantValues.weight_column_flag):
@@ -104,8 +97,10 @@ class PlaintextDataset(BaseDataset):
         # This value is a bool value, and true means plaindataset has missing values and need to clear.
         self._need_data_clear = False
 
-        if params["data_path"] is not None and isinstance(params[ConstantValues.data_path], str):
+        if params[ConstantValues.data_path] is not None \
+                and isinstance(params[ConstantValues.data_path], str):
             self._column_name_flag = params[ConstantValues.column_name_flag]
+
             assert isinstance(self._column_name_flag, bool)
             self._bunch = self.load_data()
         else:
@@ -144,23 +139,21 @@ class PlaintextDataset(BaseDataset):
         data = None
         target = None
         feature_names = None
-        target_name = None
+        target_names = None
         weight = None
 
         if self.__type_doc == "csv":
 
             try:
-                data, target, feature_names, target_name, weight = self.load_csv()
+                data, target, feature_names, target_names, weight = self.load_csv()
             except IOError:
                 logger.info("File path does not exist.")
-            except KeyError:
-                raise KeyError("Dataset file type is not correct, and it's not a csv file.")
             finally:
                 logger.info(".csv file has been converted to Bunch object.")
 
             self._bunch = Bunch(data=data,
                                 target=target,
-                                target_names=target_name,
+                                target_names=target_names,
                                 feature_names=feature_names,
                                 dataset_weight=weight)
 
@@ -173,7 +166,7 @@ class PlaintextDataset(BaseDataset):
             except ValueError:
                 raise ValueError("Dataset file type is not correct, and it's not a libsvm file.")
             finally:
-                logger.info(".csv file has been converted to Bunch object.")
+                logger.info(".libsvm file has been converted to Bunch object.")
 
             _, data, target = self._convert_data_dataframe(data=data,
                                                            target=target)
@@ -209,7 +202,7 @@ class PlaintextDataset(BaseDataset):
             except ValueError:
                 raise ValueError("Dataset file type is not correct, and it's not a txt file.")
             finally:
-                logger.info(".csv file has been converted to Bunch object.")
+                logger.info(".txt file has been converted to Bunch object.")
 
             _, data, target = self._convert_data_dataframe(data=data,
                                                            target=target)
@@ -237,63 +230,60 @@ class PlaintextDataset(BaseDataset):
 
         else:
             raise TypeError("File type can not be accepted.")
-        self.__set_proportion()
+        if self._train_flag == ConstantValues.train:
+            self.__set_proportion()
         return self._bunch
 
     def __set_proportion(self):
-        if self._bunch is None:
-            raise ValueError("Dataset has not been loaded.")
-        if self._bunch.get("proportion"):
-            raise ValueError("Value: self._proportion must be empty.")
-        if not isinstance(self._bunch, Bunch):
-            raise AttributeError("Value: self._bunch must be type: Bunch, "
-                                 "but get {} instead.".format(type(self._bunch)))
-        target = self._bunch.target
-        target_names = self._bunch.target_names[0]
+        if self._train_flag == ConstantValues.train:
+            if self._bunch is None:
+                raise ValueError("Dataset has not been loaded.")
+            if self._bunch.get("proportion"):
+                raise ValueError("Value: self._proportion must be empty.")
+            if not isinstance(self._bunch, Bunch):
+                raise AttributeError("Value: self._bunch must be type: Bunch, "
+                                     "but get {} instead.".format(type(self._bunch)))
+            target = self._bunch.target
+            target_names = self._bunch.target_names[0]
 
-        count = 0
-        proportion_dict = {}
-        label_class_dict = {}
+            count = 0
+            proportion_dict = {}
+            label_class_dict = {}
 
-        for index, value in target[target_names].value_counts().iteritems():
-            proportion_dict[index] = value
-            count += 1
-        label_class_dict[target_names] = count
-        self._bunch.label_class = label_class_dict
-        self._bunch.proportion = {target_names: proportion_dict}
+            for index, value in target[target_names].value_counts().iteritems():
+                proportion_dict[index] = value
+                count += 1
+            label_class_dict[target_names] = count
+            self._bunch.label_class = label_class_dict
+            self._bunch.proportion = {target_names: proportion_dict}
+        else:
+            self._bunch.label_class = None
+            self._bunch.proportion = None
 
     def load_csv(self):
         data = reduce_data(data_path=self._data_path,
                            column_name_flag=self._column_name_flag)
-        self._row_size = data.shape[0]
-
-        if self._target_names is None:
-            raise AttributeError("Value: target names should be set, not None.")
-
         if self._column_name_flag:
-            target = data[self._target_names]
-            data = data.drop(self._target_names, axis=1)
-            feature_names = data.columns
-            target_names = self._target_names
-
-            self._column_size = data.shape[1] + target.shape[1]
-
             if self._weight_column_flag is True:
-                if self._weight_column_names not in data.columns:
-                    raise ValueError("Column: {} doesn't exist in dataset file.".format(self._weight_column_names))
+
+                for weight_name in self._weight_column_names:
+                    if weight_name not in data.columns:
+                        raise ValueError("Column: {} doesn't exist in dataset file.".format(self._weight_column_names))
+
                 weight = data[self._weight_column_names]
                 data.drop(self._weight_column_names, axis=1, inplace=True)
             else:
                 weight = None
+            if self._target_names is not None:
+                target = data[self._target_names]
+                data = data.drop(self._target_names, axis=1)
+            else:
+                target = None
+            feature_names = data.columns
+            target_names = self._target_names
         else:
             target_columns = []
             generated_columns = list(data.columns)
-
-            for target_index in self._target_names:
-                target_columns.append(generated_columns[target_index])
-            target_columns = list(set(target_columns))
-            target = data.iloc[:, target_columns]
-
             if self._weight_column_flag is True:
                 if self._weight_column_names:
                     weight_columns = []
@@ -307,19 +297,25 @@ class PlaintextDataset(BaseDataset):
             else:
                 weight = None
 
-            data.drop(target_columns, axis=1, inplace=True)
-            target_names = ["target_" + string.ascii_uppercase[index]
-                            for index, _ in enumerate(target)]
+            if self._target_names is not None:
+                for target_index in self._target_names:
+                    target_columns.append(generated_columns[target_index])
+                target_columns = list(set(target_columns))
+                target = data.iloc[:, target_columns]
+                data.drop(target_columns, axis=1, inplace=True)
+                target_names = ["target_" + string.ascii_uppercase[index]
+                                for index, _ in enumerate(target)]
+                target.columns = target_names
+            else:
+                target = None
             feature_names = ["feature_" + str(index) for index, _ in enumerate(data)]
             data.columns = feature_names
-            target.columns = target_names
+            target_names = self._target_names
         return data, target, feature_names, target_names, weight
 
     def load_libsvm(self):
         data, target = load_svmlight_file(self._data_path)
         data = data.toarray()
-        self._column_size = len(data[0]) + 1
-        self._row_size = len(data)
 
         return data, target
 
@@ -348,21 +344,12 @@ class PlaintextDataset(BaseDataset):
             target = list(map(int, target))
             target = np.asarray(target, dtype=int)
 
-            self._column_size = len(data[0]) + 1
-            self._row_size = len(data)
-
             return data, target
 
     def wc_count(self):
         import subprocess
         out = subprocess.getoutput("wc -l %s" % self._data_path)
         return int(out.split()[0])
-
-    def get_column_size(self):
-        return self._column_size
-
-    def get_row_size(self):
-        return self._row_size
 
     def get_target_name(self):
         return self._target_names
@@ -458,8 +445,9 @@ class PlaintextDataset(BaseDataset):
 
         data_package.proportion = self._bunch.proportion
 
-        return PlaintextDataset(name="train_data",
-                                task_type=ConstantValues.train,
+        return PlaintextDataset(name=self._name,
+                                task_name=self._task_name,
+                                train_flag=ConstantValues.train,
                                 weight_column_flag=self._weight_column_flag,
                                 weight_column_name=self._weight_column_names,
                                 data_package=data_package)
@@ -471,14 +459,6 @@ class PlaintextDataset(BaseDataset):
     @need_data_clear.setter
     def need_data_clear(self, data_clear: bool):
         self._need_data_clear = data_clear
-
-    @property
-    def column_size(self):
-        return self._column_size
-
-    @property
-    def row_size(self):
-        return self._row_size
 
     @property
     def target_names(self):
