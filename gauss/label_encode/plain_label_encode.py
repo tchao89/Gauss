@@ -7,7 +7,9 @@ Authors: citic-lab
 import shelve
 
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import scale
 
 from entity.dataset.base_dataset import BaseDataset
 from gauss.label_encode.base_label_encode import BaseLabelEncode
@@ -24,6 +26,7 @@ class PlainLabelEncode(BaseLabelEncode):
     """
     BaseLabelEncode Object.
     """
+
     def __init__(self, **params):
 
         super().__init__(
@@ -41,6 +44,11 @@ class PlainLabelEncode(BaseLabelEncode):
         self.__label_encoding_configure_path = params["label_encoding_configure_path"]
         self.__label_encoding = {}
 
+        if self._task_name == ConstantValues.regression:
+            self.__regression_label_switch = params[ConstantValues.label_switch_type]
+        else:
+            self.__regression_label_switch = None
+
         if self._train_flag == ConstantValues.train:
             self.__dataset_weight = params["dataset_weight"]
         else:
@@ -55,6 +63,8 @@ class PlainLabelEncode(BaseLabelEncode):
         logger.info("Starting label encoding, " + "with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])
         self.__encode_label(dataset=dataset)
+        self.__switch_label(switch_type=self.__regression_label_switch,
+                            dataset=dataset)
         self.__reset_dataset_attributes(dataset=dataset)
 
         logger.info("Label encoding serialize, " + "with current memory usage: %.2f GiB",
@@ -87,6 +97,7 @@ class PlainLabelEncode(BaseLabelEncode):
                             type(self.__feature_configure)
                         ))
 
+                # transform features
                 if self.__feature_configure[col]['ftype'] == "category" or \
                         self.__feature_configure[col]['ftype'] == "bool":
                     assert le_model_list.get(col)
@@ -105,6 +116,7 @@ class PlainLabelEncode(BaseLabelEncode):
 
                     data[col] = le_model.transform(data[col])
 
+            # transform labels
             for col in target_names:
                 if self._task_name == ConstantValues.binary_classification or \
                         self._task_name == ConstantValues.multiclass_classification:
@@ -123,7 +135,11 @@ class PlainLabelEncode(BaseLabelEncode):
                                 col) + " has an abnormal value (unseen by label encoding): " + str(item))
 
                     target[col] = le_model.transform(target[col])
-        self.__reset_dataset_attributes(dataset=dataset)
+                else:
+                    assert le_model_list.get("switch")
+                    trans_func = le_model_list["switch"]["func"]
+                    trans_params = le_model_list["switch"]["params"]
+                    target[col] = trans_func(target[col], *trans_params)
 
     def _predict_run(self, **entity):
         assert "infer_dataset" in entity.keys()
@@ -131,11 +147,7 @@ class PlainLabelEncode(BaseLabelEncode):
 
         data = dataset.get_dataset().data
         assert isinstance(data, pd.DataFrame)
-
-        target = dataset.get_dataset().target
-
         feature_names = dataset.get_dataset().feature_names
-        target_names = dataset.get_dataset().target_names
 
         self.__feature_configure = yaml_read(yaml_file=self.__final_file_path)
 
@@ -149,42 +161,25 @@ class PlainLabelEncode(BaseLabelEncode):
                             type(self.__feature_configure)
                         ))
 
-                if self.__feature_configure[col]['ftype'] == "category" or self.__feature_configure[col]['ftype'] == "bool":
+                if self.__feature_configure[col]['ftype'] == "category" \
+                        or self.__feature_configure[col]['ftype'] == "bool":
                     assert le_model_list.get(col)
                     le_model = le_model_list[col]
 
                     label_dict = dict(zip(le_model.classes_, le_model.transform(le_model.classes_)))
                     status_list = data[col].unique()
-
                     for item in status_list:
-                        if label_dict.get(item) is None:
+                        try:
+                            le_model.transform([item])
+                        except ValueError:
                             logger.info(
                                 "feature: " + str(col) + " has an abnormal value (unseen by label encoding): " + str(
                                     item))
+                            logger.info("Label dict: {}".format(label_dict))
                             raise ValueError("feature: " + str(
                                 col) + " has an abnormal value (unseen by label encoding): " + str(item))
 
                     data[col] = le_model.transform(data[col])
-
-            for col in target_names:
-                if self._task_name == ConstantValues.binary_classification or \
-                        self._task_name == ConstantValues.multiclass_classification:
-                    assert le_model_list.get(col)
-                    le_model = le_model_list[col]
-
-                    label_dict = dict(zip(le_model.classes_, le_model.transform(le_model.classes_)))
-                    status_list = target[col].unique()
-
-                    for item in status_list:
-                        if label_dict.get(item) is None:
-                            logger.info(
-                                "feature: " + str(col) + " has an abnormal value (unseen by label encoding): " + str(
-                                    item))
-                            raise ValueError("feature: " + str(
-                                col) + " has an abnormal value (unseen by label encoding): " + str(item))
-
-                    target[col] = le_model.transform(target[col])
-        self.__reset_dataset_attributes(dataset=dataset)
 
     def __encode_label(self, dataset: BaseDataset):
         data = dataset.get_dataset().data
@@ -192,7 +187,6 @@ class PlainLabelEncode(BaseLabelEncode):
 
         target = dataset.get_dataset().target
         target_names = dataset.get_dataset().target_names
-
         for feature in feature_names:
             if self.__feature_configure[feature]['ftype'] == 'category' or \
                     self.__feature_configure[feature]['ftype'] == 'bool':
@@ -210,10 +204,11 @@ class PlainLabelEncode(BaseLabelEncode):
                 self.__label_encoding[label] = item_label_encoding_model
 
                 target[label] = item_label_encoding_model.transform(target[label])
-
-        logger.info("Label encoding finished, starting to reduce dataframe and save memory, " + "with current memory usage: %.2f GiB",
-                    get_current_memory_gb()["memory_usage"])
-        reduce_data(dataframe=dataset.get_dataset().data)
+        else:
+            assert self._task_name == ConstantValues.regression
+        logger.info(
+            "Label encoding finished, starting to reduce dataframe and save memory, " + "with current memory usage: %.2f GiB",
+            get_current_memory_gb()["memory_usage"])
 
     def __reset_dataset_attributes(self, dataset: BaseDataset):
         target_names = dataset.get_dataset().target_names
@@ -232,7 +227,8 @@ class PlainLabelEncode(BaseLabelEncode):
                         Using dict.copy() can avoid RuntimeError: dictionary changed size during iteration.
                         """
                         [encoding_value] = self.__label_encoding[label].transform([label_value])
-                        logger.info("Original value: {} has been encoded to value: {}".format(label_value, encoding_value))
+                        logger.info(
+                            "Original value: {} has been encoded to value: {}".format(label_value, encoding_value))
                         weight[encoding_value] = label_weight
                     encoding_weight[label] = weight
 
@@ -265,3 +261,42 @@ class PlainLabelEncode(BaseLabelEncode):
     @property
     def dataset_weight(self):
         return self.__dataset_weight
+
+    def __switch_label(self, switch_type: str, dataset: BaseDataset):
+        if self._task_name == ConstantValues.regression:
+            target = dataset.get_dataset().target
+            target_names = dataset.get_dataset().target_names
+            for label in target_names:
+                if label not in target.columns:
+                    raise ValueError(
+                        "label: {} is not in target names: {}.".format(
+                            label, target.columns))
+                if switch_type == "log":
+                    target[label] = np.log(target[label])
+                    switch_func = np.log
+                    params = ()
+                elif switch_type == "exp":
+                    target[label] = np.exp(target[label])
+                    switch_func = np.exp
+                    params = ()
+                elif switch_type == "pow":
+                    target[label] = np.power(target[label], 0.5)
+                    switch_func = np.power
+                    params = (0.5,)
+                elif switch_type == "scale":
+                    target[label] = scale(target[label])
+                    switch_func = scale
+                    params = ()
+                elif switch_type is None:
+                    def switch_func():
+                        pass
+
+                    switch_func = switch_func
+                    params = ()
+                else:
+                    raise ValueError(
+                        "switch type: {} is not in switch types: {}.".format(
+                            switch_type, ConstantValues.switch_types))
+                self.__label_encoding["switch"] = {"func": switch_func, "params": params}
+        else:
+            return None

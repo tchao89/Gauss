@@ -99,11 +99,11 @@ class GaussLightgbm(ModelWrapper):
         train_flag = kwargs.get("train_flag")
 
         categorical_list = dataset_bunch.categorical_list
-        target_names = dataset_bunch.target_names[0]
         # dataset is a BaseDataset object, you can use get_dataset() method to get a Bunch object,
         # including data, target, feature_names, target_names, generated_feature_names.
         assert isinstance(dataset_bunch.data, pd.DataFrame)
         if train_flag == ConstantValues.train or train_flag == ConstantValues.increment:
+            target_names = dataset_bunch.target_names[0]
             data_shape = dataset_bunch.data.shape
             label_shape = dataset_bunch.target.shape
             logger.info("Data shape: {}, label shape: {}".format(data_shape, label_shape))
@@ -630,7 +630,6 @@ class GaussLightgbm(ModelWrapper):
 
     def _predict_prob(self, infer_dataset: BaseDataset, **entity):
         assert self._train_flag == ConstantValues.inference
-
         model_file_path = os.path.join(self._model_save_root, self._model_file_name)
         assert os.path.isfile(model_file_path)
 

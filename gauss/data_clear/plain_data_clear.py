@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic-Lab. All rights reserved.
-# Authors: citic-lab
+"""-*- coding: utf-8 -*-
+
+Copyright (c) 2020, Citic-Lab. All rights reserved.
+Authors: citic-lab"""
 import copy
 import shelve
 
@@ -44,12 +44,12 @@ class PlainDataClear(BaseDataClear):
 
         self._strategy_dict = params["strategy_dict"]
 
-        self.missing_values = np.nan
+        self._missing_values = np.nan
 
-        self.default_cat_impute_model = SimpleImputer(missing_values=self.missing_values, strategy="most_frequent")
-        self.default_num_impute_model = SimpleImputer(missing_values=self.missing_values, strategy="mean")
+        self._default_cat_impute_model = SimpleImputer(missing_values=self._missing_values, strategy="most_frequent")
+        self._default_num_impute_model = SimpleImputer(missing_values=self._missing_values, strategy="mean")
 
-        self.impute_models = {}
+        self._impute_models = {}
         self._already_data_clear = None
 
     def _train_run(self, **entity):
@@ -71,14 +71,6 @@ class PlainDataClear(BaseDataClear):
         logger.info("Data clearing impute models serializing, " + "with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])
         self._data_clear_serialize()
-
-        logger.info("Clear object and save memory , " + "with current memory usage: %.2f GiB",
-                    get_current_memory_gb()["memory_usage"])
-        if self.impute_models is not None:
-            del self.impute_models
-
-        logger.info("Data clear has finished, " + "with current memory usage: %.2f GiB",
-                    get_current_memory_gb()["memory_usage"])
 
     def _increment_run(self, **entity):
         assert ConstantValues.increment_dataset in entity.keys()
@@ -156,14 +148,14 @@ class PlainDataClear(BaseDataClear):
 
             if self._strategy_dict is not None:
                 if self._strategy_dict["model"]["name"] == "ftype":
-                    impute_model = SimpleImputer(missing_values=self.missing_values,
+                    impute_model = SimpleImputer(missing_values=self._missing_values,
                                                  strategy=self._strategy_dict[item_conf['ftype']]["name"],
                                                  fill_value=self._strategy_dict[item_conf['ftype']].get("fill_value"),
                                                  add_indicator=True)
 
                 else:
                     assert self._strategy_dict["model"]["name"] == "feature"
-                    impute_model = SimpleImputer(missing_values=self.missing_values,
+                    impute_model = SimpleImputer(missing_values=self._missing_values,
                                                  strategy=self._strategy_dict[feature]["name"],
                                                  fill_value=self._strategy_dict[feature].get("fill_value"),
                                                  add_indicator=True)
@@ -171,11 +163,11 @@ class PlainDataClear(BaseDataClear):
             else:
 
                 if item_conf['ftype'] == "numerical":
-                    impute_model = copy.deepcopy(self.default_num_impute_model)
+                    impute_model = copy.deepcopy(self._default_num_impute_model)
 
                 else:
                     assert item_conf['ftype'] in ["category", "bool", "datetime"]
-                    impute_model = copy.deepcopy(self.default_cat_impute_model)
+                    impute_model = copy.deepcopy(self._default_cat_impute_model)
 
             item_data = item_data.reshape(-1, 1)
 
@@ -189,7 +181,7 @@ class PlainDataClear(BaseDataClear):
             item_data = impute_model.transform(item_data)
             item_data = item_data.reshape(1, -1).squeeze(axis=0)
 
-            self.impute_models[feature] = impute_model
+            self._impute_models[feature] = impute_model
             data[feature] = item_data
         reduce_data(dataframe=data)
 
@@ -232,7 +224,7 @@ class PlainDataClear(BaseDataClear):
     def _data_clear_serialize(self):
         # 序列化label encoding模型字典
         with shelve.open(self._data_clear_configure_path) as shelve_open:
-            shelve_open['impute_models'] = self.impute_models
+            shelve_open['impute_models'] = self._impute_models
 
     def final_configure_generation(self):
         feature_conf = yaml_read(yaml_file=self._feature_configure_path)

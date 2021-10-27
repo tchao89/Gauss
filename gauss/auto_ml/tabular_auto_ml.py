@@ -11,7 +11,6 @@ from core.nni.algorithms.hpo.hyperopt_tuner import HyperoptTuner
 from core.nni.algorithms.hpo.evolution_tuner import EvolutionTuner
 from gauss.auto_ml.base_auto_ml import BaseAutoML
 from entity.dataset.base_dataset import BaseDataset
-from entity.feature_configuration.feature_config import FeatureConf
 from entity.model.model import ModelWrapper
 from entity.metrics.base_metric import BaseMetric, MetricResult
 from entity.losses.base_loss import BaseLoss
@@ -113,12 +112,10 @@ class TabularAutoML(BaseAutoML):
         assert "train_dataset" in entity and isinstance(entity["train_dataset"], BaseDataset)
         assert "val_dataset" in entity and isinstance(entity["val_dataset"], BaseDataset)
         assert "metric" in entity and isinstance(entity["metric"], BaseMetric)
-        assert "feature_configure" in entity and isinstance(entity["feature_configure"], FeatureConf)
         assert "loss" in entity
         assert isinstance(entity["loss"], BaseLoss) if entity["loss"] is not None else True
 
         self.__model = entity["model"]
-        feature_conf = entity["feature_configure"]
 
         self.__local_best = None
 
@@ -164,7 +161,6 @@ class TabularAutoML(BaseAutoML):
                         )
                     )
                     self.__model.update_params(**params)
-                    self.__model.update_feature_conf(feature_conf=feature_conf)
 
                     logger.info(
                         "Model training, with current memory usage: {:.2f} GiB".format(

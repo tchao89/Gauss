@@ -9,8 +9,9 @@ def load_libsvm(data_path):
     return _data, _target
 
 
-df = pd.read_csv("/home/liangqian/Gauss/experiments/CbUzTV/result.csv")
-_, target = load_libsvm(data_path="/home/liangqian/文档/公开数据集/a9a/a9a.t")
+df = pd.read_csv("/home/liangqian/Gauss/experiments/nST8yE/result.csv")
+# _, target = load_libsvm(data_path="/home/liangqian/文档/公开数据集/w1a/w1a.t")
+target = pd.read_csv("/home/liangqian/文档/公开数据集/test/valid_label.csv")["label"]
 y_true = [1 if item > 0 else 0 for item in target]
 y_pred = [1 if item > 0.5 else 0 for item in df.values.flatten()]
 y_score = df.values.flatten()

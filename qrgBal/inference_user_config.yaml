@@ -1,0 +1,27 @@
+data_clear_flag: false
+data_clear_name: plain_data_clear
+data_file_type: libsvm
+dataset_name: plaindataset
+feature_generator_flag: false
+feature_generator_name: featuretools_generation
+infer_result_type: logit
+inference_column_name_flag: false
+inference_data_path: "/home/liangqian/\u6587\u6863/\u516C\u5F00\u6570\u636E\u96C6\
+  /a9a/a9a.t"
+lightgbm:
+  final_file_path: /home/liangqian/Gauss/experiments/qrgBal/model/lightgbm/feature_configure/final_feature_configure.yaml
+  increment_flag: false
+  metric_result: 0.6774729842061513
+  model_name: lightgbm
+  work_model_root: /home/liangqian/Gauss/experiments/qrgBal/model/lightgbm
+metric_name: binary_f1
+model_name: lightgbm
+out_put_path: /home/liangqian/Gauss/experiments/qrgBal
+supervised_feature_selector_flag: true
+supervised_feature_selector_name: supervised_feature_selector
+target_names: null
+task_name: binary_classification
+type_inference_name: plain_type_inference
+unsupervised_feature_selector_flag: true
+unsupervised_feature_selector_name: unsupervised_feature_selector
+work_root: /home/liangqian/Gauss/experiments/qrgBal

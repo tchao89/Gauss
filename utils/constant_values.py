@@ -19,6 +19,7 @@ class ConstantValues:
     proportion = "proportion"
     data_file_type = "data_file_type"
     data_package = "data_package"
+    label_switch_type = "label_switch_type"
     supervised_selector_model_names = "supervised_selector_model_names"
     supervised_selector_mode = "supervised_selector_mode"
     selector_trial_num = "selector_trial_num"
@@ -50,6 +51,10 @@ class ConstantValues:
                      "proportion",
                      "categorical_list",
                      "label_class"]
+    switch_types = ["log",
+                    "exp",
+                    "pow",
+                    None]
     # train_flag:
     train = "train"
     increment = "increment"
@@ -64,8 +69,9 @@ class ConstantValues:
     # entity name
     metric = "metric"
     loss = "loss"
-    auto_ml = "auto_ml"
     model_name = "model_name"
+    selector_model = "selector_model"
+    selector_metric = "selector_metric"
     dataset_name = "dataset_name"
     train_dataset = "train_dataset"
     val_dataset = "val_dataset"
@@ -76,6 +82,8 @@ class ConstantValues:
     metric_result = "metric_result"
     feature_configure_name = "feature_configure_name"
     # component name
+    auto_ml = "auto_ml"
+    selector_auto_ml = "selector_auto_ml"
     data_clear_name = "data_clear_name"
     type_inference_name = "type_inference_name"
     label_encoder_name = "label_encoder_name"
@@ -113,6 +121,9 @@ class ConstantValues:
     label_encoding_models_path = "label_encoding_models_path"
     impute_models_path = "impute_models_path"
     label_encoder_feature_path = "label_encoder_feature_path"
+    pre_feature_configure_path = "pre_feature_configure_path"
+    target_feature_configure_path = "target_feature_configure_path"
+    out_put_path = "out_put_path"
     # pipeline name
     PreprocessRoute = "PreprocessRoute"
     CoreRoute = "CoreRoute"

@@ -22,12 +22,11 @@ class CoreRoute(Component):
     """
     CoreRoute object.
     """
-
     def __init__(self, **params):
         super().__init__(
-            name=params["name"],
-            train_flag=params["train_flag"],
-            task_name=params["task_name"]
+            name=params[ConstantValues.name],
+            train_flag=params[ConstantValues.train_flag],
+            task_name=params[ConstantValues.task_name]
         )
 
         assert params[ConstantValues.task_name] in [ConstantValues.binary_classification,
@@ -35,89 +34,84 @@ class CoreRoute(Component):
                                                     ConstantValues.regression]
 
         # name of model, which will be used to create entity
-        self._model_name = params["model_name"]
-
-        self.auto_ml_name = params.get("auto_ml_name")
-
-        self._task_name = params["task_name"]
-        self._feature_selector_flag = params["supervised_feature_selector_flag"]
-
-        self._opt_model_names = params.get("opt_model_names")
-
-        self.__feature_configure_path = params["pre_feature_configure_path"]
-
-        self._final_file_path = params["target_feature_configure_path"]
+        self.__model_name = params[ConstantValues.model_name]
+        self.__feature_selector_flag = params[ConstantValues.supervised_feature_selector_flag]
+        self.__feature_configure_path = params[ConstantValues.pre_feature_configure_path]
+        self.__final_file_path = params[ConstantValues.target_feature_configure_path]
 
         # create feature configure
-        feature_conf_params = Bunch(name=["feature_configure_name"], file_path=None)
-        self.feature_conf = self.create_entity(
-            entity_name=params["feature_configure_name"],
+        feature_conf_params = Bunch(name=[ConstantValues.feature_configure_name],
+                                    file_path=None)
+        self.__feature_conf = self.create_entity(
+            entity_name=params[ConstantValues.feature_configure_name],
             **feature_conf_params
         )
 
-        self._best_metric = None
+        self.__best_metric = None
         model_params = Bunch(
-            name=self._model_name,
-            model_root_path=params["model_root_path"],
+            name=self.__model_name,
+            model_root_path=params[ConstantValues.model_root_path],
             train_flag=self._train_flag,
             task_name=self._task_name
         )
 
         if self._train_flag == ConstantValues.train:
-            self.__auto_ml_path = params["auto_ml_path"]
-            self.__selector_configure_path = params["selector_configure_path"]
+            self.__auto_ml_name = params[ConstantValues.auto_ml_name]
+            self.__auto_ml_path = params[ConstantValues.auto_ml_path]
+            self.__opt_model_names = params[ConstantValues.opt_model_names]
+            self.__selector_configure_path = params[ConstantValues.selector_configure_path]
 
-            model_params.use_weight_flag = params["use_weight_flag"]
-            model_params.init_model_root = params["init_model_root"]
-            model_params.metric_eval_used_flag = params["metric_eval_used_flag"]
+            model_params.use_weight_flag = params[ConstantValues.use_weight_flag]
+            model_params.init_model_root = params[ConstantValues.init_model_root]
+            model_params.metric_eval_used_flag = params[ConstantValues.metric_eval_used_flag]
 
-            self._loss_name = params["loss_name"]
-            if self._loss_name is not None:
+            self.__loss_name = params[ConstantValues.loss_name]
+            if self.__loss_name is not None:
                 loss_params = Bunch(
-                    name=self._loss_name
+                    name=self.__loss_name
                 )
-                self.loss = self.create_entity(
-                    entity_name=self._loss_name,
+                self.__loss = self.create_entity(
+                    entity_name=self.__loss_name,
                     **loss_params
                 )
             else:
-                self.loss = None
+                self.__loss = None
 
-            self._metric_name = params["metric_name"]
+            self.__metric_name = params[ConstantValues.metric_name]
             # create metric and set optimize_mode
-            metric_params = Bunch(name=self._metric_name)
-            self.metric = self.create_entity(
-                entity_name=self._metric_name,
+            metric_params = Bunch(name=self.__metric_name)
+            self.__metric = self.create_entity(
+                entity_name=self.__metric_name,
                 **metric_params
             )
-            self._optimize_mode = self.metric.optimize_mode
+            self.__optimize_mode = self.__metric.optimize_mode
 
             tuner_params = Bunch(
-                name=self.auto_ml_name,
+                name=self.__auto_ml_name,
                 train_flag=self._train_flag,
                 enable=self.enable,
                 task_name=params[ConstantValues.task_name],
-                auto_ml_trial_num=params["auto_ml_trial_num"],
-                opt_model_names=self._opt_model_names,
-                optimize_mode=self._optimize_mode,
+                auto_ml_trial_num=params[ConstantValues.auto_ml_trial_num],
+                opt_model_names=self.__opt_model_names,
+                optimize_mode=self.__optimize_mode,
                 auto_ml_path=self.__auto_ml_path
             )
 
-            self.auto_ml = self.create_component(
-                component_name=params["auto_ml_name"],
+            self.__auto_ml = self.create_component(
+                component_name=params[ConstantValues.auto_ml_name],
                 **tuner_params
             )
 
-            if self._feature_selector_flag is True:
+            if self.__feature_selector_flag is True:
                 assert params["supervised_selector_mode"] in ['model_select', 'topk_select']
-                self._supervised_selector_mode = params["supervised_selector_mode"]
+                self.__supervised_selector_mode = params["supervised_selector_mode"]
                 if params["supervised_selector_mode"] == "model_select":
                     # auto_ml_path and selector_configure_path are fixed configuration files.
                     s_params = Bunch(
                         name=params["supervised_selector_name"],
                         train_flag=self._train_flag,
-                        enable=self.enable,
-                        metric_name=self._metric_name,
+                        enable=self._enable,
+                        metric_name=self.__metric_name,
                         task_name=params["task_name"],
                         model_root_path=params["model_root_path"],
                         feature_configure_path=params["pre_feature_configure_path"],
@@ -125,11 +119,11 @@ class CoreRoute(Component):
                         feature_selector_model_names=params["feature_selector_model_names"],
                         selector_trial_num=params["selector_trial_num"],
                         selector_configure_path=self.__selector_configure_path,
-                        model_name=self._model_name,
+                        model_name=self.__model_name,
                         auto_ml_path=params["auto_ml_path"],
                     )
 
-                    self.feature_selector = self.create_component(
+                    self.__feature_selector = self.create_component(
                         component_name=params["supervised_selector_name"],
                         **s_params
                     )
@@ -138,8 +132,8 @@ class CoreRoute(Component):
                     s_params = Bunch(
                         name=params["supervised_selector_name"],
                         train_flag=self._train_flag,
-                        enable=self.enable,
-                        metric_name=self._metric_name,
+                        enable=self._enable,
+                        metric_name=self.__metric_name,
                         task_name=params["task_name"],
                         model_root_path=params["model_root_path"],
                         feature_configure_path=params["pre_feature_configure_path"],
@@ -149,11 +143,11 @@ class CoreRoute(Component):
                         feature_model_trial=params["feature_model_trial"],
                         selector_trial_num=params["selector_trial_num"],
                         selector_configure_path=self.__selector_configure_path,
-                        model_name=self._model_name,
+                        model_name=self.__model_name,
                         auto_ml_path=params["auto_ml_path"],
                     )
 
-                    self.feature_selector = self.create_component(
+                    self.__feature_selector = self.create_component(
                         component_name=params["improved_supervised_selector_name"],
                         **s_params
                     )
@@ -171,27 +165,27 @@ class CoreRoute(Component):
 
                     model_params.use_weight_flag = params["use_weight_flag"]
                     model_params.init_model_root = params["init_model_root"]
-                    self.selector_model = self.create_entity(entity_name="lightgbm", **selector_model_params)
+                    self.__selector_model = self.create_entity(entity_name="lightgbm", **selector_model_params)
 
-                    selector_metric_params = Bunch(name=self._metric_name)
-                    self.selector_metric = self.create_entity(
-                        entity_name=self._metric_name,
+                    selector_metric_params = Bunch(name=self.__metric_name)
+                    self.__selector_metric = self.create_entity(
+                        entity_name=self.__metric_name,
                         **selector_metric_params
                     )
 
                     selector_tuner_params = Bunch(
-                        name=self.auto_ml_name,
+                        name=self.__auto_ml_name,
                         train_flag=self._train_flag,
-                        enable=self.enable,
-                        task_name=params["task_name"],
-                        auto_ml_trial_num=params["auto_ml_trial_num"],
-                        opt_model_names=self._opt_model_names,
-                        optimize_mode=self._optimize_mode,
+                        enable=self._enable,
+                        task_name=params[ConstantValues.task_name],
+                        auto_ml_trial_num=params[ConstantValues.auto_ml_trial_num],
+                        opt_model_names=self.__opt_model_names,
+                        optimize_mode=self.__optimize_mode,
                         auto_ml_path=self.__auto_ml_path
                     )
 
-                    self.selector_auto_ml = self.create_component(
-                        component_name=params["auto_ml_name"],
+                    self.__selector_auto_ml = self.create_component(
+                        component_name=params[ConstantValues.auto_ml_name],
                         **selector_tuner_params
                     )
         elif self._train_flag == ConstantValues.increment:
@@ -205,40 +199,39 @@ class CoreRoute(Component):
             model_params.infer_result_type = params[ConstantValues.infer_result_type]
             model_params.use_weight_flag = False
             model_params.metric_eval_used_flag = False
-            self._result = None
-            self._feature_conf = None
+            self.__result = None
 
-        self.model = self.create_entity(entity_name=self._model_name, **model_params)
+        self.__model = self.create_entity(entity_name=self.__model_name, **model_params)
 
     def _train_run(self, **entity):
-        assert "train_dataset" in entity.keys()
-        assert "val_dataset" in entity.keys()
+        assert ConstantValues.train_dataset in entity.keys()
+        assert ConstantValues.val_dataset in entity.keys()
 
-        entity["model"] = self.model
-        entity["metric"] = self.metric
-        entity["auto_ml"] = self.auto_ml
-        entity["feature_configure"] = self.feature_conf
-        entity["loss"] = self.loss
+        entity[ConstantValues.model] = self.__model
+        entity[ConstantValues.metric] = self.__metric
+        entity[ConstantValues.auto_ml] = self.__auto_ml
+        entity[ConstantValues.feature_configure] = self.__feature_conf
+        entity[ConstantValues.loss] = self.__loss
 
-        if self._feature_selector_flag is True:
-            if self._supervised_selector_mode == "model_select":
-                self.feature_selector.run(**entity)
+        if self.__feature_selector_flag is True:
+            if self.__supervised_selector_mode == "model_select":
+                self.__feature_selector.run(**entity)
             else:
-                entity["selector_model"] = self.selector_model
-                entity["selector_auto_ml"] = self.selector_auto_ml
-                entity["selector_metric"] = self.selector_metric
-                self.feature_selector.run(**entity)
+                entity[ConstantValues.selector_model] = self.__selector_model
+                entity[ConstantValues.selector_auto_ml] = self.__selector_auto_ml
+                entity[ConstantValues.selector_metric] = self.__selector_metric
+                self.__feature_selector.run(**entity)
         else:
-            train_dataset = entity["train_dataset"]
-            self.metric.label_name = train_dataset.get_dataset().target_names[0]
+            train_dataset = entity[ConstantValues.train_dataset]
+            self.__metric.label_name = train_dataset.get_dataset().target_names[0]
 
             feature_conf = yaml_read(self.__feature_configure_path)
-            self.feature_conf.file_path = self.__feature_configure_path
-            self.feature_conf.parse(method="system")
+            self.__feature_conf.file_path = self.__feature_configure_path
+            self.__feature_conf.parse(method="system")
             # if feature_list is None, all feature's used will be set true.
-            self.feature_conf.feature_select(feature_list=None)
+            self.__feature_conf.feature_select(feature_list=None)
 
-            entity["model"].update_feature_conf(feature_conf=feature_conf)
+            entity[ConstantValues.model].update_feature_conf(feature_conf=feature_conf)
 
             logger.info(
                 "Auto machine learning component has started, "
@@ -247,50 +240,50 @@ class CoreRoute(Component):
                 )
             )
 
-            self.auto_ml.run(**entity)
+            self.__auto_ml.run(**entity)
 
-            yaml_write(yaml_dict=feature_conf, yaml_file=self._final_file_path)
+            yaml_write(yaml_dict=feature_conf, yaml_file=self.__final_file_path)
 
-        # self._best_metric is a MetricResult object.
-        self._best_metric = entity["model"].val_best_metric_result
+        # self.__best_metric is a MetricResult object.
+        self.__best_metric = entity[ConstantValues.model].val_best_metric_result
 
         logger.info(
             "Using %s, num of running auto machine learning train methods is : %s",
-            self._model_name, entity["auto_ml"].train_method_count
+            self.__model_name, entity[ConstantValues.auto_ml].train_method_count
         )
 
         logger.info(
             "Using %s, num of running auto machine learning algorithms trials is : %s",
-            self._model_name, entity["auto_ml"].algorithm_method_count
+            self.__model_name, entity["auto_ml"].algorithm_method_count
         )
 
         logger.info(
             "Using %s, num of running auto machine learning model training trials is : %s",
-            self._model_name, entity["auto_ml"].trial_count
+            self.__model_name, entity["auto_ml"].trial_count
         )
 
         logger.info(
             "Using %s, all training model metric results are : %s",
-            self._model_name, entity["model"].metric_history
+            self.__model_name, entity["model"].metric_history
         )
 
         logger.info("Using {}, metric: {}, maximize metric result is : {:.10f}".format(
-            self._model_name, self._metric_name, max(entity["model"].metric_history)
+            self.__model_name, self.__metric_name, max(entity["model"].metric_history)
         )
         )
 
         logger.info("Using {}, metric: {}, minimize metric result is : {:.10f}".format(
-            self._model_name, self._metric_name, min(entity["model"].metric_history)
+            self.__model_name, self.__metric_name, min(entity["model"].metric_history)
         )
         )
 
         logger.info("Using {}, metric: {}, best metric result is : {:.10f}".format(
-            self._model_name, self._metric_name, entity["model"].val_best_metric_result.result
+            self.__model_name, self.__metric_name, entity["model"].val_best_metric_result.result
         )
         )
 
         logger.info("Using {}, num of total models is {:d}".format(
-            self._model_name, len(entity["model"].metric_history)
+            self.__model_name, len(entity["model"].metric_history)
         )
         )
         entity["model"].model_save()
@@ -298,14 +291,14 @@ class CoreRoute(Component):
     def _increment_run(self, **entity):
         assert "increment_dataset" in entity.keys()
 
-        entity["model"] = self.model
-        entity["feature_configure"] = self.feature_conf
+        entity["model"] = self.__model
+        entity["feature_configure"] = self.__feature_conf
 
         feature_conf = yaml_read(self.__feature_configure_path)
-        self.feature_conf.file_path = self.__feature_configure_path
-        self.feature_conf.parse(method="system")
+        self.__feature_conf.file_path = self.__feature_configure_path
+        self.__feature_conf.parse(method="system")
         # if feature_list is None, all feature's used will be set true.
-        self.feature_conf.feature_select(feature_list=None)
+        self.__feature_conf.feature_select(feature_list=None)
 
         entity["model"].update_feature_conf(feature_conf=feature_conf)
 
@@ -318,7 +311,7 @@ class CoreRoute(Component):
 
         entity["model"].run(**entity)
 
-        yaml_write(yaml_dict=feature_conf, yaml_file=self._final_file_path)
+        yaml_write(yaml_dict=feature_conf, yaml_file=self.__final_file_path)
 
         # self._best_metric is a MetricResult object.
         self._best_metric = entity["model"].val_best_metric_result
@@ -333,21 +326,18 @@ class CoreRoute(Component):
         assert "infer_dataset" in entity
         assert self._train_flag == ConstantValues.inference
 
-        if self._feature_selector_flag:
-            entity["feature_configure"] = self.feature_conf
-            entity["feature_configure"].file_path = self._final_file_path
-            entity["feature_configure"].parse(method="system")
+        assert self.__final_file_path
 
-            dataset = entity["infer_dataset"]
-            feature_config = entity["feature_configure"]
+        entity["feature_configure"] = self.__feature_conf
+        entity["feature_configure"].file_path = self.__final_file_path
+        entity["feature_configure"].parse(method="system")
 
-            assert self._final_file_path
+        dataset = entity["infer_dataset"]
+        feature_config = entity["feature_configure"]
 
-            self.model.update_feature_conf(feature_conf=feature_config)
-            self._result = self.model.run(infer_dataset=dataset)
+        self.__model.update_feature_conf(feature_conf=feature_config)
 
-        else:
-            self._result = self.model.run(infer_dataset=entity.get("infer_dataset"))
+        self.__result = self.__model.run(infer_dataset=dataset)
 
     @property
     def optimal_metric(self):
@@ -356,8 +346,8 @@ class CoreRoute(Component):
         :return: MetricResult
         """
         assert self._train_flag
-        assert self._best_metric is not None
-        return self._best_metric
+        assert self.__best_metric is not None
+        return self.__best_metric
 
     @property
     def result(self):
@@ -365,8 +355,8 @@ class CoreRoute(Component):
         :return: inference result, pd.Dataframe
         """
         assert self._train_flag == ConstantValues.inference
-        assert self._result is not None
-        return self._result
+        assert self.__result is not None
+        return self.__result
 
     @classmethod
     def create_component(cls, component_name: str, **params):

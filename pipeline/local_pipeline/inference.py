@@ -30,17 +30,17 @@ class Inference:
 
         self.task_name = params[ConstantValues.task_name]
         self.infer_result_type = params[ConstantValues.infer_result_type]
-        self.metric_name = params["metric_name"]
-        self.feature_configure_name = params["feature_configure_name"]
-        self.data_file_type = params["data_file_type"]
-        self.inference_column_name_flag = params["inference_column_name_flag"]
-        self.inference_data_path = params["inference_data_path"]
+        self.metric_name = params[ConstantValues.metric_name]
+        self.feature_configure_name = params[ConstantValues.feature_configure_name]
+        self.data_file_type = params[ConstantValues.data_file_type]
+        self.inference_column_name_flag = params[ConstantValues.inference_column_name_flag]
+        self.inference_data_path = params[ConstantValues.inference_data_path]
 
-        self.dataset_name = params["dataset_name"]
-        self.target_names = params["target_names"]
+        self.dataset_name = params[ConstantValues.dataset_name]
+        self.target_names = params[ConstantValues.target_names]
 
-        self.type_inference_name = params["type_inference_name"]
-        self.data_clear_name = params["data_clear_name"]
+        self.type_inference_name = params[ConstantValues.type_inference_name]
+        self.data_clear_name = params[ConstantValues.data_clear_name]
         self.label_encoder_name = params["label_encoder_name"]
         self.feature_generator_name = params["feature_generator_name"]
         self.unsupervised_feature_selector_name = params["unsupervised_feature_selector_name"]
@@ -57,7 +57,7 @@ class Inference:
         self.increment_flag = params[self.model_name]["increment_flag"]
         assert isinstance(self.increment_flag, bool)
 
-        self.out_put_path = params["out_put_path"]
+        self.out_put_path = params[ConstantValues.out_put_path]
 
     def output_result(self, predict_result: pd.DataFrame):
         """

@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2020, Citic-Lab. All rights reserved.
-# Authors: citic-lab
+"""-*- coding: utf-8 -*-
+
+Copyright (c) 2020, Citic-Lab. All rights reserved.
+Authors: citic-lab"""
 import gc
 import operator
 
@@ -13,6 +13,7 @@ from core.featuretools.variable_types.variable import Discrete, Boolean, Numeric
 
 from entity.dataset.base_dataset import BaseDataset
 from gauss.feature_generation.base_feature_generation import BaseFeatureGenerator
+
 from utils.Logger import logger
 from utils.constant_values import ConstantValues
 from utils.yaml_exec import yaml_read

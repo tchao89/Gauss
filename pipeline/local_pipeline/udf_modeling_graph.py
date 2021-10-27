@@ -101,6 +101,7 @@ class UdfModelingGraph(BaseModelingGraph):
                                        selector_configure_path=system_configure[ConstantValues.selector_configure_path])
 
         self._model_zoo = user_configure[ConstantValues.model_zoo]
+        self._label_switch_type = user_configure[ConstantValues.label_switch_type]
 
         self.__pipeline_configure = \
             {ConstantValues.work_root:
@@ -198,6 +199,7 @@ class UdfModelingGraph(BaseModelingGraph):
             data_file_type=self._global_values[ConstantValues.data_file_type],
             task_name=self._attributes_names[ConstantValues.task_name],
             train_flag=ConstantValues.train,
+            label_switch_type=self._label_switch_type,
             dataset_weight=self._global_values[ConstantValues.dataset_weight],
             weight_column_flag=self._global_values[ConstantValues.weight_column_flag],
             weight_column_name=self._global_values[ConstantValues.weight_column_name],

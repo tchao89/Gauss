@@ -73,16 +73,29 @@ class PreprocessRoute(Component):
         self._data_file_type = params[ConstantValues.data_file_type]
         self._dataset_name = params[ConstantValues.dataset_name]
 
-        label_encoder_params = Bunch(
-            name=params[ConstantValues.label_encoder_name],
-            train_flag=self._train_flag,
-            enable=params[ConstantValues.label_encoder_flag],
-            task_name=params[ConstantValues.task_name],
-            feature_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.data_clear_feature_path],
-            final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.label_encoder_feature_path],
-            label_encoding_configure_path=params[ConstantValues.feature_path_dict][
-                ConstantValues.label_encoding_models_path]
-        )
+        if self._task_name == ConstantValues.regression:
+            label_encoder_params = Bunch(
+                name=params[ConstantValues.label_encoder_name],
+                train_flag=self._train_flag,
+                enable=params[ConstantValues.label_encoder_flag],
+                task_name=params[ConstantValues.task_name],
+                label_switch_type=params[ConstantValues.label_switch_type],
+                feature_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.data_clear_feature_path],
+                final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.label_encoder_feature_path],
+                label_encoding_configure_path=params[ConstantValues.feature_path_dict][
+                    ConstantValues.label_encoding_models_path]
+            )
+        else:
+            label_encoder_params = Bunch(
+                name=params[ConstantValues.label_encoder_name],
+                train_flag=self._train_flag,
+                enable=params[ConstantValues.label_encoder_flag],
+                task_name=params[ConstantValues.task_name],
+                feature_configure_path=params[ConstantValues.feature_path_dict][ConstantValues.data_clear_feature_path],
+                final_file_path=params[ConstantValues.feature_path_dict][ConstantValues.label_encoder_feature_path],
+                label_encoding_configure_path=params[ConstantValues.feature_path_dict][
+                    ConstantValues.label_encoding_models_path]
+            )
         if self._train_flag == ConstantValues.train:
             self._target_names = params[ConstantValues.target_names]
             self._weight_column_flag = params[ConstantValues.weight_column_flag]
@@ -208,6 +221,7 @@ class PreprocessRoute(Component):
         dataset_params = Bunch(
             name=self._dataset_name,
             task_name=self._task_name,
+            train_flag=self._train_flag,
             data_package=None,
             data_path=self._train_data_path,
             data_file_type=self._data_file_type,
@@ -226,6 +240,7 @@ class PreprocessRoute(Component):
             val_dataset_params = Bunch(
                 name=self._dataset_name,
                 task_name=self._task_name,
+                train_flag=self._train_flag,
                 data_package=None,
                 data_path=self._val_data_path,
                 data_file_type=self._data_file_type,
@@ -249,7 +264,6 @@ class PreprocessRoute(Component):
         # 数据清洗
         logger.info("Starting data clear.")
         self.data_clear.run(**entity_dict)
-
         self._already_data_clear = self.data_clear.already_data_clear
         if self._already_data_clear is False \
                 and train_dataset.need_data_clear is True \
@@ -258,11 +272,9 @@ class PreprocessRoute(Component):
 
         logger.info("Starting encoding features and labels.")
         self.label_encoder.run(**entity_dict)
-
         logger.info("Starting feature generation.")
         # 特征生成
         self.feature_generator.run(**entity_dict)
-
         logger.info("Starting unsupervised feature selector.")
         # 无监督特征选择
         self.unsupervised_feature_selector.run(**entity_dict)
@@ -282,6 +294,7 @@ class PreprocessRoute(Component):
         # 拼接数据
         dataset_params = Bunch(
             name=self._dataset_name,
+            train_flag=self._train_flag,
             task_name=self._task_name,
             data_package=None,
             data_path=self._train_data_path,
@@ -334,6 +347,7 @@ class PreprocessRoute(Component):
         dataset_params = Bunch(
             name="inference",
             task_name=self._task_name,
+            train_flag=self._train_flag,
             data_pair=None,
             data_path=self._inference_data_path,
             data_file_type=self._data_file_type,
@@ -349,6 +363,8 @@ class PreprocessRoute(Component):
         self.type_inference.run(**entity_dict)
         # 数据清洗
         self.data_clear.run(**entity_dict)
+
+        self.label_encoder.run(**entity_dict)
         # 特征生成
         self.feature_generator.run(**entity_dict)
         # 无监督特征选择
