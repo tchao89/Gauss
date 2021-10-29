@@ -81,9 +81,8 @@ class BaseModelingGraph:
         )
 
         self._global_values = Bunch(
-            dataset_weight=params["dataset_weight"],
+            dataset_weight_dict=params[ConstantValues.dataset_weight_dict],
             use_weight_flag=params["use_weight_flag"],
-            weight_column_flag=params["weight_column_flag"],
             weight_column_name=params["weight_column_name"],
             train_column_name_flag=params["train_column_name_flag"],
             val_column_name_flag=params["val_column_name_flag"],

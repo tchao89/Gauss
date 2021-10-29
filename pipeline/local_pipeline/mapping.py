@@ -16,18 +16,9 @@ class EnvironmentConfigure:
     """
     EnvironmentConfigure object
     """
-    def __init__(self, work_root=None, user_feature=None):
-        self.work_root = os.path.join(work_root, self.id_generator())
-
-        self.user_feature_name = None
-        self.user_feature_root = None
-        self.user_feature_path = None
-
-        if user_feature is not None:
-            user_feature_root, user_feature_file = os.path.split(user_feature)
-            self.user_feature_name = user_feature_file
-            self.user_feature_root = user_feature_root
-            self.user_feature_path = user_feature
+    def __init__(self, work_root=None):
+        if work_root is not None:
+            self.work_root = os.path.join(work_root, self.id_generator())
 
     @classmethod
     def id_generator(cls,
@@ -49,6 +40,7 @@ class EnvironmentConfigure:
         """
         feature_dict = Bunch()
 
+        feature_dict.user_feature = "user_feature.yaml"
         feature_dict.type_inference_feature = "type_inference_feature.yaml"
         feature_dict.data_clear_feature = "data_clear_feature.yaml"
         feature_dict.feature_generator_feature = "feature_generator_feature.yaml"

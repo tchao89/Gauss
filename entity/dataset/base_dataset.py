@@ -22,7 +22,6 @@ class BaseDataset(Entity):
         self._data_path = data_path
         self._memory_only = memory_only
         self._task_name = task_name
-        self._train_flag = train_flag
 
     @abc.abstractmethod
     def load_data(self):

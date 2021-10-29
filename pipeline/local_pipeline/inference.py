@@ -83,7 +83,9 @@ class Inference:
         work_feature_root = self.work_root + "/feature"
 
         feature_dict = EnvironmentConfigure.feature_dict()
-        feature_dict = {"user_feature_path": None,
+        feature_dict = {"user_feature_path": join(work_feature_root,
+                                                  feature_dict.user_feature),
+
                         "type_inference_feature_path": join(
                             work_feature_root,
                             feature_dict.type_inference_feature),
@@ -141,7 +143,7 @@ class Inference:
 
         entity_dict = preprocess_chain.run()
 
-        assert "infer_dataset" in entity_dict
+        assert ConstantValues.infer_dataset in entity_dict
 
         core_params = Bunch(
             name="core_route",

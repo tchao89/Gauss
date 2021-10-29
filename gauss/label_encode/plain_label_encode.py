@@ -17,7 +17,6 @@ from gauss.label_encode.base_label_encode import BaseLabelEncode
 from utils.Logger import logger
 from utils.base import get_current_memory_gb
 from utils.constant_values import ConstantValues
-from utils.reduce_data import reduce_data
 from utils.yaml_exec import yaml_read
 from utils.yaml_exec import yaml_write
 

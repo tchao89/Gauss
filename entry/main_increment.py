@@ -20,21 +20,20 @@ from utils.copy_folder import copy_folder
 from utils.reconstruct_folder import reconstruct_folder
 
 user_feature = None
-environ_configure = EnvironmentConfigure(work_root="/home/liangqian/Gauss/experiments",
-                                         user_feature=None)
+environ_configure = EnvironmentConfigure(work_root="/home/liangqian/Gauss/experiments")
 
 pipeline_dict = Bunch()
 # new work root for increment task
 pipeline_dict.work_root = environ_configure.work_root
 logger.info("work_root: %s", pipeline_dict.work_root)
 # optional: ["libsvm", "txt", "csv"]
-pipeline_dict.data_file_type = "libsvm"
+pipeline_dict.data_file_type = "csv"
 # increment dataset
-pipeline_dict.init_work_root = "/home/liangqian/Gauss/experiments/PRwAtu"
-pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/a9a/a9a.t"
+pipeline_dict.init_work_root = "/home/liangqian/Gauss/experiments/vfMd7U"
+pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/test_o/valid.csv"
 # user must set a specific model for increment
 pipeline_dict.model_zoo = ["lightgbm"]
-pipeline_dict.increment_column_name_flag = False
+pipeline_dict.increment_column_name_flag = True
 pipeline_dict.init_folder_name = os.path.join(pipeline_dict.init_work_root).split("/")[-1]
 copy_folder(source_path=pipeline_dict.init_work_root, target_path=pipeline_dict.work_root)
 config_path = environ_configure.work_root + "/train_user_config.yaml"

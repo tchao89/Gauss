@@ -26,6 +26,7 @@ class IncrementModelingGraph:
     In this pipeline, value: train_flag will be set "increment"
     between "train", "inference" and "increment".
     """
+
     def __init__(self, name: str, **params):
         """
         :param name: string project, pipeline name
@@ -80,16 +81,15 @@ class IncrementModelingGraph:
             work_root=params[ConstantValues.work_root],
             train_data_path=params[ConstantValues.train_data_path],
             val_data_path=params[ConstantValues.val_data_path],
-            feature_configure_path=params[ConstantValues.feature_configure_path],
-            auto_ml_path=params["auto_ml_path"],
-            selector_configure_path=params["selector_configure_path"]
+            auto_ml_path=params[ConstantValues.auto_ml_path],
+            selector_configure_path=params[ConstantValues.selector_configure_path]
         )
 
         self._entity_names = Bunch(
-            dataset_name=params["dataset_name"],
-            metric_name=params["metric_name"],
+            dataset_name=params[ConstantValues.dataset_name],
+            metric_name=params[ConstantValues.metric_name],
             loss_name=params[ConstantValues.loss_name],
-            feature_configure_name=params["feature_configure_name"]
+            feature_configure_name=params[ConstantValues.feature_configure_name]
         )
 
         self._component_names = Bunch(
@@ -180,7 +180,8 @@ class IncrementModelingGraph:
         feature_dict = EnvironmentConfigure.feature_dict()
 
         feature_dict = \
-            {ConstantValues.user_feature_path: self._work_paths[ConstantValues.feature_configure_path],
+            {ConstantValues.user_feature_path: join(work_feature_root,
+                                                    feature_dict.user_feature),
              ConstantValues.type_inference_feature_path: join(
                  work_feature_root,
                  feature_dict.type_inference_feature),

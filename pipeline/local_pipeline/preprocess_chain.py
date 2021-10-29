@@ -72,6 +72,7 @@ class PreprocessRoute(Component):
 
         self._data_file_type = params[ConstantValues.data_file_type]
         self._dataset_name = params[ConstantValues.dataset_name]
+        self._dataset_weight_dict = params[ConstantValues.dataset_weight_dict]
 
         if self._task_name == ConstantValues.regression:
             label_encoder_params = Bunch(
@@ -98,22 +99,23 @@ class PreprocessRoute(Component):
             )
         if self._train_flag == ConstantValues.train:
             self._target_names = params[ConstantValues.target_names]
-            self._weight_column_flag = params[ConstantValues.weight_column_flag]
+            self._use_weight_flag = params[ConstantValues.use_weight_flag]
             self._weight_column_name = params[ConstantValues.weight_column_name]
             self._train_column_name_flag = params[ConstantValues.train_column_name_flag]
             self._val_column_name_flag = params[ConstantValues.val_column_name_flag]
             self._val_data_path = params[ConstantValues.val_data_path]
             self._train_data_path = params[ConstantValues.train_data_path]
 
-            label_encoder_params.dataset_weight = params[ConstantValues.dataset_weight]
         elif self._train_flag == ConstantValues.increment:
             self._increment_column_name_flag = params[ConstantValues.increment_column_name_flag]
             self._target_names = params[ConstantValues.target_names]
             self._train_data_path = params[ConstantValues.train_data_path]
+
         elif self._train_flag == ConstantValues.inference:
             self._inference_column_name_flag = params[ConstantValues.inference_column_name_flag]
             assert isinstance(self._inference_column_name_flag, bool)
             self._inference_data_path = params[ConstantValues.inference_data_path]
+
         else:
             raise ValueError("Value: train_flag should be train, "
                              "increment or inference, but get {}".format(self._train_flag))
@@ -219,14 +221,14 @@ class PreprocessRoute(Component):
 
         # 拼接数据
         dataset_params = Bunch(
-            name=self._dataset_name,
+            name=ConstantValues.train_dataset,
             task_name=self._task_name,
-            train_flag=self._train_flag,
             data_package=None,
             data_path=self._train_data_path,
             data_file_type=self._data_file_type,
             target_names=self._target_names,
-            weight_column_flag=self._weight_column_flag,
+            use_weight_flag=self._use_weight_flag,
+            dataset_weight_dict=self._dataset_weight_dict,
             weight_column_name=self._weight_column_name,
             column_name_flag=self._train_column_name_flag,
             memory_only=True
@@ -238,14 +240,14 @@ class PreprocessRoute(Component):
         )
         if self._val_data_path is not None:
             val_dataset_params = Bunch(
-                name=self._dataset_name,
+                name=ConstantValues.val_dataset,
                 task_name=self._task_name,
-                train_flag=self._train_flag,
                 data_package=None,
                 data_path=self._val_data_path,
                 data_file_type=self._data_file_type,
                 target_names=self._target_names,
-                weight_column_flag=self._weight_column_flag,
+                use_weight_flag=self._use_weight_flag,
+                dataset_weight_dict=self._dataset_weight_dict,
                 weight_column_name=self._weight_column_name,
                 column_name_flag=self._val_column_name_flag,
                 memory_only=True
@@ -256,7 +258,7 @@ class PreprocessRoute(Component):
             )
             train_dataset.union(val_dataset)
 
-        entity_dict["train_dataset"] = train_dataset
+        entity_dict[ConstantValues.train_dataset] = train_dataset
         # 类型推导
         logger.info("Starting type inference.")
         self.type_inference.run(**entity_dict)
@@ -280,7 +282,7 @@ class PreprocessRoute(Component):
         self.unsupervised_feature_selector.run(**entity_dict)
         # 数据拆分
         val_dataset = train_dataset.split()
-        entity_dict["val_dataset"] = val_dataset
+        entity_dict[ConstantValues.val_dataset] = val_dataset
         logger.info("Dataset preprocessing has finished.")
         return entity_dict
 
@@ -293,23 +295,22 @@ class PreprocessRoute(Component):
 
         # 拼接数据
         dataset_params = Bunch(
-            name=self._dataset_name,
-            train_flag=self._train_flag,
+            name=ConstantValues.increment_dataset,
             task_name=self._task_name,
             data_package=None,
             data_path=self._train_data_path,
             data_file_type=self._data_file_type,
             column_name_flag=self._increment_column_name_flag,
-            target_name=self._target_names,
+            target_names=self._target_names,
             memory_only=True
         )
         logger.info("Starting loading data.")
-        train_dataset = self.create_entity(
+        increment_dataset = self.create_entity(
             entity_name=self._dataset_name,
             **dataset_params
         )
 
-        entity_dict[ConstantValues.increment_dataset] = train_dataset
+        entity_dict[ConstantValues.increment_dataset] = increment_dataset
         # 类型推导
         logger.info("Starting type inference.")
         self.type_inference.run(**entity_dict)
@@ -320,7 +321,7 @@ class PreprocessRoute(Component):
 
         self._already_data_clear = self.data_clear.already_data_clear
         if self._already_data_clear is False \
-                and train_dataset.need_data_clear is True \
+                and increment_dataset.need_data_clear is True \
                 and self._feature_generator_flag is True:
             raise PipeLineLogicError("Aberrant dataset can not generate additional features.")
 
@@ -345,9 +346,8 @@ class PreprocessRoute(Component):
         assert self._train_flag is ConstantValues.inference
 
         dataset_params = Bunch(
-            name="inference",
+            name=ConstantValues.increment_dataset,
             task_name=self._task_name,
-            train_flag=self._train_flag,
             data_pair=None,
             data_path=self._inference_data_path,
             data_file_type=self._data_file_type,
