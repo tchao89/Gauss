@@ -4,6 +4,7 @@
 Copyright (c) 2020, Citic Inc. All rights reserved.
 Authors: Lab
 """
+import os.path
 import re
 import copy
 
@@ -37,18 +38,17 @@ class PlainTypeInference(BaseTypeInference):
         """
 
         super(PlainTypeInference, self).__init__(
-            name=params["name"],
-            train_flag=params["train_flag"],
-            task_name=params["task_name"],
-            source_file_path=params["source_file_path"],
-            final_file_path=params["final_file_path"]
+            name=params[ConstantValues.name],
+            train_flag=params[ConstantValues.train_flag],
+            task_name=params[ConstantValues.task_name],
+            source_file_path=params[ConstantValues.source_file_path],
+            final_file_path=params[ConstantValues.final_file_path]
         )
 
         assert params[ConstantValues.task_name] in [ConstantValues.binary_classification,
                                                     ConstantValues.multiclass_classification,
                                                     ConstantValues.regression]
 
-        self._task_name = params["task_name"]
         self.ftype_list = []
         self.dtype_list = []
 
@@ -56,29 +56,43 @@ class PlainTypeInference(BaseTypeInference):
         self.dtype_threshold = 0.95
         self.categorical_threshold = 0.01
 
-        if params["source_file_path"] is not None:
-            self.init_feature_configure = FeatureConf(name="source feature path", file_path=params["source_file_path"])
-            self.init_feature_configure.parse(method="user")
+        if params[ConstantValues.source_file_path] is not None:
+            final_root, final_file_name = os.path.split(params[ConstantValues.final_file_path])
+            self.init_feature_configure = FeatureConf(name="user_feature_conf",
+                                                      file_path=params["source_file_path"])
+            self.init_feature_configure.parse(method="system")
+            init_feature_dict = self.init_feature_configure.feature_dict
+
+            yaml_dict = {}
+            for item in init_feature_dict.keys():
+                item_feature_conf = init_feature_dict[item]
+                item_dict = {"name": item_feature_conf.name,
+                             "index": item_feature_conf.index,
+                             "dtype": item_feature_conf.dtype,
+                             "ftype": item_feature_conf.ftype,
+                             "size": item_feature_conf.size,
+                             "used": item_feature_conf.used}
+                yaml_dict[item] = item_dict
+            yaml_write(yaml_dict=yaml_dict, yaml_file=os.path.join(final_root, "user_feature.yaml"))
         else:
             self.init_feature_configure = None
 
         self.final_feature_configure = FeatureConf(name='target feature path', file_path=params["final_file_path"])
 
     def _train_run(self, **entity):
-        assert "train_dataset" in entity.keys()
+        assert ConstantValues.train_dataset in entity.keys()
 
-        self.dtype_inference(dataset=entity["train_dataset"])
-
-        self.ftype_inference(dataset=entity["train_dataset"])
-
-        self.target_check(dataset=entity["train_dataset"])
-
-        self._check_init_final_conf()
-        self.final_configure_generation()
+        self.__remove_columns(dataset=entity[ConstantValues.train_dataset])
+        self._dtype_inference(dataset=entity[ConstantValues.train_dataset])
+        self._ftype_inference(dataset=entity[ConstantValues.train_dataset])
+        self._target_check(dataset=entity[ConstantValues.train_dataset])
+        self.__check_init_final_conf()
+        self.__final_configure_generation()
 
     def _increment_run(self, **entity):
         # just detect error in test dataset.
         assert ConstantValues.increment_dataset in entity.keys()
+        self.__remove_columns(dataset=entity[ConstantValues.increment_dataset])
         conf = yaml_read(yaml_file=self._final_file_path)
 
         for col in entity[ConstantValues.increment_dataset].get_dataset().data.columns:
@@ -87,19 +101,20 @@ class PlainTypeInference(BaseTypeInference):
     def _predict_run(self, **entity):
         # just detect error in test dataset.
         assert "infer_dataset" in entity.keys()
+        self.__remove_columns(dataset=entity[ConstantValues.infer_dataset])
         conf = yaml_read(yaml_file=self._final_file_path)
 
         for col in entity["infer_dataset"].get_dataset().data.columns:
             assert col in list(conf)
 
-    def _string_column_selector(self, feature_name: str):
+    def __string_column_selector(self, feature_name: str):
         if self.init_feature_configure is not None \
                 and self.init_feature_configure.feature_dict.get(feature_name) is not None \
                 and self.init_feature_configure.feature_dict.get(feature_name).dtype == 'string':
 
             self.final_feature_configure.feature_dict[feature_name].dtype = 'string'
 
-    def _datetime_column_selector(self, feature_name: str, dataset: pd.DataFrame):
+    def __datetime_column_selector(self, feature_name: str, dataset: pd.DataFrame):
 
         def datetime_map(x):
             x = str(x)
@@ -119,7 +134,7 @@ class PlainTypeInference(BaseTypeInference):
             if all(map(datetime_map, column_unique)):
                 self.final_feature_configure.feature_dict[feature_name].ftype = 'datetime'
 
-    def ftype_inference(self, dataset: BaseDataset):
+    def _ftype_inference(self, dataset: BaseDataset):
         data = dataset.get_dataset().data
 
         for index, column in enumerate(data.columns):
@@ -140,11 +155,11 @@ class PlainTypeInference(BaseTypeInference):
                 else:
                     self.final_feature_configure.feature_dict[column].ftype = 'numerical'
 
-            self._datetime_column_selector(feature_name=column, dataset=data)
+            self.__datetime_column_selector(feature_name=column, dataset=data)
 
         return self.final_feature_configure
 
-    def dtype_inference(self, dataset: BaseDataset):
+    def _dtype_inference(self, dataset: BaseDataset):
 
         data = dataset.get_dataset().data
         assert isinstance(data, pd.DataFrame) or isinstance(data, pd.Series)
@@ -208,11 +223,11 @@ class PlainTypeInference(BaseTypeInference):
                     feature_item_configure.dtype = 'string'
 
             self.final_feature_configure.add_item_type(column_name=column, feature_item_conf=feature_item_configure)
-            self._string_column_selector(feature_name=column)
+            self.__string_column_selector(feature_name=column)
 
         return self.final_feature_configure
 
-    def target_check(self, dataset: BaseDataset):
+    def _target_check(self, dataset: BaseDataset):
         target = dataset.get_dataset().target
 
         # check if target columns is illegal.
@@ -227,7 +242,7 @@ class PlainTypeInference(BaseTypeInference):
                 assert "int" in str(target[label].dtypes) or "category" in str(target[label].dtypes), \
                     "target types: {}".format(target[label].dtypes)
 
-    def _check_init_final_conf(self):
+    def __check_init_final_conf(self):
         if self.init_feature_configure is None:
             return
 
@@ -256,11 +271,36 @@ class PlainTypeInference(BaseTypeInference):
             else:
                 logger.info(item[0] + " feature dose not exist in type inference.")
 
-    def final_configure_generation(self):
+    def __final_configure_generation(self):
         yaml_dict = {}
+        feature_dict = self.init_feature_configure.feature_dict
+        final_feature_dict = self.final_feature_configure.feature_dict
+        for item in final_feature_dict.keys():
+            item_feature_conf = final_feature_dict[item]
+            item_dict = {"name": item_feature_conf.name,
+                         "index": item_feature_conf.index,
+                         "dtype": item_feature_conf.dtype,
+                         "ftype": item_feature_conf.ftype,
+                         "size": item_feature_conf.size}
+            yaml_dict[item] = item_dict
 
-        for item in self.final_feature_configure.feature_dict.items():
-            item_dict = {"name": item[1].name, "index": item[1].index, "dtype": item[1].dtype, "ftype": item[1].ftype, "size": item[1].size}
-            yaml_dict[item[0]] = item_dict
+        if feature_dict is not None:
+            for item in self.final_feature_configure.feature_dict.keys():
+                yaml_dict[item]["init_index"] = feature_dict[item].index
 
         yaml_write(yaml_dict=yaml_dict, yaml_file=self._final_file_path)
+
+    def __remove_columns(self, dataset: BaseDataset):
+        feature_names = dataset.get_dataset().feature_names
+        data = dataset.get_dataset().data
+
+        if self.init_feature_configure is not None:
+            feature_dict = self.init_feature_configure.feature_dict
+            for item in feature_dict.keys():
+                feature_name = feature_dict[item].name
+                if feature_name not in feature_names:
+                    raise ValueError("Features in feature configure is not consistent with features in dataset.")
+                used_flag = feature_dict[item].used
+                if not used_flag:
+                    data.drop([feature_name], axis=1, inplace=True)
+                    feature_names.remove(feature_name)

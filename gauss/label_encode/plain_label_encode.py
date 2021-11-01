@@ -17,7 +17,6 @@ from gauss.label_encode.base_label_encode import BaseLabelEncode
 from utils.Logger import logger
 from utils.base import get_current_memory_gb
 from utils.constant_values import ConstantValues
-from utils.reduce_data import reduce_data
 from utils.yaml_exec import yaml_read
 from utils.yaml_exec import yaml_write
 
@@ -49,11 +48,6 @@ class PlainLabelEncode(BaseLabelEncode):
         else:
             self.__regression_label_switch = None
 
-        if self._train_flag == ConstantValues.train:
-            self.__dataset_weight = params["dataset_weight"]
-        else:
-            self.__dataset_weight = None
-
     def _train_run(self, **entity):
         assert "train_dataset" in entity.keys()
         dataset = entity["train_dataset"]
@@ -65,7 +59,6 @@ class PlainLabelEncode(BaseLabelEncode):
         self.__encode_label(dataset=dataset)
         self.__switch_label(switch_type=self.__regression_label_switch,
                             dataset=dataset)
-        self.__reset_dataset_attributes(dataset=dataset)
 
         logger.info("Label encoding serialize, " + "with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])
@@ -211,43 +204,6 @@ class PlainLabelEncode(BaseLabelEncode):
             "Label encoding finished, starting to reduce dataframe and save memory, " + "with current memory usage: %.2f GiB",
             get_current_memory_gb()["memory_usage"])
 
-    def __reset_dataset_attributes(self, dataset: BaseDataset):
-        target_names = dataset.get_dataset().target_names
-
-        encoding_weight = None
-        encoding_proportion = {}
-        if self._task_name == ConstantValues.binary_classification \
-                or self._task_name == ConstantValues.multiclass_classification:
-            for label in target_names:
-                proportion = {}
-                if self.__dataset_weight:
-                    weight = {}
-                    encoding_weight = {}
-                    for label_value, label_weight in self.__dataset_weight[label].copy().items():
-                        """
-                        Using dict.copy() can avoid RuntimeError: dictionary changed size during iteration.
-                        """
-                        [encoding_value] = self.__label_encoding[label].transform([label_value])
-                        logger.info(
-                            "Original value: {} has been encoded to value: {}".format(label_value, encoding_value))
-                        weight[encoding_value] = label_weight
-                    encoding_weight[label] = weight
-
-                for label_value, label_num in dataset.get_dataset().proportion[label].copy().items():
-                    """
-                    Using dict.copy() can avoid RuntimeError: dictionary changed size during iteration.
-                    """
-                    [encoding_value] = self.__label_encoding[label].transform([label_value])
-                    logger.info("Original value: {} has been encoded to value: {}".format(label_value,
-                                                                                          encoding_value))
-                    proportion[encoding_value] = label_num
-                encoding_proportion[label] = proportion
-
-            if dataset.get_dataset().dataset_weight is None:
-                dataset.get_dataset().dataset_weight = encoding_weight
-
-            dataset.get_dataset().proportion = encoding_proportion
-
     def __serialize_label_encoding(self):
         # 序列化label encoding模型字典
         with shelve.open(self.__label_encoding_configure_path) as shelve_open:
@@ -258,10 +214,6 @@ class PlainLabelEncode(BaseLabelEncode):
 
     def __generate_final_configure(self):
         yaml_write(yaml_dict=self.__feature_configure, yaml_file=self.__final_file_path)
-
-    @property
-    def dataset_weight(self):
-        return self.__dataset_weight
 
     def __switch_label(self, switch_type: str, dataset: BaseDataset):
         if self._task_name == ConstantValues.regression:

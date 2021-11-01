@@ -26,15 +26,15 @@ class BaseTypeInference(Component):
         )
 
     @abc.abstractmethod
-    def dtype_inference(self, dataset: BaseDataset):
+    def _dtype_inference(self, dataset: BaseDataset):
         pass
 
     @abc.abstractmethod
-    def ftype_inference(self, dataset: BaseDataset):
+    def _ftype_inference(self, dataset: BaseDataset):
         pass
 
     @abc.abstractmethod
-    def target_check(self, target: BaseDataset):
+    def _target_check(self, target: BaseDataset):
         pass
 
     @property

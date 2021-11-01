@@ -9,10 +9,12 @@ from __future__ import annotations
 import os
 import string
 from typing import List
+from statistics import harmonic_mean
 
 import pandas as pd
 import numpy as np
 from sklearn.datasets import load_svmlight_file
+from sklearn.utils import shuffle
 
 from utils.bunch import Bunch
 from entity.dataset.base_dataset import BaseDataset
@@ -61,7 +63,6 @@ class PlaintextDataset(BaseDataset):
             params[ConstantValues.name],
             params[ConstantValues.data_path],
             params[ConstantValues.task_name],
-            params[ConstantValues.train_flag],
             params[ConstantValues.memory_only]
         )
 
@@ -70,6 +71,7 @@ class PlaintextDataset(BaseDataset):
 
         self._data_package = params[ConstantValues.data_package]
 
+        self.__column_index = None
         self._target_names = params[ConstantValues.target_names]
         self.__type_doc = params[ConstantValues.data_file_type]
 
@@ -79,16 +81,14 @@ class PlaintextDataset(BaseDataset):
         self._default_print_size = 5
         self._bunch = None
 
-        if params.get(ConstantValues.weight_column_flag):
-            assert isinstance(params[ConstantValues.weight_column_flag], bool)
-            if params[ConstantValues.weight_column_name]:
+        if self._name == ConstantValues.train_dataset or self._name == ConstantValues.val_dataset:
+            self.__use_weight_flag = params[ConstantValues.use_weight_flag]
+            self.__dataset_weight_dict = params[ConstantValues.dataset_weight_dict]
+            if params.get(ConstantValues.weight_column_name):
                 assert isinstance(params[ConstantValues.weight_column_name], list)
                 self._weight_column_names = params[ConstantValues.weight_column_name]
-
-            self._weight_column_flag = params[ConstantValues.weight_column_flag]
-        else:
-            self._weight_column_flag = False
-            self._weight_column_names = None
+            else:
+                self._weight_column_names = None
 
         # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
@@ -150,121 +150,130 @@ class PlaintextDataset(BaseDataset):
                 logger.info("File path does not exist.")
             finally:
                 logger.info(".csv file has been converted to Bunch object.")
-
-            self._bunch = Bunch(data=data,
-                                target=target,
-                                target_names=target_names,
-                                feature_names=feature_names,
-                                dataset_weight=weight)
-
         elif self.__type_doc == 'libsvm':
-            if self._column_name_flag:
-                raise ValueError(
-                    "Value: column_name_flag should be False, but get {} instead.".format(self._column_name_flag))
             try:
-                data, target = self.load_libsvm()
-            except ValueError:
-                raise ValueError("Dataset file type is not correct, and it's not a libsvm file.")
+                data, target, feature_names, target_names, weight = self.load_libsvm()
             finally:
                 logger.info(".libsvm file has been converted to Bunch object.")
-
-            _, data, target = self._convert_data_dataframe(data=data,
-                                                           target=target)
-
-            if self._weight_column_flag is True:
-                assert self._weight_column_names == "-1", \
-                    "When type of dataset file is libsvm, " \
-                    "value: self._weight_column_name should be set -1."
-
-                weight = data.iloc[:, -1]
-                data.drop(data.columns[-1], axis=1, inplace=True)
-            else:
-                weight = None
-
-            self._bunch = Bunch(
-                data=data,
-                target=target,
-                dataset_weight=weight
-            )
-
-            self._bunch.target_names = ["target_" + string.ascii_uppercase[index]
-                                        for index, _ in enumerate(target)]
-            self._bunch.feature_names = ["feature_" + str(index) for index, _ in enumerate(data)]
-            data.columns = self._bunch.feature_names
-            target.columns = self._bunch.target_names
-
         elif self.__type_doc == 'txt':
-            if self._column_name_flag:
-                raise ValueError(
-                    "Value: column_name_flag should be False, but get {} instead.".format(self._column_name_flag))
             try:
-                data, target = self.load_txt()
+                data, target, feature_names, target_names, weight = self.load_txt()
             except ValueError:
                 raise ValueError("Dataset file type is not correct, and it's not a txt file.")
             finally:
                 logger.info(".txt file has been converted to Bunch object.")
-
-            _, data, target = self._convert_data_dataframe(data=data,
-                                                           target=target)
-
-            if self._weight_column_flag is True:
-                assert self._weight_column_names == "-1", \
-                    "When type of dataset file is txt, " \
-                    "value: self._weight_column_name should be set -1."
-                weight = data.iloc[:, -1]
-                data.drop(data.columns[-1], axis=1, inplace=True)
-            else:
-                weight = None
-
-            self._bunch = Bunch(
-                data=data,
-                target=target,
-                dataset_weight=weight
-            )
-
-            self._bunch.target_names = ["target_" + string.ascii_uppercase[index]
-                                        for index, _ in enumerate(target)]
-            self._bunch.feature_names = ["feature_" + str(index) for index, _ in enumerate(data)]
-            data.columns = self._bunch.feature_names
-            target.columns = self._bunch.target_names
-
         else:
             raise TypeError("File type can not be accepted.")
-        if self._train_flag == ConstantValues.train:
+
+        self._bunch = Bunch(data=data,
+                            target=target,
+                            target_names=target_names,
+                            feature_names=feature_names,
+                            dataset_weight=weight)
+
+        # All kinds of dataset will get column names when programming reaches here.
+        if self._name == ConstantValues.train_dataset or self._name == ConstantValues.val_dataset:
             self.__set_proportion()
+            self._bunch.data, self._bunch.target = shuffle(self._bunch.data, self._bunch.target)
+            self.__set_weight()
+        elif self._name == ConstantValues.increment_dataset:
+            self._bunch.data, self._bunch.target = shuffle(self._bunch.data, self._bunch.target)
+        else:
+            assert self._name == ConstantValues.infer_dataset
         return self._bunch
 
     def __set_proportion(self):
-        if self._train_flag == ConstantValues.train:
-            if self._bunch is None:
-                raise ValueError("Dataset has not been loaded.")
-            if self._bunch.get("proportion"):
-                raise ValueError("Value: self._proportion must be empty.")
-            if not isinstance(self._bunch, Bunch):
-                raise AttributeError("Value: self._bunch must be type: Bunch, "
-                                     "but get {} instead.".format(type(self._bunch)))
-            target = self._bunch.target
-            target_names = self._bunch.target_names[0]
+        if self._bunch is None:
+            raise ValueError("Dataset has not been loaded.")
+        if self._bunch.get("proportion"):
+            raise ValueError("Value: self._proportion must be empty.")
+        if not isinstance(self._bunch, Bunch):
+            raise AttributeError("Value: self._bunch must be type: Bunch, "
+                                 "but get {} instead.".format(type(self._bunch)))
+        target = self._bunch.target
+        target_names = self._bunch.target_names[0]
 
-            count = 0
-            proportion_dict = {}
-            label_class_dict = {}
+        count = 0
+        proportion_dict = {}
+        label_class_dict = {}
 
-            for index, value in target[target_names].value_counts().iteritems():
-                proportion_dict[index] = value
-                count += 1
-            label_class_dict[target_names] = count
-            self._bunch.label_class = label_class_dict
-            self._bunch.proportion = {target_names: proportion_dict}
-        else:
-            self._bunch.label_class = None
-            self._bunch.proportion = None
+        for index, value in target[target_names].value_counts().iteritems():
+            proportion_dict[index] = value
+            count += 1
+        label_class_dict[target_names] = count
+        self._bunch.label_class = label_class_dict
+        self._bunch.proportion = {target_names: proportion_dict}
+
+    def __set_weight(self):
+        self.__dict_set_weight()
+        self.__auto_set_weight()
+
+    def __auto_set_weight(self):
+        if not self.__use_weight_flag:
+            return None
+
+        proportion = self._bunch.proportion
+        dataset_weight = self._bunch.dataset_weight
+        target = self._bunch.target
+        # Dataset weight will be calculated.
+        if dataset_weight is None:
+            if self._task_name == ConstantValues.binary_classification or ConstantValues.multiclass_classification:
+                dataset_weight = {}
+                for target_name, proportion_dict in proportion.items():
+                    weight = {}
+                    harmonic_value = harmonic_mean(proportion_dict.values())
+                    for label_value, label_num in proportion_dict.items():
+                        weight[label_value] = harmonic_value / label_num
+
+                    weight_col = [weight[item] for item in target[target_name].values]
+                    dataset_weight[target_name] = weight_col
+                self._bunch.dataset_weight = pd.DataFrame(dataset_weight)
+
+    def __dict_set_weight(self):
+        """
+        # eg. {"target_A": {1: 1.9, -1: 1}}, {-1: {1: 1.9, -1: 1}},
+        if label weight dict has been set, this weight will be used, otherwise weight will be set 1.
+        Note: column name has been replaced, so key of dataset weight dict need updated.
+        :return: None10 Minutes to cuDF and Dask-cuDF
+        """
+        if not self.__use_weight_flag:
+            return None
+
+        if not bool(self.__dataset_weight_dict):
+            return None
+
+        dataset_weight = self._bunch.dataset_weight
+        target = self._bunch.target
+        target_names = self._bunch.target_names
+
+        # Dataset weight will be calculated.
+        if dataset_weight is None:
+            if self._task_name == ConstantValues.binary_classification or ConstantValues.multiclass_classification:
+                dataset_weight = {}
+                for target_name, weight_dict in self.__dataset_weight_dict.items():
+                    if target_name not in target_names:
+                        raise ValueError(
+                            "Weight dict target_name: {} is not in target names: {}.".format(
+                                target_name, target_names))
+                    weight_col = [weight_dict[item] for item in target[target_name].values]
+                    dataset_weight[target_name] = weight_col
+
+                remained_target_names = list(set(target_names) - set(self.__dataset_weight_dict.keys()))
+                if remained_target_names:
+                    for target_name in remained_target_names:
+                        weight_col = [1 for _ in target[target_name].values]
+                        dataset_weight[target_name] = weight_col
+                self._bunch.dataset_weight = pd.DataFrame(dataset_weight)
 
     def load_csv(self):
         data = reduce_data(data_path=self._data_path,
                            column_name_flag=self._column_name_flag)
+
+        if bool(self._weight_column_names) and bool(self.__dataset_weight_dict):
+            raise ValueError("Just one weight setting can be set.")
+
         if self._column_name_flag:
-            if self._weight_column_flag is True:
+            if self._weight_column_names:
 
                 for weight_name in self._weight_column_names:
                     if weight_name not in data.columns:
@@ -274,21 +283,26 @@ class PlaintextDataset(BaseDataset):
                 data.drop(self._weight_column_names, axis=1, inplace=True)
             else:
                 weight = None
-            if self._target_names is not None:
+
+            if self._name in [ConstantValues.train_dataset,
+                              ConstantValues.val_dataset,
+                              ConstantValues.increment_dataset]:
                 target = data[self._target_names]
-                data = data.drop(self._target_names, axis=1)
+                target_names = self._target_names
+                data.drop(self._target_names, axis=1, inplace=True)
             else:
                 target = None
-            feature_names = data.columns
-            target_names = self._target_names
+                target_names = None
+            feature_names = list(data.columns)
         else:
             target_columns = []
-            generated_columns = list(data.columns)
-            if self._weight_column_flag is True:
+            self.__column_index = list(data.columns)
+
+            if self._weight_column_names:
                 if self._weight_column_names:
                     weight_columns = []
                     for weight_index in self._weight_column_names:
-                        weight_columns.append(generated_columns[weight_index])
+                        weight_columns.append(self.__column_index[weight_index])
 
                     weight = data[weight_columns]
                     data.drop(weight_columns, axis=1, inplace=True)
@@ -297,27 +311,109 @@ class PlaintextDataset(BaseDataset):
             else:
                 weight = None
 
-            if self._target_names is not None:
+            if self.__dataset_weight_dict:
+                for index in self.__dataset_weight_dict.copy().keys():
+                    self.__dataset_weight_dict[self.__column_index[index]] = self.__dataset_weight_dict[index]
+                    self.__dataset_weight_dict.pop(index)
+
+            if self._name in [ConstantValues.train_dataset,
+                              ConstantValues.val_dataset,
+                              ConstantValues.increment_dataset]:
+
                 for target_index in self._target_names:
-                    target_columns.append(generated_columns[target_index])
+                    target_columns.append(self.__column_index[target_index])
+
                 target_columns = list(set(target_columns))
                 target = data.iloc[:, target_columns]
+
                 data.drop(target_columns, axis=1, inplace=True)
                 target_names = ["target_" + string.ascii_uppercase[index]
-                                for index, _ in enumerate(target)]
+                                for index, _ in enumerate(target_columns)]
+
+                target_dict = dict(zip(target_columns, target_names))
+
+                if weight is not None:
+                    for index, weight_name in enumerate(weight.columns):
+                        weight.rename(columns={weight_name: target_names[index]},
+                                      inplace=True)
+
+                if self.__dataset_weight_dict:
+                    for weight_index in self.__dataset_weight_dict.copy().keys():
+                        if weight_index in target_columns:
+                            self.__dataset_weight_dict[target_dict[weight_index]] = self.__dataset_weight_dict[weight_index]
+                            self.__dataset_weight_dict.pop(weight_index)
+                        else:
+                            raise IndexError("Weight index: {} is not consistent with target index: {}.".format(
+                                weight_index, target_columns))
+
                 target.columns = target_names
             else:
+                target_names = None
                 target = None
+
             feature_names = ["feature_" + str(index) for index, _ in enumerate(data)]
             data.columns = feature_names
-            target_names = self._target_names
         return data, target, feature_names, target_names, weight
 
     def load_libsvm(self):
         data, target = load_svmlight_file(self._data_path)
-        data = data.toarray()
+        data = pd.DataFrame(data.toarray())
+        target = pd.DataFrame(target)
 
-        return data, target
+        if bool(self._weight_column_names) and bool(self.__dataset_weight_dict):
+            raise ValueError("Just one weight setting can be set.")
+
+        if self._target_names is not None:
+            raise ValueError("Value: target names should be None when loading libsvm file.")
+
+        if self._column_name_flag:
+            raise ValueError("Value: column name flag should be false when loading libsvm file.")
+        else:
+            target_columns = list(target.columns)
+            self.__column_index = list(data.columns)
+
+            if self._weight_column_names:
+                if self._weight_column_names:
+                    weight_columns = []
+                    for weight_index in self._weight_column_names:
+                        weight_columns.append(self.__column_index[weight_index])
+
+                    weight = data[weight_columns]
+                    data.drop(weight_columns, axis=1, inplace=True)
+                else:
+                    weight = None
+            else:
+                weight = None
+
+            if self._name in [ConstantValues.train_dataset,
+                              ConstantValues.val_dataset,
+                              ConstantValues.increment_dataset]:
+                target_names = ["target_" + string.ascii_uppercase[index]
+                                for index, _ in enumerate(target_columns)]
+                target_dict = dict(zip(target_columns, target_names))
+
+                if weight is not None:
+                    for index, weight_name in enumerate(weight.columns):
+                        weight.rename(columns={weight_name: target_names[index]},
+                                      inplace=True)
+
+                if self.__dataset_weight_dict:
+                    for weight_index in self.__dataset_weight_dict.copy().keys():
+                        if weight_index in target_columns:
+                            self.__dataset_weight_dict[target_dict[weight_index]] = self.__dataset_weight_dict[weight_index]
+                            self.__dataset_weight_dict.pop(weight_index)
+                        else:
+                            raise IndexError("Weight index: {} is not consistent with target index: {}.".format(
+                                weight_index, target_columns))
+
+                target.columns = target_names
+            else:
+                target_names = None
+                target = None
+
+            feature_names = ["feature_" + str(index) for index, _ in enumerate(data)]
+            data.columns = feature_names
+        return data, target, feature_names, target_names, weight
 
     def load_txt(self):
         target_index = 0
@@ -340,11 +436,65 @@ class PlaintextDataset(BaseDataset):
                 data_index = list(map(np.float64, data_index))
                 data.append(data_index)
 
-            data = np.asarray(data, dtype=np.float64)
+            data = pd.DataFrame(np.asarray(data, dtype=np.float64))
             target = list(map(int, target))
-            target = np.asarray(target, dtype=int)
+            target = pd.DataFrame(np.asarray(target, dtype=int))
 
-            return data, target
+            if bool(self._weight_column_names) and bool(self.__dataset_weight_dict):
+                raise ValueError("Just one weight setting can be set.")
+
+            if self._target_names is not None:
+                raise ValueError("Value: target names should be None when loading libsvm file.")
+
+            if self._column_name_flag:
+                raise ValueError("Value: column name flag should be false when loading libsvm file.")
+            else:
+                target_columns = list(target.columns)
+                self.__column_index = list(data.columns)
+
+                if self._weight_column_names:
+                    if self._weight_column_names:
+                        weight_columns = []
+                        for weight_index in self._weight_column_names:
+                            weight_columns.append(self.__column_index[weight_index])
+
+                        weight = data[weight_columns]
+                        data.drop(weight_columns, axis=1, inplace=True)
+                    else:
+                        weight = None
+                else:
+                    weight = None
+
+                if self._name in [ConstantValues.train_dataset,
+                                  ConstantValues.val_dataset,
+                                  ConstantValues.increment_dataset]:
+                    target_names = ["target_" + string.ascii_uppercase[index]
+                                    for index, _ in enumerate(target_columns)]
+                    target_dict = dict(zip(target_columns, target_names))
+
+                    if weight is not None:
+                        for index, weight_name in enumerate(weight.columns):
+                            weight.rename(columns={weight_name: target_names[index]},
+                                          inplace=True)
+
+                    if self.__dataset_weight_dict:
+                        for weight_index in self.__dataset_weight_dict.copy().keys():
+                            if weight_index in target_columns:
+                                self.__dataset_weight_dict[target_dict[weight_index]] = self.__dataset_weight_dict[
+                                    weight_index]
+                                self.__dataset_weight_dict.pop(weight_index)
+                            else:
+                                raise IndexError("Weight index: {} is not consistent with target index: {}.".format(
+                                    weight_index, target_columns))
+
+                    target.columns = target_names
+                else:
+                    target_names = None
+                    target = None
+
+                feature_names = ["feature_" + str(index) for index, _ in enumerate(data)]
+                data.columns = feature_names
+            return data, target, feature_names, target_names, weight
 
     def wc_count(self):
         import subprocess
@@ -391,8 +541,14 @@ class PlaintextDataset(BaseDataset):
         assert self._bunch.target.shape[1] == val_dataset.get_dataset().target.shape[1]
         self._bunch.target = pd.concat([self._bunch.target, val_dataset.get_dataset().target], axis=0)
 
+        if self._bunch.dataset_weight:
+            assert self._bunch.dataset_weight.shape[1] == val_dataset.get_dataset().dataset_weight.shape[1]
+            self._bunch.dataset_weight = pd.concat([self._bunch.dataset_weight,
+                                                    val_dataset.get_dataset().dataset_weight], axis=0)
+
         self._bunch.data = self._bunch.data.reset_index(drop=True)
         self._bunch.target = self._bunch.target.reset_index(drop=True)
+        self._bunch.dataset_weight = self._bunch.dataset_weight.reset_index(drop=True)
 
         if self._bunch.get("feature_names") is not None and val_dataset.get_dataset().get("feature_names") is not None:
             for item in self._bunch.feature_names:
@@ -429,11 +585,13 @@ class PlaintextDataset(BaseDataset):
 
         data_package = Bunch(data=val_data, target=val_target)
 
-        if self._weight_column_flag:
+        if self._bunch.dataset_weight:
             val_dataset_weight = self._bunch.dataset_weight.iloc[self._val_start:]
             self._bunch.dataset_weight = self._bunch.dataset_weight.iloc[:self._val_start]
+
             val_dataset_weight = val_dataset_weight.reset_index(drop=True)
             self._bunch.dataset_weight.reset_index(drop=True, inplace=True)
+
             data_package.dataset_weight = val_dataset_weight
 
         if "feature_names" in self._bunch.keys():
@@ -445,10 +603,9 @@ class PlaintextDataset(BaseDataset):
 
         data_package.proportion = self._bunch.proportion
 
-        return PlaintextDataset(name=self._name,
+        return PlaintextDataset(name=ConstantValues.val_dataset,
                                 task_name=self._task_name,
                                 train_flag=ConstantValues.train,
-                                weight_column_flag=self._weight_column_flag,
                                 weight_column_name=self._weight_column_names,
                                 data_package=data_package)
 

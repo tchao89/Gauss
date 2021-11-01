@@ -55,10 +55,9 @@ class UdfModelingGraph(BaseModelingGraph):
                                        data_file_type=user_configure[ConstantValues.data_file_type],
                                        work_root=user_configure[ConstantValues.work_root],
                                        task_name=user_configure[ConstantValues.task_name],
-                                       dataset_weight=user_configure[ConstantValues.dataset_weight],
+                                       dataset_weight_dict=user_configure[ConstantValues.dataset_weight_dict],
                                        train_column_name_flag=user_configure[ConstantValues.train_column_name_flag],
                                        val_column_name_flag=user_configure[ConstantValues.val_column_name_flag],
-                                       weight_column_flag=user_configure[ConstantValues.weight_column_flag],
                                        weight_column_name=user_configure[ConstantValues.weight_column_name],
                                        use_weight_flag=user_configure[ConstantValues.use_weight_flag],
                                        metric_name=user_configure[ConstantValues.metric_name],
@@ -134,9 +133,6 @@ class UdfModelingGraph(BaseModelingGraph):
                  self._component_names[ConstantValues.type_inference_name]
              }
 
-    def __path_register(self):
-        pass
-
     def _run_route(self, **params):
         assert isinstance(self._flag_dict[ConstantValues.data_clear_flag], bool) and \
                isinstance(self._flag_dict[ConstantValues.feature_generator_flag], bool) and \
@@ -200,8 +196,8 @@ class UdfModelingGraph(BaseModelingGraph):
             task_name=self._attributes_names[ConstantValues.task_name],
             train_flag=ConstantValues.train,
             label_switch_type=self._label_switch_type,
-            dataset_weight=self._global_values[ConstantValues.dataset_weight],
-            weight_column_flag=self._global_values[ConstantValues.weight_column_flag],
+            use_weight_flag=self._global_values[ConstantValues.use_weight_flag],
+            dataset_weight_dict=self._global_values[ConstantValues.dataset_weight_dict],
             weight_column_name=self._global_values[ConstantValues.weight_column_name],
             train_data_path=self._work_paths[ConstantValues.train_data_path],
             val_data_path=self._work_paths[ConstantValues.val_data_path],
@@ -239,7 +235,6 @@ class UdfModelingGraph(BaseModelingGraph):
         core_chain = CoreRoute(
             name=ConstantValues.CoreRoute,
             train_flag=ConstantValues.train,
-            use_weight_flag=self._global_values[ConstantValues.use_weight_flag],
             model_root_path=work_model_root,
             target_feature_configure_path=feature_dict[ConstantValues.final_feature_configure],
             pre_feature_configure_path=feature_dict[ConstantValues.unsupervised_feature_path],
