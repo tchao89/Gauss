@@ -28,7 +28,6 @@ def reduce_data(data_path: str = None, dataframe: pd.DataFrame = None, column_na
             df = pd.read_csv(data_path, parse_dates=True, keep_date_col=True, header=0)
         else:
             df = pd.read_csv(data_path, parse_dates=True, keep_date_col=True, header=None)
-        # df = df.sample(frac=1).reset_index(drop=True)
 
     for col in df.columns:
         col_type = df[col].dtype

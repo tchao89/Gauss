@@ -34,34 +34,33 @@ pipeline_dict.label_switch_type = None
 # Because udf metric using in model evaluation may reduce bad results,
 # this bool value is used to avoid this.
 pipeline_dict.metric_eval_used_flag = False
-# modify, 最外层
-pipeline_dict.use_weight_flag = True
-# weight_column_name is a string value, which means a specific column names weight_column_name in a csv file or last column in txt or libsvm
-# using as sample weight. this value should be set "-1" if dataset file type is libsvm or txt.
-pipeline_dict.weight_column_name = None
 pipeline_dict.work_root = environ_configure.work_root
 # optional: ["binary_classification", "multiclass_classification", "regression"]
 pipeline_dict.task_name = "binary_classification"
 # optional: ["auc", "binary_f1", "multiclass_f1", "mse"]
 # This value will decided the way auto ml component chooses the best model.
 pipeline_dict.metric_name = "auc"
-# format: {"label_name": {label_value: weight_value, ...}}, if no label value, choose target_A, target_B, ... instead.
-# eg. {"target_A": {1: 1.9, -1: 1}}, {-1: {1: 1.9, -1: 1}},
-# this interface will be reserved because anyone who is good at weight setting could use it conveniently
-# this interface could be set False permanently if it doesn't need.
-pipeline_dict.dataset_weight_dict = None
 # optional: ["mse", "binary_logloss", "None"]
 # This value will customize the loss function of model, and it can be set None.
 # if None, default loss will be chosen.
 pipeline_dict.loss_name = None
 # optional: ["libsvm", "txt", "csv"]
-pipeline_dict.data_file_type = "csv"
+pipeline_dict.data_file_type = "txt"
 # pipeline do not need to get target names in libsvm and txt file.
-pipeline_dict.target_names = ["label"]
-pipeline_dict.train_column_name_flag = True
-pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/test_o/train.csv"
-pipeline_dict.val_column_name_flag = True
-pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/test_o/valid.csv"
+pipeline_dict.target_names = None
+pipeline_dict.use_weight_flag = True
+# weight_column_name is a string value, which means a specific column names weight_column_name in a csv file or last column in txt or libsvm
+# using as sample weight. this value should be set "-1" if dataset file type is libsvm or txt.
+pipeline_dict.weight_column_name = None
+# format: {"label_name": {label_value: weight_value, ...}}, if no label value, choose target_A, target_B, ... instead.
+# eg. {"target_A": {1: 1.9, -1: 1}}, {-1: {1: 1.9, -1: 1}}, {-2: {"yes": 1.9, "no": 1}}
+# this interface will be reserved because anyone who is good at weight setting could use it conveniently
+# this interface could be set False permanently if it doesn't need.
+pipeline_dict.dataset_weight_dict = None
+pipeline_dict.train_column_name_flag = False
+pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/bank/bank_numerical.txt"
+pipeline_dict.val_column_name_flag = False
+pipeline_dict.val_data_path = None
 pipeline_dict.feature_configure_path = "/home/liangqian/文档/公开数据集/user_feature_folder/user_feature.yaml"
 pipeline_dict.dataset_name = "plaindataset"
 pipeline_dict.model_zoo = ["lightgbm"]
