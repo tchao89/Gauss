@@ -541,14 +541,15 @@ class PlaintextDataset(BaseDataset):
         assert self._bunch.target.shape[1] == val_dataset.get_dataset().target.shape[1]
         self._bunch.target = pd.concat([self._bunch.target, val_dataset.get_dataset().target], axis=0)
 
-        if self._bunch.dataset_weight:
+        if self._bunch.dataset_weight is not None:
+            assert isinstance(self._bunch.dataset_weight, (pd.DataFrame, pd.Series))
             assert self._bunch.dataset_weight.shape[1] == val_dataset.get_dataset().dataset_weight.shape[1]
             self._bunch.dataset_weight = pd.concat([self._bunch.dataset_weight,
                                                     val_dataset.get_dataset().dataset_weight], axis=0)
+            self._bunch.dataset_weight = self._bunch.dataset_weight.reset_index(drop=True)
 
         self._bunch.data = self._bunch.data.reset_index(drop=True)
         self._bunch.target = self._bunch.target.reset_index(drop=True)
-        self._bunch.dataset_weight = self._bunch.dataset_weight.reset_index(drop=True)
 
         if self._bunch.get("feature_names") is not None and val_dataset.get_dataset().get("feature_names") is not None:
             for item in self._bunch.feature_names:
@@ -585,28 +586,40 @@ class PlaintextDataset(BaseDataset):
 
         data_package = Bunch(data=val_data, target=val_target)
 
-        if self._bunch.dataset_weight:
+        if self._bunch.dataset_weight is not None:
+            assert isinstance(self._bunch.dataset_weight, (pd.DataFrame, pd.Series))
             val_dataset_weight = self._bunch.dataset_weight.iloc[self._val_start:]
             self._bunch.dataset_weight = self._bunch.dataset_weight.iloc[:self._val_start]
-
             val_dataset_weight = val_dataset_weight.reset_index(drop=True)
             self._bunch.dataset_weight.reset_index(drop=True, inplace=True)
-
             data_package.dataset_weight = val_dataset_weight
+        else:
+            data_package.dataset_weight = None
 
-        if "feature_names" in self._bunch.keys():
-            data_package.target_names = self._bunch.target_names
+        if self._bunch.feature_names is not None:
             data_package.feature_names = self._bunch.feature_names
+        else:
+            data_package.feature_names = None
 
-        if ConstantValues.dataset_weight in self._bunch.keys():
-            data_package.dataset_weight = self._bunch.dataset_weight
+        if self._bunch.target_names is not None:
+            data_package.target_names = self._bunch.target_names
+        else:
+            data_package.target_names = None
+
+        if self._bunch.generated_feature_names is not None:
+            data_package.generated_feature_names = self._bunch.generated_feature_names
+        else:
+            data_package.generated_feature_names = None
 
         data_package.proportion = self._bunch.proportion
+        data_package.label_class = self._bunch.label_class
 
         return PlaintextDataset(name=ConstantValues.val_dataset,
                                 task_name=self._task_name,
                                 train_flag=ConstantValues.train,
+                                use_weight_flag=self.__use_weight_flag,
                                 weight_column_name=self._weight_column_names,
+                                dataset_weight_dict=self.__dataset_weight_dict,
                                 data_package=data_package)
 
     @property

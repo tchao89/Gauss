@@ -14,7 +14,6 @@ from utils.bunch import Bunch
 class PackageDataset:
     def __init__(self, func):
         self.__load_dataset = func
-        self.__dataset_weight = None
 
     def __call__(self, *args, **kwargs):
         dataset = kwargs.get("dataset")
@@ -22,12 +21,10 @@ class PackageDataset:
         feature_list = kwargs.get("feature_list")
         train_flag = kwargs.get("train_flag")
         categorical_list = kwargs.get("categorical_list")
-        use_weight_flag = kwargs.get("use_weight_flag")
 
         data = dataset.get_dataset().data
 
         assert isinstance(data, pd.DataFrame)
-        assert isinstance(use_weight_flag, bool)
 
         for feature in data.columns:
             if feature in categorical_list:
@@ -41,9 +38,13 @@ class PackageDataset:
             data_package = Bunch(
                 data=data,
                 target=target,
+                feature_names=dataset.get_dataset().feature_names,
                 target_names=dataset.get_dataset().target_names,
-                dataset_weight=self.__dataset_weight,
-                categorical_list=categorical_list
+                generated_feature_names=dataset.get_dataset().generated_feature_names,
+                dataset_weight=dataset.get_dataset().dataset_weight,
+                categorical_list=categorical_list,
+                label_class=dataset.get_dataset().label_class,
+                proportion=dataset.get_dataset().proportion
             )
 
             dataset_bunch = data_package
