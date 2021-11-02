@@ -49,7 +49,6 @@ class GaussLightgbm(ModelWrapper):
                 init_model_root=params[ConstantValues.init_model_root],
                 task_name=params[ConstantValues.task_name],
                 train_flag=params[ConstantValues.train_flag],
-                use_weight_flag=params[ConstantValues.use_weight_flag],
                 metric_eval_used_flag=params[ConstantValues.metric_eval_used_flag]
             )
         elif params[ConstantValues.train_flag] == ConstantValues.increment:
@@ -59,7 +58,6 @@ class GaussLightgbm(ModelWrapper):
                 init_model_root=params[ConstantValues.init_model_root],
                 task_name=params[ConstantValues.task_name],
                 train_flag=params[ConstantValues.train_flag],
-                use_weight_flag=params[ConstantValues.use_weight_flag],
                 decay_rate=params[ConstantValues.decay_rate],
                 metric_eval_used_flag=params[ConstantValues.metric_eval_used_flag]
             )
@@ -73,7 +71,6 @@ class GaussLightgbm(ModelWrapper):
                 infer_result_type=params[ConstantValues.infer_result_type],
                 task_name=params[ConstantValues.task_name],
                 train_flag=params[ConstantValues.train_flag],
-                use_weight_flag=params[ConstantValues.use_weight_flag],
                 metric_eval_used_flag=params[ConstantValues.metric_eval_used_flag]
             )
 
@@ -110,11 +107,7 @@ class GaussLightgbm(ModelWrapper):
             assert data_shape[0] == label_shape[0], "Data shape is inconsistent with label shape."
 
             if dataset_bunch.dataset_weight is not None:
-                if isinstance(dataset_bunch.dataset_weight, dict):
-                    weight_dict = dataset_bunch.dataset_weight[target_names]
-                    weight = [weight_dict[item] for item in dataset_bunch.target.values.flatten()]
-                else:
-                    weight = dataset_bunch.dataset_weight
+                weight = dataset_bunch.dataset_weight
             else:
                 weight = None
 
@@ -211,7 +204,6 @@ class GaussLightgbm(ModelWrapper):
                 label_name=self._target_names,
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
-                use_weight_flag=self._use_weight_flag,
                 check_bunch=self._check_bunch,
                 feature_list=self._feature_list,
                 categorical_list=self._categorical_list,
@@ -334,7 +326,6 @@ class GaussLightgbm(ModelWrapper):
                 label_name=self._target_names,
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
-                use_weight_flag=self._use_weight_flag,
                 check_bunch=self._check_bunch,
                 feature_list=self._feature_list,
                 categorical_list=self._categorical_list,
@@ -443,7 +434,6 @@ class GaussLightgbm(ModelWrapper):
                 label_name=self._target_names,
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
-                use_weight_flag=self._use_weight_flag,
                 check_bunch=self._check_bunch,
                 feature_list=self._feature_list,
                 categorical_list=self._categorical_list,
@@ -528,7 +518,6 @@ class GaussLightgbm(ModelWrapper):
                 label_name=self._target_names,
                 train_dataset=train_dataset,
                 val_dataset=None,
-                use_weight_flag=self._use_weight_flag,
                 check_bunch=self._check_bunch,
                 feature_list=self._feature_list,
                 categorical_list=self._categorical_list,
@@ -569,7 +558,6 @@ class GaussLightgbm(ModelWrapper):
                 label_name=self._target_names,
                 train_dataset=train_dataset,
                 val_dataset=None,
-                use_weight_flag=self._use_weight_flag,
                 check_bunch=self._check_bunch,
                 feature_list=self._feature_list,
                 categorical_list=self._categorical_list,
@@ -611,7 +599,6 @@ class GaussLightgbm(ModelWrapper):
                 label_name=self._target_names,
                 train_dataset=train_dataset,
                 val_dataset=None,
-                use_weight_flag=self._use_weight_flag,
                 check_bunch=self._check_bunch,
                 feature_list=self._feature_list,
                 categorical_list=self._categorical_list,
@@ -637,7 +624,6 @@ class GaussLightgbm(ModelWrapper):
             **Bunch(
                 label_name=self._target_names,
                 infer_dataset=infer_dataset,
-                use_weight_flag=self._use_weight_flag,
                 check_bunch=self._check_bunch,
                 feature_list=self._feature_list,
                 categorical_list=self._categorical_list,
@@ -676,7 +662,6 @@ class GaussLightgbm(ModelWrapper):
             **Bunch(
                 label_name=self._target_names,
                 infer_dataset=infer_dataset,
-                use_weight_flag=self._use_weight_flag,
                 check_bunch=self._check_bunch,
                 feature_list=self._feature_list,
                 categorical_list=self._categorical_list,
@@ -729,7 +714,6 @@ class GaussLightgbm(ModelWrapper):
                 label_name=self._target_names,
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
-                use_weight_flag=self._use_weight_flag,
                 check_bunch=self._check_bunch,
                 feature_list=self._feature_list,
                 categorical_list=self._categorical_list,
@@ -873,14 +857,12 @@ class GaussLightgbm(ModelWrapper):
             lgb_entity.train_dataset = train_dataset
 
         if "val_dataset" in params and params[ConstantValues.val_dataset]:
-            params["use_weight_flag"] = False
             params["dataset"] = params.pop("val_dataset")
             lgb_eval, eval_dataset = self.__load_data(**params)
             lgb_entity.lgb_eval = lgb_eval
             lgb_entity.eval_dataset = eval_dataset
 
         if "infer_dataset" in params and params[ConstantValues.infer_dataset]:
-            params["use_weight_flag"] = False
             params["dataset"] = params.pop("infer_dataset")
             infer_dataset = self.__load_data(**params)
             lgb_entity.infer_dataset = infer_dataset

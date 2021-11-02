@@ -61,7 +61,6 @@ class CoreRoute(Component):
             self.__opt_model_names = params[ConstantValues.opt_model_names]
             self.__selector_configure_path = params[ConstantValues.selector_configure_path]
 
-            model_params.use_weight_flag = params[ConstantValues.use_weight_flag]
             model_params.init_model_root = params[ConstantValues.init_model_root]
             model_params.metric_eval_used_flag = params[ConstantValues.metric_eval_used_flag]
 
@@ -85,6 +84,7 @@ class CoreRoute(Component):
                 **metric_params
             )
             self.__optimize_mode = self.__metric.optimize_mode
+
 
             tuner_params = Bunch(
                 name=self.__auto_ml_name,
@@ -156,14 +156,12 @@ class CoreRoute(Component):
                     selector_model_params = Bunch(
                         name="lightgbm",
                         model_root_path=params["model_root_path"],
-                        use_weight_flag=False,
                         init_model_root=None,
                         train_flag=self._train_flag,
                         task_name=self._task_name,
                         metric_eval_used_flag=params["metric_eval_used_flag"]
                     )
 
-                    model_params.use_weight_flag = params["use_weight_flag"]
                     model_params.init_model_root = params["init_model_root"]
                     self.__selector_model = self.create_entity(entity_name="lightgbm", **selector_model_params)
 
@@ -191,13 +189,11 @@ class CoreRoute(Component):
         elif self._train_flag == ConstantValues.increment:
             model_params.decay_rate = params[ConstantValues.decay_rate]
             model_params.init_model_root = None
-            model_params.use_weight_flag = False
             model_params.metric_eval_used_flag = False
         else:
             model_params.init_model_root = None
             model_params.increment_flag = params[ConstantValues.increment_flag]
             model_params.infer_result_type = params[ConstantValues.infer_result_type]
-            model_params.use_weight_flag = False
             model_params.metric_eval_used_flag = False
             self.__result = None
 

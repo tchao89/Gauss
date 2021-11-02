@@ -69,13 +69,6 @@ class ModelWrapper(Entity):
             )
         self._metric_eval_used_flag = params[ConstantValues.metric_eval_used_flag]
 
-        assert isinstance(params[ConstantValues.use_weight_flag], bool), \
-            "Value: use_weight_flag must be bool type, but get {} instead.".format(
-                type(params[ConstantValues.use_weight_flag])
-            )
-
-        self._use_weight_flag = params[ConstantValues.use_weight_flag]
-
         # model_config is a dict containing all features and these attributes used in the model.
         # This dict will write to yaml file.
         # This parameters contains model parameters and preprocessing flags.
@@ -129,7 +122,7 @@ class ModelWrapper(Entity):
     def _check_bunch(cls, dataset: Bunch):
         keys = ConstantValues.dataset_items
         for key in dataset.keys():
-            assert key in keys
+            assert key in keys, "Value: {} is not in dataset items: {}.".format(key, keys)
 
     def update_best_model(self):
         """

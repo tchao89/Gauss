@@ -273,7 +273,6 @@ class PlainTypeInference(BaseTypeInference):
 
     def __final_configure_generation(self):
         yaml_dict = {}
-        feature_dict = self.init_feature_configure.feature_dict
         final_feature_dict = self.final_feature_configure.feature_dict
         for item in final_feature_dict.keys():
             item_feature_conf = final_feature_dict[item]
@@ -284,9 +283,11 @@ class PlainTypeInference(BaseTypeInference):
                          "size": item_feature_conf.size}
             yaml_dict[item] = item_dict
 
-        if feature_dict is not None:
-            for item in self.final_feature_configure.feature_dict.keys():
-                yaml_dict[item]["init_index"] = feature_dict[item].index
+        if self.init_feature_configure is not None:
+            feature_dict = self.init_feature_configure.feature_dict
+            if feature_dict is not None:
+                for item in self.final_feature_configure.feature_dict.keys():
+                    yaml_dict[item]["init_index"] = feature_dict[item].index
 
         yaml_write(yaml_dict=yaml_dict, yaml_file=self._final_file_path)
 
@@ -299,7 +300,7 @@ class PlainTypeInference(BaseTypeInference):
             for item in feature_dict.keys():
                 feature_name = feature_dict[item].name
                 if feature_name not in feature_names:
-                    raise ValueError("Features in feature configure is not consistent with features in dataset.")
+                    raise ValueError("Features:{} in feature configure is not consistent with features in dataset.".format(feature_name))
                 used_flag = feature_dict[item].used
                 if not used_flag:
                     data.drop([feature_name], axis=1, inplace=True)
