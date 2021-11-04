@@ -7,7 +7,8 @@ import tensorflow as tf
 from entity.dataset.base_dataset import BaseDataset
 from entity.dataset.plain_dataset import PlaintextDataset
 
-pd.options.mode.chained_assignment = None # default = "warn"
+pd.options.mode.chained_assignment = None  # default = "warn"
+
 
 class TFPlainDataset(BaseDataset):
     """Gauss_nn Dataset wrapper 
@@ -42,8 +43,8 @@ class TFPlainDataset(BaseDataset):
                 if params.get("target_name") else None,
             memory_only=params["memory_only"] \
                 if params.get("memory_only") else True
-            )
-        
+        )
+
         self._df_dataset = self._v_stack(params["dataset"])
 
         self._file_repeat = params["file_repeat"] \
@@ -66,7 +67,6 @@ class TFPlainDataset(BaseDataset):
             return str(self._df_dataset.head())
         else:
             return str(self._df_dataset[self._selected_features].head())
-
 
     def update_features(self, features: list, cate_fea):
         """update private attribute selected_features, which are actually
@@ -101,10 +101,10 @@ class TFPlainDataset(BaseDataset):
             raise AttributeError("dataset has not been constructed to batches.")
         # if not params.get("batch_size"):
         #     raise TypeError("update_dataset_parameters missing 1 required key word parameter: batch_size.")
-        
+
         self._batch_size_param = batch_size
-        
-    def init(self,sess):
+
+    def init(self, sess):
         """initialize current iterated tf.Dataset.
         
         activate tf.Operations defined yet by feed batch_size to iterated tf.Dataset,
@@ -113,8 +113,8 @@ class TFPlainDataset(BaseDataset):
         if not hasattr(self, "_iterator"):
             raise AttributeError("dataset has not been iterated, use build() before init().")
         self._iterator.initializer.run(session=sess, feed_dict={self._batch_size: self._batch_size_param})
-            
-    @property 
+
+    @property
     def target_name(self):
         return self._target_name
 
@@ -130,13 +130,12 @@ class TFPlainDataset(BaseDataset):
 
     @property
     def shape(self):
-        ori_shape = self._df_dataset.shape 
-        return (ori_shape[0], ori_shape[1]+1)
-        
+        ori_shape = self._df_dataset.shape
+        return (ori_shape[0], ori_shape[1] + 1)
+
     @property
     def info(self):
         return self._df_dataset.info()
-
 
     def _build_dataset(self):
         dataset = self._filter_feature(self._df_dataset)
@@ -188,7 +187,7 @@ class TFPlainDataset(BaseDataset):
         y = dataset.get_dataset().target
         dataset = pd.concat((X, y), axis=1)
         return dataset
-    
+
     def _dim_expand(self, dataset: pd.DataFrame) -> dict:
         """normalize data dimensions for pipeline.
 
@@ -203,13 +202,13 @@ class TFPlainDataset(BaseDataset):
 
     def feature_choose(self):
         pass
-    
+
     def get_dataset(self):
         pass
 
     def load_data(self):
         pass
-    
+
     def split(self):
         pass
 

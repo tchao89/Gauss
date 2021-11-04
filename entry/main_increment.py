@@ -51,7 +51,7 @@ def main(config=config_path):
     pipeline_configure.system_configure_root = "/home/liangqian/Gauss/configure_files"
     pipeline_configure.auto_ml_path = pipeline_configure.system_configure_root + "/" + "automl_params"
     pipeline_configure.selector_configure_path = pipeline_configure.system_configure_root + "/" + "selector_params"
-    system_config = yaml_read(pipeline_configure.system_configure_root + "/" + "system_config/system_config.yaml")
+    system_config = yaml_read(pipeline_configure.system_configure_root + "/" + "system_config/dispatch_system_config.yaml")
     system_config = Bunch(**system_config)
 
     increment_config = yaml_read(pipeline_configure.system_configure_root + "/" + "increment_params/increment_params.yaml")

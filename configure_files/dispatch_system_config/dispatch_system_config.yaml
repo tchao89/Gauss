@@ -1,0 +1,104 @@
+system_config_1:
+  auto_ml_path: /home/liangqian/Gauss/configure_files/automl_params
+  selector_configure_path: /home/liangqian/Gauss/configure_files/selector_params
+  improved_selector_configure_path: /home/liangqian/Gauss/configure_files/improved_selector_params
+  auto_ml_name: tabular_auto_ml
+  data_clear_name: plain_data_clear
+  feature_generator_name: featuretools_generation
+  feature_configure_name: feature_configure
+  label_encoder_name: plain_label_encoder
+  label_encoder_flag: True
+  opt_model_names:
+  - tpe
+  supervised_feature_selector_name: supervised_feature_selector
+  improved_supervised_feature_selector_name: improved_supervised_feature_selector
+  supervised_selector_model_names:
+  - GBDTSelector
+  selector_trial_num: 5
+  auto_ml_trial_num: 15
+  feature_model_trial: 15
+  max_exec_duration: 36000
+  type_inference_name: plain_type_inference
+  unsupervised_feature_selector_name: unsupervised_feature_selector
+  model_need_clear_flag:
+    "lightgbm": False
+    "lr": True
+    "dnn": True
+system_config_2:
+  auto_ml_path: /home/liangqian/Gauss/configure_files/automl_params
+  selector_configure_path: /home/liangqian/Gauss/configure_files/selector_params
+  improved_selector_configure_path: /home/liangqian/Gauss/configure_files/improved_selector_params
+  auto_ml_name: tabular_auto_ml
+  data_clear_name: plain_data_clear
+  feature_generator_name: featuretools_generation
+  feature_configure_name: feature_configure
+  label_encoder_name: plain_label_encoder
+  label_encoder_flag: True
+  opt_model_names:
+  - random_search
+  supervised_feature_selector_name: supervised_feature_selector
+  improved_supervised_feature_selector_name: improved_supervised_feature_selector
+  supervised_selector_model_names:
+  - GBDTSelector
+  selector_trial_num: 5
+  auto_ml_trial_num: 15
+  feature_model_trial: 15
+  max_exec_duration: 36000
+  type_inference_name: plain_type_inference
+  unsupervised_feature_selector_name: unsupervised_feature_selector
+  model_need_clear_flag:
+    "lightgbm": False
+    "lr": True
+    "dnn": True
+system_config_3:
+  auto_ml_path: /home/liangqian/Gauss/configure_files/automl_params
+  selector_configure_path: /home/liangqian/Gauss/configure_files/selector_params
+  improved_selector_configure_path: /home/liangqian/Gauss/configure_files/improved_selector_params
+  auto_ml_name: tabular_auto_ml
+  data_clear_name: plain_data_clear
+  feature_generator_name: featuretools_generation
+  feature_configure_name: feature_configure
+  label_encoder_name: plain_label_encoder
+  label_encoder_flag: True
+  opt_model_names:
+  - anneal
+  supervised_feature_selector_name: supervised_feature_selector
+  improved_supervised_feature_selector_name: improved_supervised_feature_selector
+  supervised_selector_model_names:
+  - GBDTSelector
+  selector_trial_num: 5
+  auto_ml_trial_num: 15
+  feature_model_trial: 15
+  max_exec_duration: 36000
+  type_inference_name: plain_type_inference
+  unsupervised_feature_selector_name: unsupervised_feature_selector
+  model_need_clear_flag:
+    "lightgbm": False
+    "lr": True
+    "dnn": True
+system_config_4:
+  auto_ml_path: /home/liangqian/Gauss/configure_files/automl_params
+  selector_configure_path: /home/liangqian/Gauss/configure_files/selector_params
+  improved_selector_configure_path: /home/liangqian/Gauss/configure_files/improved_selector_params
+  auto_ml_name: tabular_auto_ml
+  data_clear_name: plain_data_clear
+  feature_generator_name: featuretools_generation
+  feature_configure_name: feature_configure
+  label_encoder_name: plain_label_encoder
+  label_encoder_flag: True
+  opt_model_names:
+  - evolution
+  supervised_feature_selector_name: supervised_feature_selector
+  improved_supervised_feature_selector_name: improved_supervised_feature_selector
+  supervised_selector_model_names:
+  - GBDTSelector
+  selector_trial_num: 5
+  auto_ml_trial_num: 15
+  feature_model_trial: 15
+  max_exec_duration: 36000
+  type_inference_name: plain_type_inference
+  unsupervised_feature_selector_name: unsupervised_feature_selector
+  model_need_clear_flag:
+    "lightgbm": False
+    "lr": True
+    "dnn": True
