@@ -83,12 +83,17 @@ class PlaintextDataset(BaseDataset):
 
         if self._name == ConstantValues.train_dataset or self._name == ConstantValues.val_dataset:
             self.__use_weight_flag = params[ConstantValues.use_weight_flag]
+            assert isinstance(self.__use_weight_flag, bool), "This value should be bool type, but get {}".format(
+                self.__use_weight_flag)
+
             self.__dataset_weight_dict = params[ConstantValues.dataset_weight_dict]
             if params.get(ConstantValues.weight_column_name):
                 assert isinstance(params[ConstantValues.weight_column_name], list)
                 self._weight_column_names = params[ConstantValues.weight_column_name]
             else:
                 self._weight_column_names = None
+        else:
+            self.__use_weight_flag = False
 
         # mark start point of validation set in all dataset, if just one data file offers, start point will calculate
         # by train_test_split = 0.3, and if train data file and validation file offer, start point will calculate
@@ -273,14 +278,16 @@ class PlaintextDataset(BaseDataset):
             raise ValueError("Just one weight setting can be set.")
 
         if self._column_name_flag:
-            if self._weight_column_names:
+            if self.__use_weight_flag:
+                if self._weight_column_names:
+                    for weight_name in self._weight_column_names:
+                        if weight_name not in data.columns:
+                            raise ValueError("Column: {} doesn't exist in dataset file.".format(self._weight_column_names))
 
-                for weight_name in self._weight_column_names:
-                    if weight_name not in data.columns:
-                        raise ValueError("Column: {} doesn't exist in dataset file.".format(self._weight_column_names))
-
-                weight = data[self._weight_column_names]
-                data.drop(self._weight_column_names, axis=1, inplace=True)
+                    weight = data[self._weight_column_names]
+                    data.drop(self._weight_column_names, axis=1, inplace=True)
+                else:
+                    weight = None
             else:
                 weight = None
 
@@ -298,7 +305,7 @@ class PlaintextDataset(BaseDataset):
             target_columns = []
             self.__column_index = list(data.columns)
 
-            if self._weight_column_names:
+            if self.__use_weight_flag:
                 if self._weight_column_names:
                     weight_columns = []
                     for weight_index in self._weight_column_names:
@@ -372,7 +379,7 @@ class PlaintextDataset(BaseDataset):
             target_columns = list(target.columns)
             self.__column_index = list(data.columns)
 
-            if self._weight_column_names:
+            if self.__use_weight_flag:
                 if self._weight_column_names:
                     weight_columns = []
                     for weight_index in self._weight_column_names:
@@ -452,7 +459,7 @@ class PlaintextDataset(BaseDataset):
                 target_columns = list(target.columns)
                 self.__column_index = list(data.columns)
 
-                if self._weight_column_names:
+                if self.__use_weight_flag:
                     if self._weight_column_names:
                         weight_columns = []
                         for weight_index in self._weight_column_names:

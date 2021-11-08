@@ -47,13 +47,13 @@ class AUC(BaseMetric):
 
         label = labels_map[self._label_name]
         if np.sum(label) == 0 or np.sum(label) == label.shape[0]:
-            self._metric_result = MetricResult(name=self.name,
+            self._metric_result = MetricResult(name=self._name,
                                                metric_name=self._name,
                                                result=float('nan'),
                                                optimize_mode=self._optimize_mode)
         else:
             auc = roc_auc_score(y_true=label, y_score=predict)
-            self._metric_result = MetricResult(name=self.name,
+            self._metric_result = MetricResult(name=self._name,
                                                metric_name=self._name,
                                                result=auc,
                                                meta={'#': predict.size},
@@ -154,11 +154,7 @@ class MulticlassF1(BaseMetric):
 
         label = labels_map[self._label_name]
         if np.sum(label) == 0 or np.sum(label) == label.shape[0]:
-            self._metric_result = MetricResult(
-                name=self._name,
-                metric_name=self._name,
-                result=float('nan'),
-                optimize_mode=self._optimize_mode)
+            pass
         else:
             predict_label = [result.tolist().index(max(result)) for result in predict]
             f1 = f1_score(y_true=label, y_pred=predict_label, average="macro")
@@ -209,11 +205,7 @@ class MSE(BaseMetric):
 
         label = labels_map[self._label_name]
         if np.sum(label) == 0 or np.sum(label) == label.shape[0]:
-            self._metric_result = MetricResult(
-                name=self._name,
-                metric_name=self._name,
-                result=float('nan'),
-                optimize_mode=self._optimize_mode)
+            pass
         else:
             mse = mean_squared_error(y_true=label, y_pred=predict)
             self._metric_result = MetricResult(

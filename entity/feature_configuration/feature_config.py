@@ -180,6 +180,7 @@ class FeatureConf(Entity):
     def feature_dict(self):
         return self._feature_dict
 
+    # check function
     def reset_feature_type(self, key, ftype):
         assert (key in self._feature_dict)
         assert (ftype in ("numerical", "category", "bool"))
