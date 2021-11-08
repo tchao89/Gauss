@@ -139,7 +139,8 @@ class UdfModelingGraph(BaseModelingGraph):
                isinstance(self._flag_dict[ConstantValues.unsupervised_feature_selector_flag], bool) and \
                isinstance(self._flag_dict[ConstantValues.supervised_feature_selector_flag], bool)
 
-        work_feature_root = join(self._work_paths[ConstantValues.work_root], ConstantValues.feature)
+        dispatch_model_root = join(self._work_paths[ConstantValues.work_root], params[ConstantValues.model_name])
+        work_feature_root = join(dispatch_model_root, ConstantValues.feature)
         feature_dict = EnvironmentConfigure.feature_dict()
 
         feature_dict = \
@@ -178,9 +179,10 @@ class UdfModelingGraph(BaseModelingGraph):
              }
 
         work_model_root = join(
-            join(self._work_paths[ConstantValues.work_root], ConstantValues.model),
+            dispatch_model_root,
             params.get(ConstantValues.model_name)
         )
+
         feature_configure_root = join(work_model_root, ConstantValues.feature_configure)
         feature_dict[ConstantValues.final_feature_configure] = join(
             feature_configure_root,
@@ -293,7 +295,6 @@ class UdfModelingGraph(BaseModelingGraph):
 
             if best_result.get(model_name) is None:
                 best_result[model_name] = result
-
             else:
                 if result.get(ConstantValues.metric_result) is not None:
                     if best_result.get(model_name).get(ConstantValues.metric_result).__cmp__(
