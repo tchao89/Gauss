@@ -104,6 +104,7 @@ class ConstantValues:
     work_root = "work_root"
     data_path = "data_path"
     init_model_root = "init_model_root"
+    work_model_root = "work_model_root"
     auto_ml_path = "auto_ml_path"
     improved_selector_configure_path = "improved_selector_configure_path"
     model_root_path = "model_root_path"

@@ -28,6 +28,7 @@ class UdfModelingGraph(BaseModelingGraph):
     In this pipeline, value: train_flag will be set "train"
     between "train", "inference" and "increment".
     """
+
     def __init__(self, name: str, user_configure: dict, system_configure: dict):
         """
 
@@ -50,54 +51,55 @@ class UdfModelingGraph(BaseModelingGraph):
         if user_configure[ConstantValues.data_clear_flag] is None:
             user_configure[ConstantValues.data_clear_flag] = True
 
-        self.init__ = super().__init__(name=name,
-                                       metric_eval_used_flag=user_configure[ConstantValues.metric_eval_used_flag],
-                                       data_file_type=user_configure[ConstantValues.data_file_type],
-                                       work_root=user_configure[ConstantValues.work_root],
-                                       task_name=user_configure[ConstantValues.task_name],
-                                       dataset_weight_dict=user_configure[ConstantValues.dataset_weight_dict],
-                                       train_column_name_flag=user_configure[ConstantValues.train_column_name_flag],
-                                       val_column_name_flag=user_configure[ConstantValues.val_column_name_flag],
-                                       weight_column_name=user_configure[ConstantValues.weight_column_name],
-                                       use_weight_flag=user_configure[ConstantValues.use_weight_flag],
-                                       metric_name=user_configure[ConstantValues.metric_name],
-                                       init_model_root=user_configure[ConstantValues.init_model_root],
-                                       loss_name=user_configure[ConstantValues.loss_name],
-                                       train_data_path=user_configure[ConstantValues.train_data_path],
-                                       val_data_path=user_configure[ConstantValues.val_data_path],
-                                       target_names=user_configure[ConstantValues.target_names],
-                                       model_need_clear_flag=system_configure[ConstantValues.model_need_clear_flag],
-                                       feature_configure_path=user_configure[ConstantValues.feature_configure_path],
-                                       feature_configure_name=system_configure[ConstantValues.feature_configure_name],
-                                       dataset_name=user_configure[ConstantValues.dataset_name],
-                                       type_inference_name=system_configure[ConstantValues.type_inference_name],
-                                       label_encoder_name=system_configure[ConstantValues.label_encoder_name],
-                                       label_encoder_flag=system_configure[ConstantValues.label_encoder_flag],
-                                       data_clear_name=system_configure[ConstantValues.data_clear_name],
-                                       data_clear_flag=user_configure[ConstantValues.data_clear_flag],
-                                       feature_generator_name=system_configure[ConstantValues.feature_generator_name],
-                                       feature_generator_flag=user_configure[ConstantValues.feature_generator_flag],
-                                       unsupervised_feature_selector_name=system_configure[
-                                           ConstantValues.unsupervised_feature_selector_name],
-                                       unsupervised_feature_selector_flag=user_configure[
-                                           ConstantValues.unsupervised_feature_selector_flag],
-                                       supervised_selector_mode=user_configure[ConstantValues.supervised_selector_mode],
-                                       supervised_feature_selector_name=system_configure[
-                                           ConstantValues.supervised_feature_selector_name],
-                                       improved_supervised_feature_selector_name=system_configure[
-                                           "improved_supervised_feature_selector_name"],
-                                       supervised_feature_selector_flag=user_configure[
-                                           ConstantValues.supervised_feature_selector_flag],
-                                       supervised_selector_model_names=system_configure[
-                                           ConstantValues.supervised_selector_model_names],
-                                       improved_selector_configure_path=system_configure["improved_selector_configure_path"],
-                                       feature_model_trial=system_configure["feature_model_trial"],
-                                       selector_trial_num=system_configure[ConstantValues.selector_trial_num],
-                                       auto_ml_name=system_configure[ConstantValues.auto_ml_name],
-                                       auto_ml_trial_num=system_configure[ConstantValues.auto_ml_trial_num],
-                                       opt_model_names=system_configure[ConstantValues.opt_model_names],
-                                       auto_ml_path=system_configure[ConstantValues.auto_ml_path],
-                                       selector_configure_path=system_configure[ConstantValues.selector_configure_path])
+        super().__init__(
+            name=name,
+            metric_eval_used_flag=user_configure[ConstantValues.metric_eval_used_flag],
+            data_file_type=user_configure[ConstantValues.data_file_type],
+            work_root=user_configure[ConstantValues.work_root],
+            task_name=user_configure[ConstantValues.task_name],
+            dataset_weight_dict=user_configure[ConstantValues.dataset_weight_dict],
+            train_column_name_flag=user_configure[ConstantValues.train_column_name_flag],
+            val_column_name_flag=user_configure[ConstantValues.val_column_name_flag],
+            weight_column_name=user_configure[ConstantValues.weight_column_name],
+            use_weight_flag=user_configure[ConstantValues.use_weight_flag],
+            metric_name=user_configure[ConstantValues.metric_name],
+            init_model_root=user_configure[ConstantValues.init_model_root],
+            loss_name=user_configure[ConstantValues.loss_name],
+            train_data_path=user_configure[ConstantValues.train_data_path],
+            val_data_path=user_configure[ConstantValues.val_data_path],
+            target_names=user_configure[ConstantValues.target_names],
+            model_need_clear_flag=system_configure[ConstantValues.model_need_clear_flag],
+            feature_configure_path=user_configure[ConstantValues.feature_configure_path],
+            feature_configure_name=system_configure[ConstantValues.feature_configure_name],
+            dataset_name=user_configure[ConstantValues.dataset_name],
+            type_inference_name=system_configure[ConstantValues.type_inference_name],
+            label_encoder_name=system_configure[ConstantValues.label_encoder_name],
+            label_encoder_flag=system_configure[ConstantValues.label_encoder_flag],
+            data_clear_name=system_configure[ConstantValues.data_clear_name],
+            data_clear_flag=user_configure[ConstantValues.data_clear_flag],
+            feature_generator_name=system_configure[ConstantValues.feature_generator_name],
+            feature_generator_flag=user_configure[ConstantValues.feature_generator_flag],
+            unsupervised_feature_selector_name=system_configure[
+                ConstantValues.unsupervised_feature_selector_name],
+            unsupervised_feature_selector_flag=user_configure[
+                ConstantValues.unsupervised_feature_selector_flag],
+            supervised_selector_mode=user_configure[ConstantValues.supervised_selector_mode],
+            supervised_feature_selector_name=system_configure[
+                ConstantValues.supervised_feature_selector_name],
+            improved_supervised_feature_selector_name=system_configure[
+                ConstantValues.improved_supervised_feature_selector_name],
+            supervised_feature_selector_flag=user_configure[
+                ConstantValues.supervised_feature_selector_flag],
+            supervised_selector_model_names=system_configure[
+                ConstantValues.supervised_selector_model_names],
+            improved_selector_configure_path=system_configure[ConstantValues.improved_selector_configure_path],
+            feature_model_trial=system_configure[ConstantValues.feature_model_trial],
+            selector_trial_num=system_configure[ConstantValues.selector_trial_num],
+            auto_ml_name=system_configure[ConstantValues.auto_ml_name],
+            auto_ml_trial_num=system_configure[ConstantValues.auto_ml_trial_num],
+            opt_model_names=system_configure[ConstantValues.opt_model_names],
+            auto_ml_path=system_configure[ConstantValues.auto_ml_path],
+            selector_configure_path=system_configure[ConstantValues.selector_configure_path])
 
         self._model_zoo = user_configure[ConstantValues.model_zoo]
         self._label_switch_type = user_configure[ConstantValues.label_switch_type]
@@ -130,7 +132,8 @@ class UdfModelingGraph(BaseModelingGraph):
              ConstantValues.dataset_name:
                  self._entity_names[ConstantValues.dataset_name],
              ConstantValues.type_inference_name:
-                 self._component_names[ConstantValues.type_inference_name]
+                 self._component_names[ConstantValues.type_inference_name],
+             ConstantValues.model_zoo: self._model_zoo
              }
 
     def _run_route(self, **params):
@@ -180,7 +183,7 @@ class UdfModelingGraph(BaseModelingGraph):
 
         work_model_root = join(
             dispatch_model_root,
-            params.get(ConstantValues.model_name)
+            ConstantValues.model
         )
 
         feature_configure_root = join(work_model_root, ConstantValues.feature_configure)
@@ -253,7 +256,8 @@ class UdfModelingGraph(BaseModelingGraph):
             selector_trial_num=self._global_values[ConstantValues.selector_trial_num],
             supervised_feature_selector_flag=self._flag_dict[ConstantValues.supervised_feature_selector_flag],
             supervised_selector_mode=self._global_values[ConstantValues.supervised_selector_mode],
-            improved_supervised_selector_name=self._component_names[ConstantValues.improved_supervised_feature_selector_name],
+            improved_supervised_selector_name=self._component_names[
+                ConstantValues.improved_supervised_feature_selector_name],
             improved_selector_configure_path=self._work_paths[ConstantValues.improved_selector_configure_path],
             feature_model_trial=self._global_values[ConstantValues.feature_model_trial],
             auto_ml_name=self._component_names[ConstantValues.auto_ml_name],

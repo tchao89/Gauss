@@ -93,10 +93,10 @@ class IncrementModelingGraph:
         )
 
         self._component_names = Bunch(
-            type_inference_name=params["type_inference_name"],
-            data_clear_name=params["data_clear_name"],
-            label_encoder_name=params["label_encoder_name"],
-            feature_generator_name=params["feature_generator_name"],
+            type_inference_name=params[ConstantValues.type_inference_name],
+            data_clear_name=params[ConstantValues.data_clear_name],
+            label_encoder_name=params[ConstantValues.label_encoder_name],
+            feature_generator_name=params[ConstantValues.feature_generator_name],
             unsupervised_feature_selector_name=params["unsupervised_feature_selector_name"],
             supervised_feature_selector_name=params["supervised_feature_selector_name"],
             improved_supervised_feature_selector_name=params["improved_supervised_feature_selector_name"],
@@ -104,9 +104,7 @@ class IncrementModelingGraph:
         )
 
         self._global_values = Bunch(
-            dataset_weight=params["dataset_weight"],
             use_weight_flag=params["use_weight_flag"],
-            weight_column_flag=params["weight_column_flag"],
             weight_column_name=params["weight_column_name"],
             decay_rate=params[ConstantValues.decay_rate],
             increment_column_name_flag=params[ConstantValues.increment_column_name_flag],
@@ -176,7 +174,8 @@ class IncrementModelingGraph:
                isinstance(self._flag_dict[ConstantValues.unsupervised_feature_selector_flag], bool) and \
                isinstance(self._flag_dict[ConstantValues.supervised_feature_selector_flag], bool)
 
-        work_feature_root = join(self._work_paths[ConstantValues.work_root], ConstantValues.feature)
+        dispatch_model_root = join(self._work_paths[ConstantValues.work_root], params[ConstantValues.model_name])
+        work_feature_root = join(dispatch_model_root, ConstantValues.feature)
         feature_dict = EnvironmentConfigure.feature_dict()
 
         feature_dict = \
@@ -216,9 +215,10 @@ class IncrementModelingGraph:
              }
 
         work_model_root = join(
-            join(self._work_paths[ConstantValues.work_root], ConstantValues.model),
-            params.get(ConstantValues.model_name)
+            dispatch_model_root,
+            ConstantValues.model
         )
+
         feature_configure_root = join(work_model_root, ConstantValues.feature_configure)
         feature_dict[ConstantValues.final_feature_configure] = join(
             feature_configure_root,

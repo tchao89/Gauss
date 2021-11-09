@@ -85,7 +85,6 @@ class CoreRoute(Component):
             )
             self.__optimize_mode = self.__metric.optimize_mode
 
-
             tuner_params = Bunch(
                 name=self.__auto_ml_name,
                 train_flag=self._train_flag,

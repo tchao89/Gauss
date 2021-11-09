@@ -20,7 +20,7 @@ user_feature = "/home/liangqian/Gauss/test_dataset/feature_conf.yaml"
 environ_configure = EnvironmentConfigure(work_root="/home/liangqian/Gauss/experiments")
 
 pipeline_dict = Bunch()
-# ["udf", "auto", "multi_udf"]
+# ["udf", "auto", "dispatch_auto", "dispatch_udf"]
 pipeline_dict.mode = "udf"
 # initial model path, optional: str or None, and it's different from increment model setting.
 # This is used to train a better model instead of increment.

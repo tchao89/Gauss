@@ -148,6 +148,7 @@ class GaussLightgbm(ModelWrapper):
         """
         assert self._train_flag == ConstantValues.train
         assert self._task_name == ConstantValues.binary_classification
+
         init_model_path = self._init_model_root
         if init_model_path:
             assert os.path.isfile(init_model_path), \
@@ -272,6 +273,8 @@ class GaussLightgbm(ModelWrapper):
                           val_dataset: BaseDataset,
                           **entity):
         assert self._train_flag == ConstantValues.train
+        assert self._task_name == ConstantValues.multiclass_classification
+
         init_model_path = self._init_model_root
 
         params = self._model_params
@@ -395,6 +398,8 @@ class GaussLightgbm(ModelWrapper):
                           val_dataset: BaseDataset,
                           **entity):
         assert self._task_name == ConstantValues.regression
+        assert self._train_flag == ConstantValues.train
+
         init_model_path = self._init_model_root
 
         params = self._model_params
@@ -413,9 +418,9 @@ class GaussLightgbm(ModelWrapper):
             "Value: target_names is different between train_dataset and validation dataset."
 
         self._target_names = list(set(train_target_names).union(set(eval_target_names)))[0]
-        entity["metric"].label_name = self._target_names
 
         if self._metric_eval_used_flag and entity["metric"] is not None:
+            entity["metric"].label_name = self._target_names
             self._eval_function = entity["metric"].evaluate
             eval_function = self._eval_func
         else:
@@ -551,7 +556,7 @@ class GaussLightgbm(ModelWrapper):
         assert os.path.isfile(init_model_path)
 
         assert self._train_flag == ConstantValues.increment
-        assert self._task_name == ConstantValues.binary_classification
+        assert self._task_name == ConstantValues.multiclass_classification
 
         lgb_entity = self.__lgb_preprocessing(
             **Bunch(
@@ -592,7 +597,7 @@ class GaussLightgbm(ModelWrapper):
         assert os.path.isfile(init_model_path)
 
         assert self._train_flag == ConstantValues.increment
-        assert self._task_name == ConstantValues.binary_classification
+        assert self._task_name == ConstantValues.regression
 
         lgb_entity = self.__lgb_preprocessing(
             **Bunch(
@@ -709,6 +714,7 @@ class GaussLightgbm(ModelWrapper):
         assert "data" in train_dataset.get_dataset() and "target" in train_dataset.get_dataset()
         assert "data" in val_dataset.get_dataset() and "target" in val_dataset.get_dataset()
 
+        # 去除label name
         lgb_entity = self.__lgb_preprocessing(
             **Bunch(
                 label_name=self._target_names,
