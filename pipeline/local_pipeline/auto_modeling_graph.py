@@ -4,180 +4,474 @@ Copyright (c) 2021, Citic-Lab. All rights reserved.
 Authors: Lab"""
 from __future__ import annotations
 
-import os
-from abc import ABC
-
-from typing import List
+from os.path import join
+import itertools
 
 from pipeline.local_pipeline.core_chain import CoreRoute
 from pipeline.local_pipeline.preprocess_chain import PreprocessRoute
 from pipeline.local_pipeline.mapping import EnvironmentConfigure
 from pipeline.local_pipeline.base_modeling_graph import BaseModelingGraph
 
-from utils.bunch import Bunch
 from utils.check_dataset import check_data
-from utils.exception import PipeLineLogicError
+from utils.yaml_exec import yaml_write
+from utils.exception import PipeLineLogicError, NoResultReturnException
 from utils.Logger import logger
+from utils.constant_values import ConstantValues
 
 
-# This class is used to train model.
-class AutoModelingGraph(BaseModelingGraph, ABC):
-    def __init__(self, name: str, work_root: str, task_type: str, metric_name: str, train_data_path: str,
-                 val_data_path: str = None, feature_configure_path: str = None, target_names: List[str] = None,
-                 dataset_type: str = "plain", type_inference: str = "plain", data_clear: str = "plain",
-                 feature_generator: str = "featuretools", unsupervised_feature_selector: str = "unsupervised",
-                 supervised_feature_selector: str = "supervised", auto_ml: str = "plain", opt_model_names: List[str] = None):
+# This class is used to train model in fast module.
+class AutoModelingGraph(BaseModelingGraph):
+    def __init__(self, name: str, user_configure: dict, system_configure: dict):
+        """
 
-        super().__init__(name, work_root, task_type, metric_name, train_data_path, val_data_path, target_names,
-                         feature_configure_path, dataset_type, type_inference, data_clear, feature_generator,
-                         unsupervised_feature_selector, supervised_feature_selector, auto_ml, opt_model_names)
+        :param name:
+        :param user_configure:
+        :param system_configure:
+        """
+        if user_configure[ConstantValues.model_zoo] is None:
+            user_configure[ConstantValues.model_zoo] = ["xgboost", "lightgbm", "catboost", "lr_lightgbm", "dnn"]
 
-        self.already_data_clear = None
-        self.best_model = None
-        self.best_metric = None
-        self.best_result_root = None
-        self.best_model_name = None
+        if user_configure[ConstantValues.supervised_feature_selector_flag] is None:
+            user_configure[ConstantValues.supervised_feature_selector_flag] = [True, False]
 
-    def run_route(self,
-                  folder_prefix_str,
-                  data_clear_flag: bool,
-                  feature_generator_flag: bool,
-                  unsupervised_feature_generator_flag: bool,
-                  supervised_feature_selector_flag: bool,
-                  model_zoo: List[str]):
+        if user_configure[ConstantValues.unsupervised_feature_selector_flag] is None:
+            user_configure[ConstantValues.unsupervised_feature_selector_flag] = [True, False]
 
-        work_root = self._work_root + "/" + folder_prefix_str
+        if user_configure[ConstantValues.feature_generator_flag] is None:
+            user_configure[ConstantValues.feature_generator_flag] = [True, False]
 
-        pipeline_configure = {"data_clear_flag": data_clear_flag,
-                              "feature_generator_flag": feature_generator_flag,
-                              "unsupervised_feature_selector_flag": unsupervised_feature_generator_flag,
-                              "supervised_feature_selector_flag": supervised_feature_selector_flag,
-                              "metric_name": self._metric_name,
-                              "task_type": self.task_type}
+        if user_configure[ConstantValues.data_clear_flag] is None:
+            user_configure[ConstantValues.data_clear_flag] = [True, False]
 
-        work_feature_root = work_root + "/feature"
-        feature_dict = Bunch()
+        super().__init__(
+            name=name,
+            metric_eval_used_flag=user_configure[ConstantValues.metric_eval_used_flag],
+            data_file_type=user_configure[ConstantValues.data_file_type],
+            work_root=user_configure[ConstantValues.work_root],
+            task_name=user_configure[ConstantValues.task_name],
+            dataset_weight_dict=user_configure[ConstantValues.dataset_weight_dict],
+            train_column_name_flag=user_configure[ConstantValues.train_column_name_flag],
+            val_column_name_flag=user_configure[ConstantValues.val_column_name_flag],
+            weight_column_name=user_configure[ConstantValues.weight_column_name],
+            use_weight_flag=user_configure[ConstantValues.use_weight_flag],
+            metric_name=user_configure[ConstantValues.metric_name],
+            init_model_root=user_configure[ConstantValues.init_model_root],
+            loss_name=user_configure[ConstantValues.loss_name],
+            train_data_path=user_configure[ConstantValues.train_data_path],
+            val_data_path=user_configure[ConstantValues.val_data_path],
+            target_names=user_configure[ConstantValues.target_names],
+            model_need_clear_flag=system_configure[ConstantValues.model_need_clear_flag],
+            feature_configure_path=user_configure[ConstantValues.feature_configure_path],
+            feature_configure_name=system_configure[
+                ConstantValues.feature_configure_name],
+            dataset_name=user_configure[ConstantValues.dataset_name],
+            type_inference_name=system_configure[ConstantValues.type_inference_name],
+            label_encoder_name=system_configure[ConstantValues.label_encoder_name],
+            label_encoder_flag=system_configure[ConstantValues.label_encoder_flag],
+            data_clear_name=system_configure[ConstantValues.data_clear_name],
+            data_clear_flag=user_configure[ConstantValues.data_clear_flag],
+            feature_generator_name=system_configure[
+                ConstantValues.feature_generator_name],
+            feature_generator_flag=user_configure[ConstantValues.feature_generator_flag],
+            unsupervised_feature_selector_name=system_configure[
+                ConstantValues.unsupervised_feature_selector_name],
+            unsupervised_feature_selector_flag=user_configure[
+                ConstantValues.unsupervised_feature_selector_flag],
+            supervised_selector_mode=user_configure[
+                ConstantValues.supervised_selector_mode],
+            supervised_feature_selector_name=system_configure[
+                ConstantValues.supervised_feature_selector_name],
+            improved_supervised_feature_selector_name=system_configure[
+                ConstantValues.improved_supervised_feature_selector_name],
+            supervised_feature_selector_flag=user_configure[
+                ConstantValues.supervised_feature_selector_flag],
+            supervised_selector_model_names=system_configure[
+                ConstantValues.supervised_selector_model_names],
+            improved_selector_configure_path=system_configure[
+                ConstantValues.improved_selector_configure_path],
+            feature_model_trial=system_configure[ConstantValues.feature_model_trial],
+            selector_trial_num=system_configure[ConstantValues.selector_trial_num],
+            auto_ml_name=system_configure[ConstantValues.auto_ml_name],
+            auto_ml_trial_num=system_configure[ConstantValues.auto_ml_trial_num],
+            opt_model_names=system_configure[ConstantValues.opt_model_names],
+            auto_ml_path=system_configure[ConstantValues.auto_ml_path],
+            selector_configure_path=system_configure[
+                ConstantValues.selector_configure_path])
 
-        feature_dict.user_feature = self._feature_configure_path
-        feature_dict.type_inference_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().type_inference_feature)
-        feature_dict.data_clear_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().data_clear_feature)
-        feature_dict.feature_generator_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().feature_generator_feature)
-        feature_dict.unsupervised_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().unsupervised_feature)
-        feature_dict.label_encoding_path = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().label_encoding_path)
-        feature_dict.impute_path = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().impute_path)
-        feature_dict.supervised_feature = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().supervised_feature)
-        feature_dict.final_feature_config = os.path.join(work_feature_root, EnvironmentConfigure.feature_dict().final_feature_config)
+        self._model_zoo = user_configure[ConstantValues.model_zoo]
+        self._label_switch_type = user_configure[ConstantValues.label_switch_type]
 
-        preprocess_chain = PreprocessRoute(name="PreprocessRoute",
-                                           feature_path_dict=feature_dict,
-                                           task_type=self.task_type,
-                                           train_flag=True,
-                                           train_data_path=self._train_data_path,
-                                           val_data_path=self._val_data_path,
-                                           test_data_path=None,
-                                           target_names=self._target_names,
-                                           dataset_name="plaindataset",
-                                           type_inference_name="typeinference",
-                                           data_clear_name="plaindataclear",
-                                           data_clear_flag=data_clear_flag,
-                                           feature_generator_name="featuretools",
-                                           feature_generator_flag=feature_generator_flag,
-                                           feature_selector_name="unsupervised",
-                                           feature_selector_flag=unsupervised_feature_generator_flag)
+        self.__pipeline_configure = \
+            {ConstantValues.work_root:
+                 self._work_paths[ConstantValues.work_root],
+             ConstantValues.data_clear_flag:
+                 self._flag_dict[ConstantValues.data_clear_flag],
+             ConstantValues.data_clear_name:
+                 self._component_names[ConstantValues.data_clear_name],
+             ConstantValues.feature_generator_flag:
+                 self._flag_dict[ConstantValues.feature_generator_flag],
+             ConstantValues.feature_generator_name:
+                 self._component_names[ConstantValues.feature_generator_name],
+             ConstantValues.unsupervised_feature_selector_flag:
+                 self._flag_dict[ConstantValues.unsupervised_feature_selector_flag],
+             ConstantValues.unsupervised_feature_selector_name:
+                 self._component_names[ConstantValues.unsupervised_feature_selector_name],
+             ConstantValues.supervised_feature_selector_flag:
+                 self._flag_dict[ConstantValues.supervised_feature_selector_flag],
+             ConstantValues.supervised_feature_selector_name:
+                 self._component_names[ConstantValues.supervised_feature_selector_name],
+             ConstantValues.metric_name:
+                 self._entity_names[ConstantValues.metric_name],
+             ConstantValues.task_name:
+                 self._attributes_names[ConstantValues.task_name],
+             ConstantValues.target_names:
+                 self._attributes_names[ConstantValues.target_names],
+             ConstantValues.dataset_name:
+                 self._entity_names[ConstantValues.dataset_name],
+             ConstantValues.type_inference_name:
+                 self._component_names[ConstantValues.type_inference_name],
+             ConstantValues.model_zoo: self._model_zoo
+             }
+
+    def _run_route(self, **params):
+        data_clear_flag = params[ConstantValues.data_clear_flag]
+        if not isinstance(data_clear_flag, bool):
+            raise TypeError(
+                "Value: data clear flag should be type of bool, "
+                "but get {} instead.".format(
+                    data_clear_flag)
+            )
+
+        feature_generator_flag = params[ConstantValues.feature_generator_flag]
+        if not isinstance(feature_generator_flag, bool):
+            raise TypeError(
+                "Value: feature generator flag should be type of bool, "
+                "but get {} instead.".format(
+                    feature_generator_flag)
+            )
+
+        unsupervised_feature_selector_flag = params[ConstantValues.unsupervised_feature_selector_flag]
+        if not isinstance(unsupervised_feature_selector_flag, bool):
+            raise TypeError(
+                "Value: unsupervised feature selector flag should be type of bool, "
+                "but get {} instead.".format(
+                    unsupervised_feature_selector_flag)
+            )
+
+        supervised_feature_selector_flag = params[ConstantValues.supervised_feature_selector_flag]
+        if not isinstance(supervised_feature_selector_flag, bool):
+            raise TypeError(
+                "Value: supervised feature selector flag should be type of bool, "
+                "but get {} instead.".format(
+                    supervised_feature_selector_flag)
+            )
+
+        supervised_selector_model_names = params[ConstantValues.supervised_selector_model_names]
+        if not isinstance(supervised_selector_model_names, str):
+            raise TypeError(
+                "Value: data clear flag should be type of bool, "
+                "but get {} instead.".format(
+                    data_clear_flag)
+            )
+
+        opt_model_names = params[ConstantValues.opt_model_names]
+        if not isinstance(opt_model_names, str):
+            raise TypeError(
+                "Value: opt model names should be type of bool, "
+                "but get {} instead.".format(
+                    opt_model_names)
+            )
+
+        model_name = params[ConstantValues.model_name]
+        if not isinstance(model_name, str):
+            raise TypeError(
+                "Value: model name should be type of bool, "
+                "but get {} instead.".format(
+                    model_name)
+            )
+
+        folder_name = "_".join([str(data_clear_flag),
+                               str(feature_generator_flag),
+                               str(unsupervised_feature_selector_flag),
+                               str(supervised_feature_selector_flag),
+                               str(supervised_selector_model_names),
+                               opt_model_names,
+                               model_name])
+
+        supervised_selector_model_names = [supervised_selector_model_names]
+        opt_model_names = [opt_model_names]
+
+        dispatch_model_root = join(self._work_paths[ConstantValues.work_root], folder_name)
+        work_feature_root = join(dispatch_model_root, ConstantValues.feature)
+        feature_dict = EnvironmentConfigure.feature_dict()
+
+        feature_dict = \
+            {ConstantValues.user_feature_path: self._work_paths[ConstantValues.feature_configure_path],
+             ConstantValues.type_inference_feature_path: join(
+                 work_feature_root,
+                 feature_dict.type_inference_feature),
+
+             ConstantValues.data_clear_feature_path: join(
+                 work_feature_root,
+                 feature_dict.data_clear_feature),
+
+             ConstantValues.feature_generator_feature_path: join(
+                 work_feature_root,
+                 feature_dict.feature_generator_feature),
+
+             ConstantValues.unsupervised_feature_path: join(
+                 work_feature_root,
+                 feature_dict.unsupervised_feature),
+
+             ConstantValues.supervised_feature_path: join(
+                 work_feature_root,
+                 feature_dict.supervised_feature),
+
+             ConstantValues.label_encoding_models_path: join(
+                 work_feature_root,
+                 feature_dict.label_encoding_path),
+
+             ConstantValues.impute_models_path: join(
+                 work_feature_root,
+                 feature_dict.impute_path),
+
+             ConstantValues.label_encoder_feature_path: join(
+                 work_feature_root,
+                 feature_dict.label_encoder_feature)
+             }
+
+        work_model_root = join(
+            dispatch_model_root,
+            ConstantValues.model
+        )
+
+        feature_configure_root = join(work_model_root, ConstantValues.feature_configure)
+        feature_dict[ConstantValues.final_feature_configure] = join(
+            feature_configure_root,
+            EnvironmentConfigure.feature_dict().final_feature_configure
+        )
+
+        preprocess_chain = PreprocessRoute(
+            name=ConstantValues.PreprocessRoute,
+            feature_path_dict=feature_dict,
+            train_column_name_flag=self._global_values[ConstantValues.train_column_name_flag],
+            val_column_name_flag=self._global_values[ConstantValues.val_column_name_flag],
+            data_file_type=self._global_values[ConstantValues.data_file_type],
+            task_name=self._attributes_names[ConstantValues.task_name],
+            train_flag=ConstantValues.train,
+            label_switch_type=self._label_switch_type,
+            use_weight_flag=self._global_values[ConstantValues.use_weight_flag],
+            dataset_weight_dict=self._global_values[ConstantValues.dataset_weight_dict],
+            weight_column_name=self._global_values[ConstantValues.weight_column_name],
+            train_data_path=self._work_paths[ConstantValues.train_data_path],
+            val_data_path=self._work_paths[ConstantValues.val_data_path],
+            inference_data_path=None,
+            target_names=self._attributes_names[ConstantValues.target_names],
+            dataset_name=self._entity_names[ConstantValues.dataset_name],
+            type_inference_name=self._component_names[ConstantValues.type_inference_name],
+            data_clear_name=self._component_names[ConstantValues.data_clear_name],
+            data_clear_flag=data_clear_flag,
+            label_encoder_name=self._component_names[ConstantValues.label_encoder_name],
+            label_encoder_flag=self._flag_dict[ConstantValues.label_encoder_flag],
+            feature_generator_name=self._component_names[ConstantValues.feature_generator_name],
+            feature_generator_flag=feature_generator_flag,
+            unsupervised_feature_selector_name=self._component_names[
+                ConstantValues.unsupervised_feature_selector_name],
+            unsupervised_feature_selector_flag=unsupervised_feature_selector_flag
+        )
 
         try:
-            preprocess_chain.run()
-        except PipeLineLogicError as e:
-            logger.info(e)
+            entity_dict = preprocess_chain.run()
+        except PipeLineLogicError as error:
+            logger.info(error)
             return None
 
-        entity_dict = preprocess_chain.entity_dict
-        self.already_data_clear = preprocess_chain.already_data_clear
+        self._already_data_clear = preprocess_chain.already_data_clear
 
-        assert "dataset" in entity_dict and "val_dataset" in entity_dict
+        assert params.get(ConstantValues.model_name) is not None
+        # 如果未进行数据清洗, 并且模型需要数据清洗, 则返回None.
+        if check_data(already_data_clear=self._already_data_clear,
+                      model_need_clear_flag=self._model_need_clear_flag.get(model_name)) is not True:
+            return None
 
-        best_model = None
-        best_metric = None
-        best_model_name = None
-        best_pipeline_config = None
+        assert ConstantValues.train_dataset in entity_dict and ConstantValues.val_dataset in entity_dict
 
-        for model in model_zoo:
-            work_model_root = work_root + "/model/" + model + "/"
-            model_save_root = work_model_root + "model_save"
-            model_config_root = work_model_root + "/model_config"
-            feature_config_root = work_model_root + "/feature_config"
+        core_chain = CoreRoute(
+            name=ConstantValues.CoreRoute,
+            train_flag=ConstantValues.train,
+            model_root_path=work_model_root,
+            target_feature_configure_path=feature_dict[ConstantValues.final_feature_configure],
+            pre_feature_configure_path=feature_dict[ConstantValues.unsupervised_feature_path],
+            model_name=model_name,
+            init_model_root=self._work_paths[ConstantValues.init_model_root],
+            metric_eval_used_flag=self._attributes_names.metric_eval_used_flag,
+            feature_configure_name=self._entity_names[ConstantValues.feature_configure_name],
+            label_encoding_path=feature_dict[ConstantValues.label_encoding_models_path],
+            metric_name=self._entity_names[ConstantValues.metric_name],
+            loss_name=self._entity_names[ConstantValues.loss_name],
+            task_name=self._attributes_names[ConstantValues.task_name],
+            supervised_selector_name=self._component_names[ConstantValues.supervised_feature_selector_name],
+            feature_selector_model_names=supervised_selector_model_names,
+            selector_trial_num=self._global_values[ConstantValues.selector_trial_num],
+            supervised_feature_selector_flag=supervised_feature_selector_flag,
+            supervised_selector_mode=self._global_values[ConstantValues.supervised_selector_mode],
+            improved_supervised_selector_name=self._component_names[
+                ConstantValues.improved_supervised_feature_selector_name],
+            improved_selector_configure_path=self._work_paths[ConstantValues.improved_selector_configure_path],
+            feature_model_trial=self._global_values[ConstantValues.feature_model_trial],
+            auto_ml_name=self._component_names[ConstantValues.auto_ml_name],
+            auto_ml_trial_num=self._global_values[ConstantValues.auto_ml_trial_num],
+            auto_ml_path=self._work_paths[ConstantValues.auto_ml_path],
+            opt_model_names=opt_model_names,
+            selector_configure_path=self._work_paths[ConstantValues.selector_configure_path]
+        )
 
-            if check_data(already_data_clear=self.already_data_clear, model_name=model) is not True:
-                continue
+        core_chain.run(**entity_dict)
+        local_metric = core_chain.optimal_metric
 
-            core_chain = CoreRoute(name="core_route",
-                                   train_flag=True,
-                                   model_name=model,
-                                   model_save_root=model_save_root,
-                                   model_config_root=model_config_root,
-                                   feature_config_root=feature_config_root,
-                                   target_feature_configure_path=feature_dict.final_feature_config,
-                                   pre_feature_configure_path=feature_dict.unsupervised_feature,
-                                   label_encoding_path=feature_dict.label_encoding_path,
-                                   model_type="tree_model",
-                                   metrics_name=self._metric_name,
-                                   task_type=self.task_type,
-                                   feature_selector_name="supervised_selector",
-                                   feature_selector_flag=supervised_feature_selector_flag,
-                                   auto_ml_type="auto_ml",
-                                   opt_model_names=self._opt_model_names,
-                                   auto_ml_path="/configure_files/automl_params",
-                                   selector_config_path="/configure_files/selector_params")
-
-            core_chain.run(**entity_dict)
-            local_metric = core_chain.optimal_metrics
-            local_model = core_chain.optimal_model
-
-            if best_model is None:
-                best_model = local_model
-            if best_metric is None:
-                best_metric = local_metric
-            if best_model_name is None:
-                best_model_name = model
-            if best_pipeline_config is None:
-                best_pipeline_config = pipeline_configure
-
-            if best_metric is None or best_metric.__cmp__(local_metric) < 0:
-                best_model = local_model
-                best_metric = local_metric
-                best_model_name = model
-                best_pipeline_config = pipeline_configure
-
-        return best_model, best_metric, work_root, pipeline_configure
+        assert local_metric is not None
+        return {"work_model_root": work_model_root,
+                "model_name": params.get(ConstantValues.model_name),
+                "increment_flag": False,
+                "metric_result": local_metric,
+                "final_file_path":
+                    feature_dict[ConstantValues.final_feature_configure]}
 
     def _run(self):
-        local_result = self.run_route(
-            folder_prefix_str="no-clear_feagen_no-unsupfeasel_no-supfeasel",
-            data_clear_flag=False,
-            feature_generator_flag=True,
-            unsupervised_feature_generator_flag=False,
-            supervised_feature_selector_flag=False,
-            model_zoo=["lightgbm"])
+        train_results = []
+        routes = self.__generate_route()
 
-        if local_result is not None:
-            self.update_best(*local_result)
+        for params in routes:
+            data_clear_flag, feature_generator_flag, unsupervised_feature_selector_flag, \
+                supervised_feature_selector_flag, supervised_selector_model_names, \
+                opt_model_names, model_name = params
 
-        local_result = self.run_route("clear_feagen_supfeasel_no-supfeasel", True, True, True, False, ["lightgbm"])
+            local_result = self._run_route(
+                data_clear_flag=data_clear_flag,
+                feature_generator_flag=feature_generator_flag,
+                unsupervised_feature_selector_flag=unsupervised_feature_selector_flag,
+                supervised_feature_selector_flag=supervised_feature_selector_flag,
+                supervised_selector_model_names=supervised_selector_model_names,
+                opt_model_names=opt_model_names,
+                model_name=model_name)
 
-        if local_result is not None:
-            self.update_best(*local_result)
+            if local_result is not None:
+                train_results.append(local_result)
+        self._find_best_result(train_results=train_results)
 
-        local_result = self.run_route("no-clear_feagen_supfeasel_supfeasel", False, True, True, True, ["lightgbm"])
+    def _find_best_result(self, train_results):
 
-        if local_result is not None:
-            self.update_best(*local_result)
+        best_result = {}
 
-        local_result = self.run_route("no-clear_no-feagen_no-supfeasel_no-supfeasel", False, False, False, False, ["lightgbm"])
+        if len(train_results) == 0:
+            raise NoResultReturnException("No model is trained successfully.")
 
-        if local_result is not None:
-            self.update_best(*local_result)
+        for result in train_results:
+            model_name = result.get(ConstantValues.model_name)
 
-        local_result = self.run_route("no-clear_no-feagen_no-supfeasel_supfeasel", False, False, False, True, ["lightgbm"])
+            if best_result.get(model_name) is None:
+                best_result[model_name] = result
+            else:
+                if result.get(ConstantValues.metric_result) is not None:
+                    if best_result.get(model_name).get(ConstantValues.metric_result).__cmp__(
+                            result.get(ConstantValues.metric_result)) < 0:
+                        best_result[model_name] = result
 
-        if local_result is not None:
-            self.update_best(*local_result)
+        for result in train_results:
+            result[ConstantValues.metric_result] = float(result.get(ConstantValues.metric_result).result)
+
+        self.__pipeline_configure.update(best_result)
+
+    def _set_pipeline_config(self):
+        feature_dict = EnvironmentConfigure.feature_dict()
+        yaml_dict = {}
+
+        if self.__pipeline_configure is not None:
+            yaml_dict.update(self.__pipeline_configure)
+
+        yaml_write(yaml_dict=yaml_dict,
+                   yaml_file=join(self._work_paths["work_root"], feature_dict.pipeline_configure))
+
+    @property
+    def pipeline_configure(self):
+        """
+        property method
+        :return: A dict of udf model graph configuration.
+        """
+        if self.__pipeline_configure is None:
+            raise RuntimeError("This pipeline has not start.")
+        return self.__pipeline_configure
+
+    @classmethod
+    def build_pipeline(cls, name: str, **params):
+        if name == ConstantValues.PreprocessRoute:
+            return PreprocessRoute(**params)
+        if name == ConstantValues.CoreRoute:
+            return CoreRoute(**params)
+
+    def __generate_route(self):
+        supervised_selector_model_names = self._global_values[ConstantValues.supervised_selector_model_names]
+        if not isinstance(supervised_selector_model_names, list):
+            raise TypeError(
+                "Value: supervised selector model names should be type of list, "
+                "but get {} instead.".format(
+                    supervised_selector_model_names)
+            )
+
+        opt_model_names = self._global_values[ConstantValues.opt_model_names]
+        if not isinstance(opt_model_names, list):
+            raise TypeError(
+                "Value: opt model names should be type of list, "
+                "but get {} instead.".format(
+                    opt_model_names)
+            )
+
+        data_clear_flag = self._flag_dict[ConstantValues.data_clear_flag]
+        if not isinstance(data_clear_flag, list):
+            raise TypeError(
+                "Value: data clear flag should be type of list, "
+                "but get {} instead.".format(
+                    data_clear_flag)
+            )
+
+        feature_generator_flag = self._flag_dict[ConstantValues.feature_generator_flag]
+        if not isinstance(feature_generator_flag, list):
+            raise TypeError(
+                "Value: feature generator flag should be type of list, "
+                "but get {} instead.".format(
+                    feature_generator_flag)
+            )
+
+        unsupervised_feature_selector_flag = self._flag_dict[ConstantValues.unsupervised_feature_selector_flag]
+        if not isinstance(unsupervised_feature_selector_flag, list):
+            raise TypeError(
+                "Value: unsupervised feature selector flag should be type of list, "
+                "but get {} instead.".format(
+                    unsupervised_feature_selector_flag)
+            )
+
+        supervised_feature_selector_flag = self._flag_dict[ConstantValues.supervised_feature_selector_flag]
+        if not isinstance(supervised_feature_selector_flag, list):
+            raise TypeError(
+                "Value: supervised feature selector flag should be type of list, "
+                "but get {} instead.".format(
+                    supervised_feature_selector_flag)
+            )
+
+        model_zoo = self._model_zoo
+        if not isinstance(model_zoo, list):
+            raise TypeError(
+                "Value: model zoo should be type of list, "
+                "but get {} instead.".format(
+                    model_zoo)
+            )
+
+        routes = itertools.product(
+            data_clear_flag,
+            feature_generator_flag,
+            unsupervised_feature_selector_flag,
+            supervised_feature_selector_flag,
+            supervised_selector_model_names,
+            opt_model_names,
+            model_zoo)
+        return routes

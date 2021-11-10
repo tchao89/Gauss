@@ -29,8 +29,8 @@ logger.info("work_root: %s", pipeline_dict.work_root)
 # optional: ["libsvm", "txt", "csv"]
 pipeline_dict.data_file_type = "csv"
 # increment dataset
-pipeline_dict.init_work_root = "/home/liangqian/Gauss/experiments/vfMd7U"
-pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/test_o/valid.csv"
+pipeline_dict.init_work_root = "/home/liangqian/Gauss/experiments/5tbK7n"
+pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/bank/bank.csv"
 # user must set a specific model for increment
 pipeline_dict.model_zoo = ["lightgbm"]
 pipeline_dict.increment_column_name_flag = True
@@ -51,7 +51,7 @@ def main(config=config_path):
     pipeline_configure.system_configure_root = "/home/liangqian/Gauss/configure_files"
     pipeline_configure.auto_ml_path = pipeline_configure.system_configure_root + "/" + "automl_params"
     pipeline_configure.selector_configure_path = pipeline_configure.system_configure_root + "/" + "selector_params"
-    system_config = yaml_read(pipeline_configure.system_configure_root + "/" + "system_config/dispatch_system_config.yaml")
+    system_config = yaml_read(pipeline_configure.system_configure_root + "/" + "system_config/system_config.yaml")
     system_config = Bunch(**system_config)
 
     increment_config = yaml_read(pipeline_configure.system_configure_root + "/" + "increment_params/increment_params.yaml")

@@ -104,7 +104,8 @@ class PlainTypeInference(BaseTypeInference):
         self.__remove_columns(dataset=entity[ConstantValues.infer_dataset])
         conf = yaml_read(yaml_file=self._final_file_path)
 
-        for col in entity["infer_dataset"].get_dataset().data.columns:
+        column_names = entity["infer_dataset"].get_dataset().data.columns
+        for col in column_names:
             assert col in list(conf)
 
     def __string_column_selector(self, feature_name: str):
@@ -300,7 +301,9 @@ class PlainTypeInference(BaseTypeInference):
             for item in feature_dict.keys():
                 feature_name = feature_dict[item].name
                 if feature_name not in feature_names:
-                    raise ValueError("Features:{} in feature configure is not consistent with features in dataset.".format(feature_name))
+                    raise ValueError(
+                        "Features:{} in feature configure is not consistent with features in dataset.".format(
+                            feature_name))
                 used_flag = feature_dict[item].used
                 if not used_flag:
                     data.drop([feature_name], axis=1, inplace=True)

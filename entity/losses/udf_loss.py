@@ -80,8 +80,8 @@ class BinaryLogLoss(BaseLoss):
         return LossResult(name="loss_result", result=loss_dict)
 
     @classmethod
-    def _log_loss(cls, prob, label):
-        prob = special.expit(prob)
+    def _log_loss(cls, score, label):
+        prob = special.expit(score)
         loss = np.sum(- label * np.log(prob) - (1 - label) * np.log(1 - prob))
         grad = prob - label
         hess = prob * (1 - prob)

@@ -58,53 +58,53 @@ class BaseModelingGraph:
             feature_configure_path=params[ConstantValues.feature_configure_path],
             auto_ml_path=params[ConstantValues.auto_ml_path],
             selector_configure_path=params[ConstantValues.selector_configure_path],
-            improved_selector_configure_path=params["improved_selector_configure_path"],
-            init_model_root=params["init_model_root"]
+            improved_selector_configure_path=params[ConstantValues.improved_selector_configure_path],
+            init_model_root=params[ConstantValues.init_model_root]
         )
 
         self._entity_names = Bunch(
-            dataset_name=params["dataset_name"],
-            metric_name=params["metric_name"],
+            dataset_name=params[ConstantValues.dataset_name],
+            metric_name=params[ConstantValues.metric_name],
             loss_name=params[ConstantValues.loss_name],
-            feature_configure_name=params["feature_configure_name"]
+            feature_configure_name=params[ConstantValues.feature_configure_name]
         )
 
         self._component_names = Bunch(
-            type_inference_name=params["type_inference_name"],
-            data_clear_name=params["data_clear_name"],
-            label_encoder_name=params["label_encoder_name"],
-            feature_generator_name=params["feature_generator_name"],
-            unsupervised_feature_selector_name=params["unsupervised_feature_selector_name"],
-            supervised_feature_selector_name=params["supervised_feature_selector_name"],
-            improved_supervised_feature_selector_name=params["improved_supervised_feature_selector_name"],
-            auto_ml_name=params["auto_ml_name"]
+            type_inference_name=params[ConstantValues.type_inference_name],
+            data_clear_name=params[ConstantValues.data_clear_name],
+            label_encoder_name=params[ConstantValues.label_encoder_name],
+            feature_generator_name=params[ConstantValues.feature_generator_name],
+            unsupervised_feature_selector_name=params[ConstantValues.unsupervised_feature_selector_name],
+            supervised_feature_selector_name=params[ConstantValues.supervised_feature_selector_name],
+            improved_supervised_feature_selector_name=params[ConstantValues.improved_supervised_feature_selector_name],
+            auto_ml_name=params[ConstantValues.auto_ml_name]
         )
 
         self._global_values = Bunch(
             dataset_weight_dict=params[ConstantValues.dataset_weight_dict],
-            use_weight_flag=params["use_weight_flag"],
-            weight_column_name=params["weight_column_name"],
-            train_column_name_flag=params["train_column_name_flag"],
-            val_column_name_flag=params["val_column_name_flag"],
-            data_file_type=params["data_file_type"],
-            selector_trial_num=params["selector_trial_num"],
-            auto_ml_trial_num=params["auto_ml_trial_num"],
-            opt_model_names=params["opt_model_names"],
-            supervised_selector_mode=params["supervised_selector_mode"],
-            feature_model_trial=params["feature_model_trial"],
-            supervised_selector_model_names=params["supervised_selector_model_names"]
+            use_weight_flag=params[ConstantValues.use_weight_flag],
+            weight_column_name=params[ConstantValues.weight_column_name],
+            train_column_name_flag=params[ConstantValues.train_column_name_flag],
+            val_column_name_flag=params[ConstantValues.val_column_name_flag],
+            data_file_type=params[ConstantValues.data_file_type],
+            selector_trial_num=params[ConstantValues.selector_trial_num],
+            auto_ml_trial_num=params[ConstantValues.auto_ml_trial_num],
+            opt_model_names=params[ConstantValues.opt_model_names],
+            supervised_selector_mode=params[ConstantValues.supervised_selector_mode],
+            feature_model_trial=params[ConstantValues.feature_model_trial],
+            supervised_selector_model_names=params[ConstantValues.supervised_selector_model_names]
         )
 
         self._flag_dict = Bunch(
-            data_clear_flag=params["data_clear_flag"],
-            label_encoder_flag=params["label_encoder_flag"],
-            feature_generator_flag=params["feature_generator_flag"],
-            unsupervised_feature_selector_flag=params["unsupervised_feature_selector_flag"],
-            supervised_feature_selector_flag=params["supervised_feature_selector_flag"]
+            data_clear_flag=params[ConstantValues.data_clear_flag],
+            label_encoder_flag=params[ConstantValues.label_encoder_flag],
+            feature_generator_flag=params[ConstantValues.feature_generator_flag],
+            unsupervised_feature_selector_flag=params[ConstantValues.unsupervised_feature_selector_flag],
+            supervised_feature_selector_flag=params[ConstantValues.supervised_feature_selector_flag]
         )
 
         self._already_data_clear = None
-        self._model_need_clear_flag = params["model_need_clear_flag"]
+        self._model_need_clear_flag = params[ConstantValues.model_need_clear_flag]
         self._pipeline_configure = None
 
     @abc.abstractmethod
@@ -150,3 +150,6 @@ class BaseModelingGraph:
         :return: dict
         """
         return self._pipeline_configure
+
+    def __generate_work_path(self):
+        pass

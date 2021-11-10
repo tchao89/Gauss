@@ -72,7 +72,6 @@ class PreprocessRoute(Component):
 
         self._data_file_type = params[ConstantValues.data_file_type]
         self._dataset_name = params[ConstantValues.dataset_name]
-        self._dataset_weight_dict = params[ConstantValues.dataset_weight_dict]
 
         if self._task_name == ConstantValues.regression:
             label_encoder_params = Bunch(
@@ -100,6 +99,7 @@ class PreprocessRoute(Component):
         if self._train_flag == ConstantValues.train:
             self._target_names = params[ConstantValues.target_names]
             self._use_weight_flag = params[ConstantValues.use_weight_flag]
+            self._dataset_weight_dict = params[ConstantValues.dataset_weight_dict]
             self._weight_column_name = params[ConstantValues.weight_column_name]
             self._train_column_name_flag = params[ConstantValues.train_column_name_flag]
             self._val_column_name_flag = params[ConstantValues.val_column_name_flag]
@@ -346,7 +346,7 @@ class PreprocessRoute(Component):
         assert self._train_flag is ConstantValues.inference
 
         dataset_params = Bunch(
-            name=ConstantValues.increment_dataset,
+            name=ConstantValues.infer_dataset,
             task_name=self._task_name,
             data_pair=None,
             data_path=self._inference_data_path,
@@ -354,11 +354,11 @@ class PreprocessRoute(Component):
             column_name_flag=self._inference_column_name_flag,
             memory_only=True
         )
-        test_dataset = self.create_entity(
+        infer_dataset = self.create_entity(
             entity_name=self._dataset_name,
             **dataset_params
         )
-        entity_dict["infer_dataset"] = test_dataset
+        entity_dict[ConstantValues.infer_dataset] = infer_dataset
 
         self.type_inference.run(**entity_dict)
         # 数据清洗
