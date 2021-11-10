@@ -100,7 +100,6 @@ class GaussLightgbm(ModelWrapper):
         # including data, target, feature_names, target_names, generated_feature_names.
         assert isinstance(dataset_bunch.data, pd.DataFrame)
         if train_flag == ConstantValues.train or train_flag == ConstantValues.increment:
-            target_names = dataset_bunch.target_names[0]
             data_shape = dataset_bunch.data.shape
             label_shape = dataset_bunch.target.shape
             logger.info("Data shape: {}, label shape: {}".format(data_shape, label_shape))
@@ -179,7 +178,7 @@ class GaussLightgbm(ModelWrapper):
         train_label_num = len(train_label_set)
         eval_label_num = len(eval_label_set)
 
-        assert train_label_num == eval_label_num and train_label_num == 2 and eval_label_num == 2, \
+        assert train_label_num == eval_label_num and train_label_num == 2, \
             "Set of train label is: {}, length: {}, validation label is {}, length is {}, " \
             "and binary classification can not be used.".format(
                 train_label_set, train_label_num, eval_label_set, eval_label_num

@@ -134,12 +134,74 @@ class AutoModelingGraph(BaseModelingGraph):
              }
 
     def _run_route(self, **params):
-        assert isinstance(self._flag_dict[ConstantValues.data_clear_flag], bool) and \
-               isinstance(self._flag_dict[ConstantValues.feature_generator_flag], bool) and \
-               isinstance(self._flag_dict[ConstantValues.unsupervised_feature_selector_flag], bool) and \
-               isinstance(self._flag_dict[ConstantValues.supervised_feature_selector_flag], bool)
+        data_clear_flag = params[ConstantValues.data_clear_flag]
+        if not isinstance(data_clear_flag, bool):
+            raise TypeError(
+                "Value: data clear flag should be type of bool, "
+                "but get {} instead.".format(
+                    data_clear_flag)
+            )
 
-        dispatch_model_root = join(self._work_paths[ConstantValues.work_root], params[ConstantValues.model_name])
+        feature_generator_flag = params[ConstantValues.feature_generator_flag]
+        if not isinstance(feature_generator_flag, bool):
+            raise TypeError(
+                "Value: feature generator flag should be type of bool, "
+                "but get {} instead.".format(
+                    feature_generator_flag)
+            )
+
+        unsupervised_feature_selector_flag = params[ConstantValues.unsupervised_feature_selector_flag]
+        if not isinstance(unsupervised_feature_selector_flag, bool):
+            raise TypeError(
+                "Value: unsupervised feature selector flag should be type of bool, "
+                "but get {} instead.".format(
+                    unsupervised_feature_selector_flag)
+            )
+
+        supervised_feature_selector_flag = params[ConstantValues.supervised_feature_selector_flag]
+        if not isinstance(supervised_feature_selector_flag, bool):
+            raise TypeError(
+                "Value: supervised feature selector flag should be type of bool, "
+                "but get {} instead.".format(
+                    supervised_feature_selector_flag)
+            )
+
+        supervised_selector_model_names = params[ConstantValues.supervised_selector_model_names]
+        if not isinstance(supervised_selector_model_names, str):
+            raise TypeError(
+                "Value: data clear flag should be type of bool, "
+                "but get {} instead.".format(
+                    data_clear_flag)
+            )
+
+        opt_model_names = params[ConstantValues.opt_model_names]
+        if not isinstance(opt_model_names, str):
+            raise TypeError(
+                "Value: opt model names should be type of bool, "
+                "but get {} instead.".format(
+                    opt_model_names)
+            )
+
+        model_name = params[ConstantValues.model_name]
+        if not isinstance(model_name, str):
+            raise TypeError(
+                "Value: model name should be type of bool, "
+                "but get {} instead.".format(
+                    model_name)
+            )
+
+        folder_name = "_".join([str(data_clear_flag),
+                               str(feature_generator_flag),
+                               str(unsupervised_feature_selector_flag),
+                               str(supervised_feature_selector_flag),
+                               str(supervised_selector_model_names),
+                               opt_model_names,
+                               model_name])
+
+        supervised_selector_model_names = [supervised_selector_model_names]
+        opt_model_names = [opt_model_names]
+
+        dispatch_model_root = join(self._work_paths[ConstantValues.work_root], folder_name)
         work_feature_root = join(dispatch_model_root, ConstantValues.feature)
         feature_dict = EnvironmentConfigure.feature_dict()
 
@@ -208,14 +270,14 @@ class AutoModelingGraph(BaseModelingGraph):
             dataset_name=self._entity_names[ConstantValues.dataset_name],
             type_inference_name=self._component_names[ConstantValues.type_inference_name],
             data_clear_name=self._component_names[ConstantValues.data_clear_name],
-            data_clear_flag=self._flag_dict[ConstantValues.data_clear_flag],
+            data_clear_flag=data_clear_flag,
             label_encoder_name=self._component_names[ConstantValues.label_encoder_name],
             label_encoder_flag=self._flag_dict[ConstantValues.label_encoder_flag],
             feature_generator_name=self._component_names[ConstantValues.feature_generator_name],
-            feature_generator_flag=self._flag_dict[ConstantValues.feature_generator_flag],
+            feature_generator_flag=feature_generator_flag,
             unsupervised_feature_selector_name=self._component_names[
                 ConstantValues.unsupervised_feature_selector_name],
-            unsupervised_feature_selector_flag=self._flag_dict[ConstantValues.unsupervised_feature_selector_flag]
+            unsupervised_feature_selector_flag=unsupervised_feature_selector_flag
         )
 
         try:
@@ -228,7 +290,6 @@ class AutoModelingGraph(BaseModelingGraph):
 
         assert params.get(ConstantValues.model_name) is not None
         # 如果未进行数据清洗, 并且模型需要数据清洗, 则返回None.
-        model_name = (params.get(ConstantValues.model_name))
         if check_data(already_data_clear=self._already_data_clear,
                       model_need_clear_flag=self._model_need_clear_flag.get(model_name)) is not True:
             return None
@@ -241,7 +302,7 @@ class AutoModelingGraph(BaseModelingGraph):
             model_root_path=work_model_root,
             target_feature_configure_path=feature_dict[ConstantValues.final_feature_configure],
             pre_feature_configure_path=feature_dict[ConstantValues.unsupervised_feature_path],
-            model_name=params[ConstantValues.model_name],
+            model_name=model_name,
             init_model_root=self._work_paths[ConstantValues.init_model_root],
             metric_eval_used_flag=self._attributes_names.metric_eval_used_flag,
             feature_configure_name=self._entity_names[ConstantValues.feature_configure_name],
@@ -250,9 +311,9 @@ class AutoModelingGraph(BaseModelingGraph):
             loss_name=self._entity_names[ConstantValues.loss_name],
             task_name=self._attributes_names[ConstantValues.task_name],
             supervised_selector_name=self._component_names[ConstantValues.supervised_feature_selector_name],
-            feature_selector_model_names=self._global_values[ConstantValues.supervised_selector_model_names],
+            feature_selector_model_names=supervised_selector_model_names,
             selector_trial_num=self._global_values[ConstantValues.selector_trial_num],
-            supervised_feature_selector_flag=self._flag_dict[ConstantValues.supervised_feature_selector_flag],
+            supervised_feature_selector_flag=supervised_feature_selector_flag,
             supervised_selector_mode=self._global_values[ConstantValues.supervised_selector_mode],
             improved_supervised_selector_name=self._component_names[
                 ConstantValues.improved_supervised_feature_selector_name],
@@ -261,12 +322,13 @@ class AutoModelingGraph(BaseModelingGraph):
             auto_ml_name=self._component_names[ConstantValues.auto_ml_name],
             auto_ml_trial_num=self._global_values[ConstantValues.auto_ml_trial_num],
             auto_ml_path=self._work_paths[ConstantValues.auto_ml_path],
-            opt_model_names=self._global_values[ConstantValues.opt_model_names],
+            opt_model_names=opt_model_names,
             selector_configure_path=self._work_paths[ConstantValues.selector_configure_path]
         )
 
         core_chain.run(**entity_dict)
         local_metric = core_chain.optimal_metric
+
         assert local_metric is not None
         return {"work_model_root": work_model_root,
                 "model_name": params.get(ConstantValues.model_name),
@@ -277,13 +339,25 @@ class AutoModelingGraph(BaseModelingGraph):
 
     def _run(self):
         train_results = []
+        routes = self.__generate_route()
 
-        for model in self._model_zoo:
-            local_result = self._run_route(model_name=model)
+        for params in routes:
+            data_clear_flag, feature_generator_flag, unsupervised_feature_selector_flag, \
+                supervised_feature_selector_flag, supervised_selector_model_names, \
+                opt_model_names, model_name = params
+
+            local_result = self._run_route(
+                data_clear_flag=data_clear_flag,
+                feature_generator_flag=feature_generator_flag,
+                unsupervised_feature_selector_flag=unsupervised_feature_selector_flag,
+                supervised_feature_selector_flag=supervised_feature_selector_flag,
+                supervised_selector_model_names=supervised_selector_model_names,
+                opt_model_names=opt_model_names,
+                model_name=model_name)
 
             if local_result is not None:
                 train_results.append(local_result)
-            self._find_best_result(train_results=train_results)
+        self._find_best_result(train_results=train_results)
 
     def _find_best_result(self, train_results):
 
@@ -336,4 +410,68 @@ class AutoModelingGraph(BaseModelingGraph):
             return CoreRoute(**params)
 
     def __generate_route(self):
-        supervised_selector_model_names = self._supervised_selector_model_names
+        supervised_selector_model_names = self._global_values[ConstantValues.supervised_selector_model_names]
+        if not isinstance(supervised_selector_model_names, list):
+            raise TypeError(
+                "Value: supervised selector model names should be type of list, "
+                "but get {} instead.".format(
+                    supervised_selector_model_names)
+            )
+
+        opt_model_names = self._global_values[ConstantValues.opt_model_names]
+        if not isinstance(opt_model_names, list):
+            raise TypeError(
+                "Value: opt model names should be type of list, "
+                "but get {} instead.".format(
+                    opt_model_names)
+            )
+
+        data_clear_flag = self._flag_dict[ConstantValues.data_clear_flag]
+        if not isinstance(data_clear_flag, list):
+            raise TypeError(
+                "Value: data clear flag should be type of list, "
+                "but get {} instead.".format(
+                    data_clear_flag)
+            )
+
+        feature_generator_flag = self._flag_dict[ConstantValues.feature_generator_flag]
+        if not isinstance(feature_generator_flag, list):
+            raise TypeError(
+                "Value: feature generator flag should be type of list, "
+                "but get {} instead.".format(
+                    feature_generator_flag)
+            )
+
+        unsupervised_feature_selector_flag = self._flag_dict[ConstantValues.unsupervised_feature_selector_flag]
+        if not isinstance(unsupervised_feature_selector_flag, list):
+            raise TypeError(
+                "Value: unsupervised feature selector flag should be type of list, "
+                "but get {} instead.".format(
+                    unsupervised_feature_selector_flag)
+            )
+
+        supervised_feature_selector_flag = self._flag_dict[ConstantValues.supervised_feature_selector_flag]
+        if not isinstance(supervised_feature_selector_flag, list):
+            raise TypeError(
+                "Value: supervised feature selector flag should be type of list, "
+                "but get {} instead.".format(
+                    supervised_feature_selector_flag)
+            )
+
+        model_zoo = self._model_zoo
+        if not isinstance(model_zoo, list):
+            raise TypeError(
+                "Value: model zoo should be type of list, "
+                "but get {} instead.".format(
+                    model_zoo)
+            )
+
+        routes = itertools.product(
+            data_clear_flag,
+            feature_generator_flag,
+            unsupervised_feature_selector_flag,
+            supervised_feature_selector_flag,
+            supervised_selector_model_names,
+            opt_model_names,
+            model_zoo)
+        return routes

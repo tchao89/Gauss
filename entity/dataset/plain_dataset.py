@@ -32,7 +32,6 @@ class PlaintextDataset(BaseDataset):
     Features of current dataset can be eliminated by `feature_choose()` function, both index and
     feature name are accepted.
     """
-
     def __init__(self, **params):
         """
         Two kinds of raw data supported:
@@ -204,7 +203,6 @@ class PlaintextDataset(BaseDataset):
         count = 0
         proportion_dict = {}
         label_class_dict = {}
-
         for index, value in target[target_names].value_counts().iteritems():
             proportion_dict[index] = value
             count += 1

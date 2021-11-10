@@ -6,6 +6,7 @@ Authors: Lab
 """
 import argparse
 import os.path
+import itertools
 
 from jinja2 import Template
 
@@ -19,7 +20,7 @@ class DispatchTasks:
     def __init__(self,
                  user_configure_path: str = None,
                  system_configure_path: str = None):
-        self.__tmpl_fun = """
+        self.__udf_tmpl_fun = """
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2021, Citic-Lab. All rights reserved.
@@ -36,6 +37,29 @@ def {{fun}}(name="udf", user_configure=None, system_configure=None):
     model_graph = UdfModelingGraph(name=name,
                                    user_configure=user_configure,
                                    system_configure=system_configure)
+
+    model_graph.run()
+
+
+{{fun}}()
+        """
+        self.__auto_tmpl_fun = """
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2021, Citic-Lab. All rights reserved.
+# Authors: Lab
+from pipeline.dispatch_pipeline.dispatch_auto_modeling_graph import AutoModelingGraph
+
+def {{fun}}(name="udf", user_configure=None, system_configure=None):
+    if user_configure is None:
+        user_configure = {{user_configure}}
+
+    if system_configure is None:
+        system_configure = {{system_configure}}
+
+    model_graph = AutoModelingGraph(name=name,
+                                    user_configure=user_configure,
+                                    system_configure=system_configure)
 
     model_graph.run()
 
@@ -81,7 +105,80 @@ def {{fun}}(name="udf", user_configure=None, system_configure=None):
         self.__generated_dispatch_configure()
 
     def __auto_dispatch(self, user_configure, system_configure):
-        raise ValueError("If train mode is `auto`, dispatch method can not be used.")
+        docker_num= 0
+
+        self.__main_id = os.path.split(user_configure[ConstantValues.work_root])[1]
+        self.__work_space = os.path.split(user_configure[ConstantValues.work_root])[0]
+
+        generated_ids = []
+        data_clear_flag = user_configure.data_clear_flag
+        feature_generator_flag = user_configure.feature_generator_flag
+        unsupervised_feature_selector_flag = user_configure.unsupervised_feature_selector_flag
+        supervised_feature_selector_flag = user_configure.supervised_feature_selector_flag
+        supervised_selector_model_names = system_configure.supervised_selector_model_names
+        opt_model_names = system_configure.opt_model_names
+        model_zoo = user_configure.model_zoo
+
+        routes = self.__auto_generate_route(data_clear_flag=data_clear_flag,
+                                            feature_generator_flag=feature_generator_flag,
+                                            unsupervised_feature_selector_flag=unsupervised_feature_selector_flag,
+                                            supervised_feature_selector_flag=supervised_feature_selector_flag,
+                                            supervised_selector_model_names=supervised_selector_model_names,
+                                            opt_model_names=opt_model_names,
+                                            model_zoo=model_zoo)
+        for params in routes:
+            data_clear_flag, feature_generator_flag, unsupervised_feature_selector_flag, \
+                supervised_feature_selector_flag, supervised_selector_model_names, \
+                opt_model_names, model_name = params
+
+            if data_clear_flag is False and feature_generator_flag is True:
+                continue
+
+            if feature_generator_flag is True and unsupervised_feature_selector_flag is False:
+                continue
+
+            if feature_generator_flag is True and supervised_feature_selector_flag is False:
+                continue
+
+            folder_name = "_".join([str(data_clear_flag),
+                                    str(feature_generator_flag),
+                                    str(unsupervised_feature_selector_flag),
+                                    str(supervised_feature_selector_flag),
+                                    str(supervised_selector_model_names),
+                                    opt_model_names,
+                                    model_name])
+
+            generated_id = self.__main_id + "-" + folder_name
+            generated_ids.append(generated_id)
+
+            temp_work_root = os.path.join(self.__work_space, generated_id)
+            user_configure[ConstantValues.work_root] = temp_work_root
+            user_configure[ConstantValues.data_clear_flag] = data_clear_flag
+            user_configure[ConstantValues.feature_generator_flag] = feature_generator_flag
+            user_configure[ConstantValues.unsupervised_feature_selector_flag] = unsupervised_feature_selector_flag
+            user_configure[ConstantValues.supervised_feature_selector_flag] = supervised_feature_selector_flag
+            system_configure[ConstantValues.supervised_selector_model_names] = supervised_selector_model_names
+            system_configure[ConstantValues.opt_model_names] = opt_model_names
+            system_configure[ConstantValues.model_name] = model_name
+
+            train_func = self.__render(self.__auto_tmpl_fun,
+                                       fun="main_train",
+                                       user_configure=user_configure,
+                                       system_configure=system_configure)
+
+            self.__save(code_text=train_func, filename="./dispatch_methods/" + generated_id + ".py")
+            docker_num += 1
+
+        if docker_num <= 0:
+            raise ValueError("Value: docker_num is {}, but it should be more than zero.".format(docker_num))
+
+        if docker_num <= 0:
+            raise ValueError("Value: docker_num is {}, but it should be more than zero.".format(docker_num))
+
+        self.__dispatch_configure.docker_num = docker_num
+        self.__dispatch_configure.generated_ids = generated_ids
+        self.__dispatch_configure.main_id = self.__main_id
+        self.__dispatch_configure.work_space = self.__work_space
 
     def __udf_dispatch(self, user_configure, system_configure):
         self.__main_id = os.path.split(user_configure[ConstantValues.work_root])[1]
@@ -105,7 +202,7 @@ def {{fun}}(name="udf", user_configure=None, system_configure=None):
                 temp_work_root = os.path.join(self.__work_space, generated_id)
                 user_configure[ConstantValues.work_root] = temp_work_root
 
-                train_func = self.__render(self.__tmpl_fun,
+                train_func = self.__render(self.__udf_tmpl_fun,
                                            fun="main_train",
                                            user_configure=user_configure,
                                            system_configure=system_configure[system_key])
@@ -141,6 +238,74 @@ def {{fun}}(name="udf", user_configure=None, system_configure=None):
                 f.write(p)
             f.write("\n")
 
+    @classmethod
+    def __auto_generate_route(cls, **params):
+        supervised_selector_model_names = params[ConstantValues.supervised_selector_model_names]
+        if not isinstance(supervised_selector_model_names, list):
+            raise TypeError(
+                "Value: supervised selector model names should be type of list, "
+                "but get {} instead.".format(
+                    supervised_selector_model_names)
+            )
+
+        opt_model_names = params[ConstantValues.opt_model_names]
+        if not isinstance(opt_model_names, list):
+            raise TypeError(
+                "Value: opt model names should be type of list, "
+                "but get {} instead.".format(
+                    opt_model_names)
+            )
+
+        data_clear_flag = params[ConstantValues.data_clear_flag]
+        if not isinstance(data_clear_flag, list):
+            raise TypeError(
+                "Value: data clear flag should be type of list, "
+                "but get {} instead.".format(
+                    data_clear_flag)
+            )
+
+        feature_generator_flag = params[ConstantValues.feature_generator_flag]
+        if not isinstance(feature_generator_flag, list):
+            raise TypeError(
+                "Value: feature generator flag should be type of list, "
+                "but get {} instead.".format(
+                    feature_generator_flag)
+            )
+
+        unsupervised_feature_selector_flag = params[ConstantValues.unsupervised_feature_selector_flag]
+        if not isinstance(unsupervised_feature_selector_flag, list):
+            raise TypeError(
+                "Value: unsupervised feature selector flag should be type of list, "
+                "but get {} instead.".format(
+                    unsupervised_feature_selector_flag)
+            )
+
+        supervised_feature_selector_flag = params[ConstantValues.supervised_feature_selector_flag]
+        if not isinstance(supervised_feature_selector_flag, list):
+            raise TypeError(
+                "Value: supervised feature selector flag should be type of list, "
+                "but get {} instead.".format(
+                    supervised_feature_selector_flag)
+            )
+
+        model_zoo = params["model_zoo"]
+        if not isinstance(model_zoo, list):
+            raise TypeError(
+                "Value: model zoo should be type of list, "
+                "but get {} instead.".format(
+                    model_zoo)
+            )
+
+        routes = itertools.product(
+            data_clear_flag,
+            feature_generator_flag,
+            unsupervised_feature_selector_flag,
+            supervised_feature_selector_flag,
+            supervised_selector_model_names,
+            opt_model_names,
+            model_zoo)
+        return routes
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("configure-file")
@@ -148,6 +313,6 @@ if __name__ == "__main__":
                         help="config file")
 
     args = parser.parse_args()
-    dispatch_task = DispatchTasks(user_configure_path="/home/liangqian/Gauss/experiments/h95Mhl/train_user_config.yaml",
-                                  system_configure_path="/home/liangqian/Gauss/configure_files/dispatch_system_config/dispatch_system_config.yaml")
+    dispatch_task = DispatchTasks(user_configure_path="/home/liangqian/Gauss/experiments/qX8GxT/train_user_config.yaml",
+                                  system_configure_path="/home/liangqian/Gauss/configure_files/system_config/system_config.yaml")
     dispatch_task.run()

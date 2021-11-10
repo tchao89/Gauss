@@ -56,7 +56,7 @@ class PlainDataClear(BaseDataClear):
         logger.info("Data clear component flag: " + str(self._enable))
         if self._enable is True:
             self._already_data_clear = True
-            assert "train_dataset" in entity.keys()
+            assert ConstantValues.train_dataset in entity.keys()
             logger.info("Running clean() method and clearing, " + "with current memory usage: %.2f GiB",
                         get_current_memory_gb()["memory_usage"])
             self._clean(dataset=entity["train_dataset"])
