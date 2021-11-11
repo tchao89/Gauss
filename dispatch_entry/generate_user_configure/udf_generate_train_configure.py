@@ -63,6 +63,6 @@ pipeline_dict.unsupervised_feature_selector_flag = False
 pipeline_dict.supervised_feature_selector_flag = False
 user_config_path = environ_configure.work_root + "/train_user_config.yaml"
 yaml_write(yaml_dict=dict(pipeline_dict), yaml_file=user_config_path)
-system_config_path = "/home/liangqian/Gauss/configure_files/dispatch_system_config/dispatch_system_config.yaml"
+system_config_path = "/home/liangqian/Gauss/configure_files/system_config/system_config.yaml"
 print(system_config_path)
 print(user_config_path)

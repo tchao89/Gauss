@@ -305,10 +305,12 @@ class UdfModelingGraph(BaseModelingGraph):
                             result.get(ConstantValues.metric_result)) < 0:
                         best_result[model_name] = result
 
+        # this code will change metric result object to metric value.
         for result in train_results:
             result[ConstantValues.metric_result] = float(result.get(ConstantValues.metric_result).result)
 
-        self.__pipeline_configure.update(best_result)
+        model_dict = {ConstantValues.model: best_result}
+        self.__pipeline_configure.update(model_dict)
 
     def _set_pipeline_config(self):
         feature_dict = EnvironmentConfigure.feature_dict()

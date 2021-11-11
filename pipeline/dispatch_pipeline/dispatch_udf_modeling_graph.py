@@ -140,7 +140,8 @@ class UdfModelingGraph(BaseModelingGraph):
                isinstance(self._flag_dict[ConstantValues.unsupervised_feature_selector_flag], bool) and \
                isinstance(self._flag_dict[ConstantValues.supervised_feature_selector_flag], bool)
 
-        work_feature_root = join(self._work_paths[ConstantValues.work_root], ConstantValues.feature)
+        dispatch_model_root = join(self._work_paths[ConstantValues.work_root], params[ConstantValues.model_name])
+        work_feature_root = join(dispatch_model_root, ConstantValues.feature)
         feature_dict = EnvironmentConfigure.feature_dict()
 
         feature_dict = \
@@ -179,8 +180,8 @@ class UdfModelingGraph(BaseModelingGraph):
              }
 
         work_model_root = join(
-            join(self._work_paths[ConstantValues.work_root], ConstantValues.model),
-            params.get(ConstantValues.model_name)
+            dispatch_model_root,
+            ConstantValues.model
         )
         feature_configure_root = join(work_model_root, ConstantValues.feature_configure)
         feature_dict[ConstantValues.final_feature_configure] = join(
@@ -294,17 +295,18 @@ class UdfModelingGraph(BaseModelingGraph):
 
             if best_result.get(model_name) is None:
                 best_result[model_name] = result
-
             else:
                 if result.get(ConstantValues.metric_result) is not None:
                     if best_result.get(model_name).get(ConstantValues.metric_result).__cmp__(
                             result.get(ConstantValues.metric_result)) < 0:
                         best_result[model_name] = result
-
+        # this code will change metric result object to metric value.
         for result in train_results:
+            result[ConstantValues.optimize_mode] = result.get(ConstantValues.metric_result).optimize_mode
             result[ConstantValues.metric_result] = float(result.get(ConstantValues.metric_result).result)
 
-        self.__pipeline_configure.update(best_result)
+        model_dict = {ConstantValues.model: best_result}
+        self.__pipeline_configure.update(model_dict)
 
     def _set_pipeline_config(self):
         feature_dict = EnvironmentConfigure.feature_dict()

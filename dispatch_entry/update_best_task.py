@@ -9,16 +9,29 @@ import shutil
 
 from gauss_factory.gauss_factory_producer import GaussFactoryProducer
 from utils.base import mkdir
+from utils.bunch import Bunch
+from utils.constant_values import ConstantValues
 from utils.yaml_exec import yaml_read, yaml_write
 
 
-class UpdateBest:
+class UpdateBestApplication:
     def __init__(self, main_work_root):
         self.__main_work_root = main_work_root
         self.__dispatch_file_name = "dispatch_configure.yaml"
-
+        self.__train_user_configure_file_name = "train_user_config.yaml"
+        self.__pipeline_configure_file_name = "pipeline_configure.yaml"
         self.__dispatch_configure = None
+        self.__train_user_configure = None
         self.__model_zoo = None
+        self.__metric_name = None
+        self.__metric_value = None
+        self.__optimize_mode = None
+        self.__work_space = None
+        self.__generated_ids = None
+        self.__model_num = 0
+        self.__docker_num = 0
+
+        self.__evaluate_result = Bunch()
 
     def run(self):
         """
@@ -27,36 +40,84 @@ class UpdateBest:
         And finally, this method will reconstruct main work root.
         :return: None
         """
-        pass
+        self.__load_dispatch_configure()
+        self.__load_train_user_configure()
+
+        if self.__metric_name is not None:
+            metric_params = Bunch(name=self.__metric_name)
+            metric = self.__create_entity(entity_name=self.__metric_name,
+                                          **metric_params)
+        else:
+            raise TypeError(
+                "Value: metric name should be type of str, but get {} instead.".format(
+                    self.__metric_name))
+
+        for generated_id in self.__generated_ids:
+            pipeline_configure = self.__load_pipeline_configure(generated_id)
+            model_name = pipeline_configure.model.keys()[0]
+            model_dict = pipeline_configure[ConstantValues.model][model_name]
+            if model_name in self.__model_zoo:
+                metric_result = metric.reconstruct(metric_value=model_dict[ConstantValues.metric_result])
+                if self.__evaluate_result.get(model_name) is None:
+                    self.__evaluate_result[model_name] = {"metric_result": metric_result, "id": generated_id}
+                else:
+                    if self.__evaluate_result.get(model_name).get(ConstantValues.metric_result).__cmp__(
+                            metric_result) < 0:
+                        self.__evaluate_result[model_name] = {"metric_result": metric_result, "id": generated_id}
+            else:
+                raise ValueError("Value: {} is not in model zoo.".format(model_name))
+
+        for model_name in self.__evaluate_result.keys():
+            eval_dict = self.__evaluate_result[model_name]
+
+            generated_id = eval_dict["id"]
+            pipeline_configure = self.__load_pipeline_configure(generated_id)
+
+            folder_path = os.path.join(self.__work_space, generated_id)
+            folder_path = os.path.join(folder_path, model_name)
+
+            yaml_write(yaml_dict=pipeline_configure,
+                       yaml_file=os.path.join(folder_path, self.__pipeline_configure_file_name))
+            self.__copy_folder(source_path=folder_path, target_path=self.__main_work_root)
+            self.__reconstruct_folder(folder=os.path.join(self.__main_work_root, model_name),
+                                      init_prefix=generated_id)
+        self.__delete_generated_folder()
 
     def __load_dispatch_configure(self):
         """
-        Get generated ids.
-        :return:
+        Load dispatch configure and get generated ids.
+        :return: None
         """
         self.__dispatch_configure = yaml_read(
             os.path.join(self.__main_work_root,
                          self.__dispatch_file_name))
+        self.__docker_num = self.__dispatch_configure["docker_num"]
+        self.__generated_ids = self.__dispatch_configure["generated_ids"]
+        self.__work_space = self.__dispatch_configure["work_space"]
 
     def __load_train_user_configure(self):
         """
         Get model zoo value.
         :return:
         """
-        pass
+        file_path = os.path.join(self.__main_work_root,
+                                 self.__train_user_configure_file_name)
+        self.__train_user_configure = yaml_read(file_path)
+        self.__model_zoo = self.__train_user_configure["model_zoo"]
+        self.__metric_name = self.__train_user_configure["metric_name"]
 
-    def __load_pipeline_configure(self):
+    def __load_pipeline_configure(self, generated_id):
         """
-        Get metric result name and metric value
-        :return:
+        Load pipeline dict from temp id.
+        :return: pipeline configure dict.
         """
-        pass
+        temp_root = os.path.join(self.__work_space, generated_id)
+        file_path = os.path.join(temp_root, self.__pipeline_configure_file_name)
+        return yaml_read(file_path)
 
-    def __get_best_root(self):
-        pass
-
-    def __delete_generated_folder(self):
-        pass
+    def __delete_generated_folder(self, temp_id):
+        folder_path = os.path.join(self.__work_space, temp_id)
+        os.removedirs(folder_path)
 
     def __copy_folder(self, source_path, target_path):
         """
@@ -149,7 +210,18 @@ class UpdateBest:
                     )
 
     @classmethod
-    def _create_entity(cls, entity_name: str, **params):
+    def __create_component(cls, component_name: str, **params):
+        gauss_factory = GaussFactoryProducer()
+        component_factory = gauss_factory.get_factory(choice="component")
+        return component_factory.get_component(component_name=component_name, **params)
+
+    @classmethod
+    def __create_entity(cls, entity_name: str, **params):
         gauss_factory = GaussFactoryProducer()
         entity_factory = gauss_factory.get_factory(choice="entity")
         return entity_factory.get_entity(entity_name=entity_name, **params)
+
+
+if __name__ == "__main__":
+    application = UpdateBestApplication(main_work_root="/home/liangqian/Gauss/experiments/j97qq5")
+    application.run()

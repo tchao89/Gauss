@@ -106,6 +106,7 @@ class BinaryF1(BaseMetric):
                 optimize_mode=self._optimize_mode)
         else:
             predict_label = np.round(predict)
+
             f1 = f1_score(y_true=label, y_pred=predict_label)
             self._metric_result = MetricResult(
                 name=self._name,
