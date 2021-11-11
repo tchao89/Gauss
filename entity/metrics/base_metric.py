@@ -139,3 +139,12 @@ class BaseMetric(Entity, ABC):
     @label_name.setter
     def label_name(self, label_name: str):
         self._label_name = label_name
+
+    def reconstruct(self, metric_value: float):
+        metric_result = MetricResult(name=self._name,
+                                     metric_name=self._name,
+                                     result=metric_value,
+                                     meta=None,
+                                     optimize_mode=self._optimize_mode)
+
+        return metric_result

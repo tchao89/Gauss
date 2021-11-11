@@ -43,7 +43,7 @@ pipeline_dict.metric_name = "binary_f1"
 # optional: ["mse", "binary_logloss", "None"]
 # This value will customize the loss function of model, and it can be set None.
 # if None, default loss will be chosen.
-pipeline_dict.loss_name = "binary_logloss"
+pipeline_dict.loss_name = None
 # optional: ["libsvm", "txt", "csv"]
 pipeline_dict.data_file_type = "csv"
 # pipeline do not need to get target names in libsvm and txt file.

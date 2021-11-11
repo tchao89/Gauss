@@ -393,6 +393,11 @@ class PlaintextDataset(BaseDataset):
             else:
                 weight = None
 
+            if self.__dataset_weight_dict:
+                for index in self.__dataset_weight_dict.copy().keys():
+                    self.__dataset_weight_dict[self.__column_index[index]] = self.__dataset_weight_dict[index]
+                    self.__dataset_weight_dict.pop(index)
+
             if self._name in [ConstantValues.train_dataset,
                               ConstantValues.val_dataset,
                               ConstantValues.increment_dataset]:
@@ -473,6 +478,11 @@ class PlaintextDataset(BaseDataset):
                         weight = None
                 else:
                     weight = None
+
+                if self.__dataset_weight_dict:
+                    for index in self.__dataset_weight_dict.copy().keys():
+                        self.__dataset_weight_dict[self.__column_index[index]] = self.__dataset_weight_dict[index]
+                        self.__dataset_weight_dict.pop(index)
 
                 if self._name in [ConstantValues.train_dataset,
                                   ConstantValues.val_dataset,

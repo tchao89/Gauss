@@ -105,7 +105,7 @@ def {{fun}}(name="udf", user_configure=None, system_configure=None):
         self.__generated_dispatch_configure()
 
     def __auto_dispatch(self, user_configure, system_configure):
-        docker_num= 0
+        docker_num = 0
 
         self.__main_id = os.path.split(user_configure[ConstantValues.work_root])[1]
         self.__work_space = os.path.split(user_configure[ConstantValues.work_root])[0]
@@ -181,33 +181,38 @@ def {{fun}}(name="udf", user_configure=None, system_configure=None):
         self.__dispatch_configure.work_space = self.__work_space
 
     def __udf_dispatch(self, user_configure, system_configure):
+        docker_num = 0
+
         self.__main_id = os.path.split(user_configure[ConstantValues.work_root])[1]
         self.__work_space = os.path.split(user_configure[ConstantValues.work_root])[0]
-        docker_num = len(user_configure.model_zoo) * len(system_configure.keys())
-
-        if docker_num <= 0:
-            raise ValueError("Value: docker_num is {}, but it should be more than zero.".format(docker_num))
-        docker_num = len(user_configure.model_zoo) * len(system_configure.keys())
-
-        if docker_num <= 0:
-            raise ValueError("Value: docker_num is {}, but it should be more than zero.".format(docker_num))
-        self.__dispatch_configure.docker_num = docker_num
 
         generated_ids = []
-        for model_name in user_configure.model_zoo:
-            for index, system_key in enumerate(system_configure):
-                generated_id = self.__main_id + "-" + model_name + "-" + str(index)
-                generated_ids.append(generated_id)
+        supervised_selector_model_names = system_configure.supervised_selector_model_names
+        opt_model_names = system_configure.opt_model_names
+        model_zoo = user_configure.model_zoo
 
-                temp_work_root = os.path.join(self.__work_space, generated_id)
-                user_configure[ConstantValues.work_root] = temp_work_root
+        routes = self.__udf_generate_route(supervised_selector_model_names=supervised_selector_model_names,
+                                            opt_model_names=opt_model_names,
+                                            model_zoo=model_zoo)
+        for params in routes:
+            supervised_selector_model_names, opt_model_names, model_name = params
+            folder_name = "_".join([supervised_selector_model_names,
+                                    opt_model_names,
+                                    model_name])
+            generated_id = self.__main_id + "-" + folder_name
+            generated_ids.append(generated_id)
 
-                train_func = self.__render(self.__udf_tmpl_fun,
-                                           fun="main_train",
-                                           user_configure=user_configure,
-                                           system_configure=system_configure[system_key])
+            temp_work_root = os.path.join(self.__work_space, generated_id)
+            user_configure[ConstantValues.work_root] = temp_work_root
 
-                self.__save(code_text=train_func, filename="./dispatch_methods/" + generated_id + ".py")
+            train_func = self.__render(self.__udf_tmpl_fun,
+                                       fun="main_train",
+                                       user_configure=user_configure,
+                                       system_configure=system_configure)
+
+            self.__save(code_text=train_func, filename="./dispatch_methods/" + generated_id + ".py")
+            docker_num += 1
+
         self.__dispatch_configure.docker_num = docker_num
         self.__dispatch_configure.generated_ids = generated_ids
         self.__dispatch_configure.main_id = self.__main_id
@@ -306,6 +311,38 @@ def {{fun}}(name="udf", user_configure=None, system_configure=None):
             model_zoo)
         return routes
 
+    @classmethod
+    def __udf_generate_route(cls, **params):
+        supervised_selector_model_names = params[ConstantValues.supervised_selector_model_names]
+        if not isinstance(supervised_selector_model_names, list):
+            raise TypeError(
+                "Value: supervised selector model names should be type of list, "
+                "but get {} instead.".format(
+                    supervised_selector_model_names)
+            )
+
+        opt_model_names = params[ConstantValues.opt_model_names]
+        if not isinstance(opt_model_names, list):
+            raise TypeError(
+                "Value: opt model names should be type of list, "
+                "but get {} instead.".format(
+                    opt_model_names)
+            )
+
+        model_zoo = params["model_zoo"]
+        if not isinstance(model_zoo, list):
+            raise TypeError(
+                "Value: model zoo should be type of list, "
+                "but get {} instead.".format(
+                    model_zoo)
+            )
+
+        routes = itertools.product(
+            supervised_selector_model_names,
+            opt_model_names,
+            model_zoo)
+        return routes
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("configure-file")
@@ -313,6 +350,6 @@ if __name__ == "__main__":
                         help="config file")
 
     args = parser.parse_args()
-    dispatch_task = DispatchTasks(user_configure_path="/home/liangqian/Gauss/experiments/qX8GxT/train_user_config.yaml",
+    dispatch_task = DispatchTasks(user_configure_path="/home/liangqian/Gauss/experiments/j97qq5/train_user_config.yaml",
                                   system_configure_path="/home/liangqian/Gauss/configure_files/system_config/system_config.yaml")
     dispatch_task.run()

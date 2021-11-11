@@ -746,8 +746,7 @@ class GaussLightgbm(ModelWrapper):
         )
         # 默认生成的为预测值的概率值，传入metric之后再处理.
         val_y_pred = self._model.predict(
-            eval_data,
-            num_iteration=self._model.best_iteration
+            eval_data
         )
 
         train_y_pred = self._model.predict(train_data)
@@ -764,6 +763,7 @@ class GaussLightgbm(ModelWrapper):
             target_names=eval_target_names)
 
         metric.label_name = self._target_names
+
         metric.evaluate(predict=val_y_pred, labels_map=eval_label)
         val_metric_result = metric.metric_result
 
