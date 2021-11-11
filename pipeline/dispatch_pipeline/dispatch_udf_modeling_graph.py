@@ -317,6 +317,8 @@ class UdfModelingGraph(BaseModelingGraph):
 
         yaml_write(yaml_dict=yaml_dict,
                    yaml_file=join(self._work_paths["work_root"], feature_dict.pipeline_configure))
+        yaml_write(yaml_dict={},
+                   yaml_file=join(self._work_paths["work_root"], feature_dict.success_file_name))
 
     @property
     def pipeline_configure(self):

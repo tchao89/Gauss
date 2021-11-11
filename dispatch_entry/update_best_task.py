@@ -20,6 +20,7 @@ class UpdateBestApplication:
         self.__dispatch_file_name = "dispatch_configure.yaml"
         self.__train_user_configure_file_name = "train_user_config.yaml"
         self.__pipeline_configure_file_name = "pipeline_configure.yaml"
+        self.__success_file_name = "success.yaml"
         self.__dispatch_configure = None
         self.__train_user_configure = None
         self.__model_zoo = None
@@ -53,19 +54,23 @@ class UpdateBestApplication:
                     self.__metric_name))
 
         for generated_id in self.__generated_ids:
-            pipeline_configure = self.__load_pipeline_configure(generated_id)
-            model_name = pipeline_configure.model.keys()[0]
-            model_dict = pipeline_configure[ConstantValues.model][model_name]
-            if model_name in self.__model_zoo:
-                metric_result = metric.reconstruct(metric_value=model_dict[ConstantValues.metric_result])
-                if self.__evaluate_result.get(model_name) is None:
-                    self.__evaluate_result[model_name] = {"metric_result": metric_result, "id": generated_id}
-                else:
-                    if self.__evaluate_result.get(model_name).get(ConstantValues.metric_result).__cmp__(
-                            metric_result) < 0:
+            success_flag = self.__load_success_flag(generated_id)
+            if success_flag:
+                pipeline_configure = self.__load_pipeline_configure(generated_id)
+                model_name = list(pipeline_configure[ConstantValues.model].keys())[0]
+                model_dict = pipeline_configure[ConstantValues.model][model_name]
+                if model_name in self.__model_zoo:
+                    metric_result = metric.reconstruct(metric_value=model_dict[ConstantValues.metric_result])
+                    if self.__evaluate_result.get(model_name) is None:
                         self.__evaluate_result[model_name] = {"metric_result": metric_result, "id": generated_id}
+                    else:
+                        if self.__evaluate_result.get(model_name).get(ConstantValues.metric_result).__cmp__(
+                                metric_result) < 0:
+                            self.__evaluate_result[model_name] = {"metric_result": metric_result, "id": generated_id}
+                else:
+                    raise ValueError("Value: {} is not in model zoo.".format(model_name))
             else:
-                raise ValueError("Value: {} is not in model zoo.".format(model_name))
+                raise RuntimeError("An unexpected error happened in generated id: {}.".format(generated_id))
 
         for model_name in self.__evaluate_result.keys():
             eval_dict = self.__evaluate_result[model_name]
@@ -78,10 +83,17 @@ class UpdateBestApplication:
 
             yaml_write(yaml_dict=pipeline_configure,
                        yaml_file=os.path.join(folder_path, self.__pipeline_configure_file_name))
-            self.__copy_folder(source_path=folder_path, target_path=self.__main_work_root)
+            self.__copy_folder(source_path=folder_path, target_path=os.path.join(self.__main_work_root, model_name))
             self.__reconstruct_folder(folder=os.path.join(self.__main_work_root, model_name),
                                       init_prefix=generated_id)
-        self.__delete_generated_folder()
+
+        for generated_id in self.__generated_ids:
+            self.__delete_generated_folder(generated_id)
+
+    def __load_success_flag(self, generated_id):
+        temp_root = os.path.join(self.__work_space, generated_id)
+        file_path = os.path.join(temp_root, self.__success_file_name)
+        return os.path.exists(file_path)
 
     def __load_dispatch_configure(self):
         """
@@ -117,7 +129,7 @@ class UpdateBestApplication:
 
     def __delete_generated_folder(self, temp_id):
         folder_path = os.path.join(self.__work_space, temp_id)
-        os.removedirs(folder_path)
+        shutil.rmtree(folder_path)
 
     def __copy_folder(self, source_path, target_path):
         """
@@ -163,8 +175,8 @@ class UpdateBestApplication:
             raise ValueError("Value: folder: {} is not a correct root path.".format(
                 folder))
 
-        assert os.path.isdir(folder), "Value: folder:{} is not exist.".format(
-            folder)
+        if not os.path.isdir(folder):
+            mkdir(folder)
 
         folder_path = os.walk(folder)
         prefix = os.path.join(folder).split("/")[-1]
