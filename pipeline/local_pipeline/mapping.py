@@ -53,5 +53,6 @@ class EnvironmentConfigure:
         feature_dict.train_user_configure = "train_user_config.yaml"
         feature_dict.pipeline_configure = "pipeline_configure.yaml"
         feature_dict.inference_configure = "inference_configure.yaml"
+        feature_dict.success_file_name = "success.yaml"
 
         return feature_dict
