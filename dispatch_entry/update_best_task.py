@@ -29,6 +29,7 @@ class UpdateBestApplication:
         self.__optimize_mode = None
         self.__work_space = None
         self.__generated_ids = None
+        self.__main_id = None
         self.__model_num = 0
         self.__docker_num = 0
 
@@ -87,8 +88,8 @@ class UpdateBestApplication:
             self.__reconstruct_folder(folder=os.path.join(self.__main_work_root, model_name),
                                       init_prefix=generated_id)
 
-        for generated_id in self.__generated_ids:
-            self.__delete_generated_folder(generated_id)
+        # for generated_id in self.__generated_ids:
+        #     self.__delete_generated_folder(generated_id)
 
     def __load_success_flag(self, generated_id):
         temp_root = os.path.join(self.__work_space, generated_id)
@@ -106,6 +107,7 @@ class UpdateBestApplication:
         self.__docker_num = self.__dispatch_configure["docker_num"]
         self.__generated_ids = self.__dispatch_configure["generated_ids"]
         self.__work_space = self.__dispatch_configure["work_space"]
+        self.__main_id = self.__dispatch_configure["main_id"]
 
     def __load_train_user_configure(self):
         """
@@ -189,7 +191,7 @@ class UpdateBestApplication:
                     configure_dict = yaml_read(os.path.join(path, file_name))
                     self.__replace_path(source_dict=configure_dict,
                                         init_prefix=init_prefix,
-                                        prefix=prefix)
+                                        prefix=self.__main_id)
 
                     yaml_write(yaml_dict=configure_dict, yaml_file=file_path)
 

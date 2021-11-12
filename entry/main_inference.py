@@ -13,7 +13,7 @@ from utils.bunch import Bunch
 
 
 # test programming
-pipeline_dict = yaml_read(yaml_file="/home/liangqian/Gauss/experiments/ASS1EH/pipeline_configure.yaml")
+pipeline_dict = yaml_read(yaml_file="/home/liangqian/Gauss/experiments/j97qq5/lightgbm/pipeline_configure.yaml")
 pipeline_dict["model_name"] = "lightgbm"
 # ["probability", "logit"]
 pipeline_dict["infer_result_type"] = "probability"

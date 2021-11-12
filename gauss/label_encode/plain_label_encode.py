@@ -219,6 +219,7 @@ class PlainLabelEncode(BaseLabelEncode):
         if self._task_name == ConstantValues.regression:
             target = dataset.get_dataset().target
             target_names = dataset.get_dataset().target_names
+
             for label in target_names:
                 if label not in target.columns:
                     raise ValueError(

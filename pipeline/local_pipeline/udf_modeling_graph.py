@@ -7,6 +7,7 @@ This pipeline is used to train model, which parameters and settings can be custo
 """
 from __future__ import annotations
 
+import os.path
 from os.path import join
 
 from pipeline.local_pipeline.core_chain import CoreRoute
@@ -307,6 +308,7 @@ class UdfModelingGraph(BaseModelingGraph):
 
         # this code will change metric result object to metric value.
         for result in train_results:
+            result[ConstantValues.optimize_mode] = result.get(ConstantValues.metric_result).optimize_mode
             result[ConstantValues.metric_result] = float(result.get(ConstantValues.metric_result).result)
 
         model_dict = {ConstantValues.model: best_result}
@@ -319,8 +321,15 @@ class UdfModelingGraph(BaseModelingGraph):
         if self.__pipeline_configure is not None:
             yaml_dict.update(self.__pipeline_configure)
 
+        for model_name in self._model_zoo:
+            file_root = join(self._work_paths["work_root"], model_name)
+            yaml_write(yaml_dict=yaml_dict,
+                       yaml_file=join(file_root, feature_dict.pipeline_configure))
+
         yaml_write(yaml_dict=yaml_dict,
                    yaml_file=join(self._work_paths["work_root"], feature_dict.pipeline_configure))
+        yaml_write(yaml_dict={},
+                   yaml_file=join(self._work_paths["work_root"], feature_dict.success_file_name))
 
     @property
     def pipeline_configure(self):

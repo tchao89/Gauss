@@ -4,6 +4,7 @@ Copyright (c) 2021, Citic-Lab. All rights reserved.
 Authors: Lab"""
 from __future__ import annotations
 
+import shutil
 from os.path import join
 import itertools
 
@@ -335,7 +336,8 @@ class AutoModelingGraph(BaseModelingGraph):
                 "increment_flag": False,
                 "metric_result": local_metric,
                 "final_file_path":
-                    feature_dict[ConstantValues.final_feature_configure]}
+                    feature_dict[ConstantValues.final_feature_configure],
+                "dispatch_id": folder_name}
 
     def _run(self):
         train_results = []
@@ -357,12 +359,13 @@ class AutoModelingGraph(BaseModelingGraph):
 
             if local_result is not None:
                 train_results.append(local_result)
+
         self._find_best_result(train_results=train_results)
 
     def _find_best_result(self, train_results):
 
         best_result = {}
-
+        best_id = []
         if len(train_results) == 0:
             raise NoResultReturnException("No model is trained successfully.")
 
@@ -377,10 +380,33 @@ class AutoModelingGraph(BaseModelingGraph):
                             result.get(ConstantValues.metric_result)) < 0:
                         best_result[model_name] = result
 
+        for model_name in best_result.keys():
+            best_id.append(best_result[model_name]["dispatch_id"])
+
+        routes = self.__generate_route()
+
+        for params in routes:
+            data_clear_flag, feature_generator_flag, unsupervised_feature_selector_flag, \
+                supervised_feature_selector_flag, supervised_selector_model_names, \
+                opt_model_names, model_name = params
+
+            folder_name = "_".join([str(data_clear_flag),
+                                    str(feature_generator_flag),
+                                    str(unsupervised_feature_selector_flag),
+                                    str(supervised_feature_selector_flag),
+                                    str(supervised_selector_model_names),
+                                    opt_model_names,
+                                    model_name])
+            if folder_name not in best_id:
+                self.__delete_generated_folder(folder_name)
+
+        # this code will change metric result object to metric value.
         for result in train_results:
+            result[ConstantValues.optimize_mode] = result.get(ConstantValues.metric_result).optimize_mode
             result[ConstantValues.metric_result] = float(result.get(ConstantValues.metric_result).result)
 
-        self.__pipeline_configure.update(best_result)
+        model_dict = {ConstantValues.model: best_result}
+        self.__pipeline_configure.update(model_dict)
 
     def _set_pipeline_config(self):
         feature_dict = EnvironmentConfigure.feature_dict()
@@ -391,6 +417,12 @@ class AutoModelingGraph(BaseModelingGraph):
 
         yaml_write(yaml_dict=yaml_dict,
                    yaml_file=join(self._work_paths["work_root"], feature_dict.pipeline_configure))
+        yaml_write(yaml_dict={},
+                   yaml_file=join(self._work_paths["work_root"], feature_dict.success_file_name))
+
+    def __delete_generated_folder(self, temp_id):
+        folder_path = join(self._work_paths["work_root"], temp_id)
+        shutil.rmtree(folder_path)
 
     @property
     def pipeline_configure(self):

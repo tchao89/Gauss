@@ -21,7 +21,7 @@ environ_configure = EnvironmentConfigure(work_root="/home/liangqian/Gauss/experi
 
 pipeline_dict = Bunch()
 # ["udf", "auto", "dispatch_auto", "dispatch_udf"]
-pipeline_dict.mode = "udf"
+pipeline_dict.mode = "auto"
 # initial model path, optional: str or None, and it's different from increment model setting.
 # This is used to train a better model instead of increment.
 # if this value is not None, user can just use one model in value: model_zoo
@@ -64,14 +64,14 @@ pipeline_dict.val_data_path = None
 pipeline_dict.feature_configure_path = "/home/liangqian/文档/公开数据集/bank/bank.yaml"
 pipeline_dict.dataset_name = "plaindataset"
 pipeline_dict.model_zoo = ["lightgbm"]
-pipeline_dict.data_clear_flag = False
-pipeline_dict.feature_generator_flag = False
-pipeline_dict.unsupervised_feature_selector_flag = False
-pipeline_dict.supervised_feature_selector_flag = False
-# pipeline_dict.data_clear_flag = [True, False]
-# pipeline_dict.feature_generator_flag = [True, False]
-# pipeline_dict.unsupervised_feature_selector_flag = [True, False]
-# pipeline_dict.supervised_feature_selector_flag = [True, False]
+# pipeline_dict.data_clear_flag = False
+# pipeline_dict.feature_generator_flag = False
+# pipeline_dict.unsupervised_feature_selector_flag = False
+# pipeline_dict.supervised_feature_selector_flag = False
+pipeline_dict.data_clear_flag = [True]
+pipeline_dict.feature_generator_flag = [False]
+pipeline_dict.unsupervised_feature_selector_flag = [False]
+pipeline_dict.supervised_feature_selector_flag = [False]
 user_config_path = environ_configure.work_root + "/train_user_config.yaml"
 yaml_write(yaml_dict=dict(pipeline_dict), yaml_file=user_config_path)
 

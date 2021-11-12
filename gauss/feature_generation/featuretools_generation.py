@@ -113,7 +113,7 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
 
         logger.info("Featuretools EntitySet object constructs, " + "with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])
-        es = ft.EntitySet(id=self.name).entity_from_dataframe(entity_id=self.name, dataframe=data,
+        es = ft.EntitySet(id=self.name).entity_from_dataframe(entity_id=self._name, dataframe=data,
                                                               variable_types=self.variable_types,
                                                               make_index=True, index=self.index_name)
 
@@ -150,8 +150,14 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
                         get_current_memory_gb()["memory_usage"])
 
             dataset.get_dataset().data = generated_data
-            dataset.get_dataset().generated_feature_names = feature_names
             self.generated_feature_names = list(dataset.get_dataset().data.columns)
+
+            retain_features = []
+            for index, feature in enumerate(feature_names):
+                if feature.name in self.generated_feature_names:
+                    retain_features.append(feature)
+
+            dataset.get_dataset().generated_feature_names = retain_features
 
     def clean_dataset(self, df):
         assert isinstance(df, pd.DataFrame)
@@ -170,18 +176,12 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
 
         if self._enable is True:
             generated_feature_names = dataset.get_dataset().generated_feature_names
+
             assert operator.eq(list(self.generated_feature_names), list(dataset.get_dataset().data.columns))
-
-            retain_features = []
-            for index, feature in enumerate(generated_feature_names):
-                if feature.name in self.generated_feature_names:
-                    retain_features.append(feature)
-
-            dataset.get_dataset().generated_feature_names = retain_features
-            generated_feature_names = dataset.get_dataset().generated_feature_names
-
             assert operator.eq(list(generated_feature_names), list(self.generated_feature_names))
             assert operator.eq(list(generated_feature_names), list(dataset.get_dataset().data.columns))
+
+            dataset.get_dataset().generated_feature_names = list(self.generated_feature_names)
 
             for index, feature in enumerate(generated_feature_names):
 
@@ -201,9 +201,7 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
                 assert feature.name not in self.yaml_dict.keys()
                 if feature.name in self.generated_feature_names:
                     self.yaml_dict[feature.name] = item_dict
-                dataset.get_dataset().generated_feature_names = list(self.generated_feature_names)
         else:
-
             for item in self.feature_configure.keys():
                 self.feature_configure[item]["used"] = True
             self.yaml_dict = self.feature_configure

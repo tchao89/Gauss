@@ -362,10 +362,13 @@ class AutoModelingGraph(BaseModelingGraph):
                             result.get(ConstantValues.metric_result)) < 0:
                         best_result[model_name] = result
 
+        # this code will change metric result object to metric value.
         for result in train_results:
+            result[ConstantValues.optimize_mode] = result.get(ConstantValues.metric_result).optimize_mode
             result[ConstantValues.metric_result] = float(result.get(ConstantValues.metric_result).result)
 
-        self.__pipeline_configure.update(best_result)
+        model_dict = {ConstantValues.model: best_result}
+        self.__pipeline_configure.update(model_dict)
 
     def _set_pipeline_config(self):
         feature_dict = EnvironmentConfigure.feature_dict()
@@ -376,6 +379,8 @@ class AutoModelingGraph(BaseModelingGraph):
 
         yaml_write(yaml_dict=yaml_dict,
                    yaml_file=join(self._work_paths["work_root"], feature_dict.pipeline_configure))
+        yaml_write(yaml_dict={},
+                   yaml_file=join(self._work_paths["work_root"], feature_dict.success_file_name))
 
     @property
     def pipeline_configure(self):

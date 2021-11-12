@@ -243,6 +243,12 @@ class PlainTypeInference(BaseTypeInference):
                 assert "int" in str(target[label].dtypes) or "category" in str(target[label].dtypes), \
                     "target types: {}".format(target[label].dtypes)
 
+            if self._task_name == ConstantValues.multiclass_classification:
+                if "float" in str(target[label].dtypes):
+                    target[label] = target[label].astype("int64")
+                assert "int" in str(target[label].dtypes) or "category" in str(target[label].dtypes), \
+                    "target types: {}".format(target[label].dtypes)
+
     def __check_init_final_conf(self):
         if self.init_feature_configure is None:
             return
