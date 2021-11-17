@@ -363,7 +363,6 @@ class AutoModelingGraph(BaseModelingGraph):
         self._find_best_result(train_results=train_results)
 
     def _find_best_result(self, train_results):
-
         best_result = {}
         best_id = []
         if len(train_results) == 0:

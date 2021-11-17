@@ -185,7 +185,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         # 创建自动机器学习对象
         model_tuner = entity["auto_ml"]
-        model_tuner.is_final_set = False
+        model_tuner.automl_final_set = False
 
         model = entity["model"]
         assert isinstance(model, ModelWrapper), \
@@ -468,7 +468,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         check dataset and remove irregular columns,
         if there is existing at least a features containing
         np.nan, np.inf or -np.inf, this method will return False.
-        :param dataframe:
+        :param dataframe
         :return: bool
         """
         indices_to_keep = dataframe.isin([np.nan, np.inf, -np.inf]).any()

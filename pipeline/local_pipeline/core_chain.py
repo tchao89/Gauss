@@ -40,7 +40,7 @@ class CoreRoute(Component):
         self.__final_file_path = params[ConstantValues.target_feature_configure_path]
 
         # create feature configure
-        feature_conf_params = Bunch(name=[ConstantValues.feature_configure_name],
+        feature_conf_params = Bunch(name=params[ConstantValues.feature_configure_name],
                                     file_path=None)
         self.__feature_conf = self.create_entity(
             entity_name=params[ConstantValues.feature_configure_name],
@@ -139,7 +139,6 @@ class CoreRoute(Component):
                         final_file_path=params["target_feature_configure_path"],
                         feature_selector_model_names=params["feature_selector_model_names"],
                         improved_selector_configure_path=params["improved_selector_configure_path"],
-                        feature_model_trial=params["feature_model_trial"],
                         selector_trial_num=params["selector_trial_num"],
                         selector_configure_path=self.__selector_configure_path,
                         model_name=self.__model_name,
@@ -175,7 +174,7 @@ class CoreRoute(Component):
                         train_flag=self._train_flag,
                         enable=self._enable,
                         task_name=params[ConstantValues.task_name],
-                        auto_ml_trial_num=params[ConstantValues.auto_ml_trial_num],
+                        auto_ml_trial_num=params[ConstantValues.feature_model_trial],
                         opt_model_names=self.__opt_model_names,
                         optimize_mode=self.__optimize_mode,
                         auto_ml_path=self.__auto_ml_path
@@ -340,7 +339,7 @@ class CoreRoute(Component):
         Best metric for this graph
         :return: MetricResult
         """
-        assert self._train_flag
+        assert self._train_flag is ConstantValues.train
         assert self.__best_metric is not None
         return self.__best_metric
 

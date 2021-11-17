@@ -66,6 +66,8 @@ class PreprocessRoute(Component):
         assert ConstantValues.unsupervised_feature_path in params[ConstantValues.feature_path_dict]
         # label encoding file path, .db文件
         assert ConstantValues.label_encoding_models_path in params[ConstantValues.feature_path_dict]
+        assert ConstantValues.label_encoder_feature_path in params[ConstantValues.feature_path_dict]
+        assert ConstantValues.impute_models_path in params[ConstantValues.feature_path_dict]
 
         self._feature_generator_flag = params[ConstantValues.feature_generator_flag]
         self._already_data_clear = None
@@ -262,7 +264,6 @@ class PreprocessRoute(Component):
         # 类型推导
         logger.info("Starting type inference.")
         self.type_inference.run(**entity_dict)
-
         # 数据清洗
         logger.info("Starting data clear.")
         self.data_clear.run(**entity_dict)
@@ -348,7 +349,7 @@ class PreprocessRoute(Component):
         dataset_params = Bunch(
             name=ConstantValues.infer_dataset,
             task_name=self._task_name,
-            data_pair=None,
+            data_package=None,
             data_path=self._inference_data_path,
             data_file_type=self._data_file_type,
             column_name_flag=self._inference_column_name_flag,

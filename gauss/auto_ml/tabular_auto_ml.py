@@ -195,7 +195,7 @@ class TabularAutoML(BaseAutoML):
         self.__best_metric = self.__model.val_best_metric_result.result
 
     def _increment_run(self, **entity):
-        self._train_run(**entity)
+        pass
 
     def _predict_run(self, **entity):
         pass

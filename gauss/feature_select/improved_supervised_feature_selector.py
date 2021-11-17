@@ -67,9 +67,8 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         self._optimize_mode = None
 
         # max trail num for selector tuner
-        self.selector_trial_num = params[ConstantValues.selector_trial_num]
+        self.__selector_trial_num = params[ConstantValues.selector_trial_num]
         self.__improved_selector_configure_path = params[ConstantValues.improved_selector_configure_path]
-        self.__feature_model_trial = params[ConstantValues.feature_model_trial]
         # default parameters concludes tree selector parameters and gradient parameters.
         # format: {"gradient_feature_selector": {"order": 4, "n_epochs": 100},
         # "GBDTSelector": {"lgb_params": {}, "eval_ratio", 0.3, "importance_type":
@@ -178,7 +177,7 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
             )
         )
 
-        for trial in range(self.selector_trial_num):
+        for trial in range(self.__selector_trial_num):
             logger.info(
                 "supervised selector models training, round: {:d}, "
                 "with current memory usage: {:.2f} GiB".format(
@@ -187,14 +186,14 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
             )
 
             receive_params = selector_tuner.generate_parameters(trial)
-            # feature selector hyper-parameters
             parameters.update(receive_params)
 
             def len_features(col_ratio: float):
                 return int(columns * col_ratio)
 
             parameters["topk"] = len_features(parameters["topk"])
-            feature_list = [item[0] for item in feature_importance_pair]
+
+            feature_list = [item[0] for item in feature_importance_pair[:parameters["topk"]]]
             logger.info(
                 "trial: {:d}, supervised selector training, and starting training model, "
                 "with current memory usage: {:.2f} GiB".format(
@@ -254,6 +253,7 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
 
         # save features
         self._final_feature_names = model.feature_list
+
         if isinstance(train_dataset.get_dataset().data, pd.DataFrame):
             self.final_configure_generation()
         else:

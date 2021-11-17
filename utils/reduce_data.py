@@ -32,7 +32,7 @@ def reduce_data(data_path: str = None, dataframe: pd.DataFrame = None, column_na
     for col in df.columns:
         col_type = df[col].dtype
 
-        if col_type != object:
+        if col_type != "object" and col_type != "category":
             c_min = df[col].min()
             c_max = df[col].max()
             if str(col_type)[:3] == 'int':

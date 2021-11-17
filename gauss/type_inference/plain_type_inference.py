@@ -56,7 +56,7 @@ class PlainTypeInference(BaseTypeInference):
         self.dtype_threshold = 0.95
         self.categorical_threshold = 0.01
 
-        if params[ConstantValues.source_file_path] is not None:
+        if params[ConstantValues.source_file_path] is not None and os.path.isfile(params["source_file_path"]):
             final_root, final_file_name = os.path.split(params[ConstantValues.final_file_path])
             self.init_feature_configure = FeatureConf(name="user_feature_conf",
                                                       file_path=params["source_file_path"])
@@ -106,7 +106,7 @@ class PlainTypeInference(BaseTypeInference):
 
         column_names = entity["infer_dataset"].get_dataset().data.columns
         for col in column_names:
-            assert col in list(conf)
+            assert col in list(conf), "Column: {} is not in feature configure file.".format(col)
 
     def __string_column_selector(self, feature_name: str):
         if self.init_feature_configure is not None \
@@ -240,13 +240,18 @@ class PlainTypeInference(BaseTypeInference):
             if self._task_name == ConstantValues.binary_classification:
                 if "float" in str(target[label].dtypes):
                     target[label] = target[label].astype("int64")
-                assert "int" in str(target[label].dtypes) or "category" in str(target[label].dtypes), \
+
+                assert "int" in str(target[label].dtypes) \
+                       or "category" in str(target[label].dtypes) \
+                       or "object" in str(target[label].dtypes), \
                     "target types: {}".format(target[label].dtypes)
 
             if self._task_name == ConstantValues.multiclass_classification:
                 if "float" in str(target[label].dtypes):
                     target[label] = target[label].astype("int64")
-                assert "int" in str(target[label].dtypes) or "category" in str(target[label].dtypes), \
+                assert "int" in str(target[label].dtypes) \
+                       or "category" in str(target[label].dtypes) \
+                       or "object" in str(target[label].dtypes), \
                     "target types: {}".format(target[label].dtypes)
 
     def __check_init_final_conf(self):

@@ -7,7 +7,7 @@ from gauss_factory.abstarct_guass import AbstractGauss
 from entity.dataset.plain_dataset import PlaintextDataset
 from entity.feature_configuration.feature_config import FeatureConf
 from entity.model.tree_model.gauss_lightgbm import GaussLightgbm
-from entity.model.linear_models.linear_models import GaussLinearModels
+from entity.model.tree_model.gauss_xgboost import GaussXgboost
 from entity.metrics.udf_metric import AUC
 from entity.metrics.udf_metric import BinaryF1
 from entity.metrics.udf_metric import MulticlassF1
@@ -45,10 +45,8 @@ class EntityFactory(AbstractGauss):
         elif entity_name.lower() == "lightgbm":
             # parameters: name: str, label_name: str
             return GaussLightgbm(**params)
-        elif entity_name.lower() == "lr":
-            return GaussLinearModels(**params)
-        elif entity_name.lower() == "multiprocess_lr":
-            return GaussLinearModels(**params)
+        elif entity_name.lower() == "xgboost":
+            return GaussXgboost(**params)
 
         raise ValueError("Entity factory can not construct entity by name: %s.", entity_name)
 

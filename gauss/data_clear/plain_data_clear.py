@@ -15,6 +15,7 @@ from gauss.data_clear.base_data_clear import BaseDataClear
 from entity.dataset.base_dataset import BaseDataset
 
 from utils.base import get_current_memory_gb
+from utils.bunch import Bunch
 from utils.yaml_exec import yaml_read
 from utils.reduce_data import reduce_data
 from utils.Logger import logger
@@ -63,7 +64,6 @@ class PlainDataClear(BaseDataClear):
 
         else:
             self._already_data_clear = False
-
         logger.info("Data clearing feature configuration is generating, " + "with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])
         self.final_configure_generation()
@@ -71,6 +71,25 @@ class PlainDataClear(BaseDataClear):
         logger.info("Data clearing impute models serializing, " + "with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])
         self._data_clear_serialize()
+        self.__check_dtype(dataset=entity["train_dataset"])
+
+    def __check_dtype(self, dataset: BaseDataset):
+        feature_conf = yaml_read(self._feature_configure_path)
+        data = dataset.get_dataset().data
+        for item in feature_conf.keys():
+            item_configure = Bunch(**feature_conf[item])
+            if "category" in item_configure["ftype"]:
+                data[item_configure.name] = data[item_configure["name"]].astype("category")
+            else:
+                if "int" in item_configure["dtype"]:
+                    data[item_configure.name] = data[item_configure["name"]].astype("int64")
+                elif "float" in item_configure["dtype"]:
+                    data[item_configure.name] = data[item_configure["name"]].astype("float64")
+                else:
+                    raise ValueError(
+                        "Feature: {} is not category ftype, but its dtype is numerical.".format(
+                            item_configure.name))
+        reduce_data(dataframe=data)
 
     def _increment_run(self, **entity):
         assert ConstantValues.increment_dataset in entity.keys()
@@ -101,6 +120,7 @@ class PlainDataClear(BaseDataClear):
 
                     item_data = dc_model_list.get(col).transform(item_data)
                     data[col] = item_data.reshape(1, -1).squeeze(axis=0)
+        self.__check_dtype(dataset=dataset)
 
     def _predict_run(self, **entity):
         assert "infer_dataset" in entity.keys()
@@ -131,6 +151,7 @@ class PlainDataClear(BaseDataClear):
 
                     item_data = dc_model_list.get(col).transform(item_data)
                     data[col] = item_data.reshape(1, -1).squeeze(axis=0)
+        self.__check_dtype(dataset=dataset)
 
     def _clean(self, dataset: BaseDataset):
         data = dataset.get_dataset().data
@@ -183,7 +204,6 @@ class PlainDataClear(BaseDataClear):
 
             self._impute_models[feature] = impute_model
             data[feature] = item_data
-        reduce_data(dataframe=data)
 
     def _aberrant_modify(self, data: pd.DataFrame):
         feature_conf = yaml_read(self._feature_configure_path)
