@@ -10,14 +10,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import annotations
 
+import shelve
 import os.path
 import operator
 
 import numpy as np
 import pandas as pd
 from scipy import special
-
-import core.lightgbm as lgb
+from sklearn.linear_model import SGDClassifier, SGDRegressor
 
 from entity.model.model import ModelWrapper
 from entity.model.package_dataset import PackageDataset
@@ -33,9 +33,9 @@ from utils.yaml_exec import yaml_write
 from utils.Logger import logger
 
 
-class GaussLightgbm(ModelWrapper):
+class GaussLogisticRegression(ModelWrapper):
     """
-    lightgbm object.
+    logistic regression object.
     """
     def __init__(self, **params):
         assert params[ConstantValues.train_flag] in [ConstantValues.train,

@@ -132,6 +132,7 @@ class ConstantValues:
     CoreRoute = "CoreRoute"
     # folder_name
     model = "model"
+    best_model = "best_model"
     feature = "feature"
     feature_configure = "feature_configure"
     model_parameters = "model_parameters"

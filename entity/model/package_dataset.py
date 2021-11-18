@@ -34,14 +34,13 @@ class PackageDataset:
             # check type of feature_choose
             data = dataset.feature_choose(feature_list, use_index_flag=False)
             target = dataset.get_dataset().target
-
             # feature name
             data_package = Bunch(
                 data=data,
                 target=target,
-                feature_names=dataset.get_dataset().feature_names,
+                feature_names=[item for item in dataset.get_dataset().feature_names if item in feature_list],
                 target_names=dataset.get_dataset().target_names,
-                generated_feature_names=dataset.get_dataset().generated_feature_names,
+                generated_feature_names=feature_list,
                 dataset_weight=dataset.get_dataset().dataset_weight,
                 categorical_list=categorical_list,
                 label_class=dataset.get_dataset().label_class,
@@ -66,15 +65,8 @@ class PackageDataset:
             )
         )
 
-        # train_flag
-        if train_flag:
-            return self.__load_dataset(
-                self,
-                dataset=dataset_bunch,
-                train_flag=train_flag,
-            )
-
         return self.__load_dataset(
             self,
-            dataset=Bunch(data=dataset.data.values),
-            train_flag=train_flag)
+            dataset=dataset_bunch,
+            train_flag=train_flag,
+        )

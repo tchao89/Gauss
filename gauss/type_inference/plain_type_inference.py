@@ -56,7 +56,7 @@ class PlainTypeInference(BaseTypeInference):
         self.dtype_threshold = 0.95
         self.categorical_threshold = 0.01
 
-        if params[ConstantValues.source_file_path] is not None:
+        if params[ConstantValues.source_file_path] is not None and os.path.isfile(params["source_file_path"]):
             final_root, final_file_name = os.path.split(params[ConstantValues.final_file_path])
             self.init_feature_configure = FeatureConf(name="user_feature_conf",
                                                       file_path=params["source_file_path"])
@@ -85,9 +85,9 @@ class PlainTypeInference(BaseTypeInference):
         self.__remove_columns(dataset=entity[ConstantValues.train_dataset])
         self._dtype_inference(dataset=entity[ConstantValues.train_dataset])
         self._ftype_inference(dataset=entity[ConstantValues.train_dataset])
-        self._target_check(dataset=entity[ConstantValues.train_dataset])
+        self._check_target_columns(dataset=entity[ConstantValues.train_dataset])
         self.__check_init_final_conf()
-        self.__final_configure_generation()
+        self.__generate_final_configure()
 
     def _increment_run(self, **entity):
         # just detect error in test dataset.
@@ -106,16 +106,16 @@ class PlainTypeInference(BaseTypeInference):
 
         column_names = entity["infer_dataset"].get_dataset().data.columns
         for col in column_names:
-            assert col in list(conf)
+            assert col in list(conf), "Column: {} is not in feature configure file.".format(col)
 
-    def __string_column_selector(self, feature_name: str):
+    def __select_string_columns(self, feature_name: str):
         if self.init_feature_configure is not None \
                 and self.init_feature_configure.feature_dict.get(feature_name) is not None \
                 and self.init_feature_configure.feature_dict.get(feature_name).dtype == 'string':
 
             self.final_feature_configure.feature_dict[feature_name].dtype = 'string'
 
-    def __datetime_column_selector(self, feature_name: str, dataset: pd.DataFrame):
+    def __select_datetime_columns(self, feature_name: str, dataset: pd.DataFrame):
 
         def datetime_map(x):
             x = str(x)
@@ -156,7 +156,7 @@ class PlainTypeInference(BaseTypeInference):
                 else:
                     self.final_feature_configure.feature_dict[column].ftype = 'numerical'
 
-            self.__datetime_column_selector(feature_name=column, dataset=data)
+            self.__select_datetime_columns(feature_name=column, dataset=data)
 
         return self.final_feature_configure
 
@@ -222,13 +222,17 @@ class PlainTypeInference(BaseTypeInference):
 
                 else:
                     feature_item_configure.dtype = 'string'
+            else:
+                raise TypeError(
+                    "Unknown dtype {} in column: {}, index: {}.".format(
+                        data_dtypes[col_index], column, col_index))
 
             self.final_feature_configure.add_item_type(column_name=column, feature_item_conf=feature_item_configure)
-            self.__string_column_selector(feature_name=column)
+            self.__select_string_columns(feature_name=column)
 
         return self.final_feature_configure
 
-    def _target_check(self, dataset: BaseDataset):
+    def _check_target_columns(self, dataset: BaseDataset):
         target = dataset.get_dataset().target
 
         # check if target columns is illegal.
@@ -240,7 +244,18 @@ class PlainTypeInference(BaseTypeInference):
             if self._task_name == ConstantValues.binary_classification:
                 if "float" in str(target[label].dtypes):
                     target[label] = target[label].astype("int64")
-                assert "int" in str(target[label].dtypes) or "category" in str(target[label].dtypes), \
+
+                assert "int" in str(target[label].dtypes) \
+                       or "category" in str(target[label].dtypes) \
+                       or "object" in str(target[label].dtypes), \
+                    "target types: {}".format(target[label].dtypes)
+
+            if self._task_name == ConstantValues.multiclass_classification:
+                if "float" in str(target[label].dtypes):
+                    target[label] = target[label].astype("int64")
+                assert "int" in str(target[label].dtypes) \
+                       or "category" in str(target[label].dtypes) \
+                       or "object" in str(target[label].dtypes), \
                     "target types: {}".format(target[label].dtypes)
 
     def __check_init_final_conf(self):
@@ -272,7 +287,7 @@ class PlainTypeInference(BaseTypeInference):
             else:
                 logger.info(item[0] + " feature dose not exist in type inference.")
 
-    def __final_configure_generation(self):
+    def __generate_final_configure(self):
         yaml_dict = {}
         final_feature_dict = self.final_feature_configure.feature_dict
         for item in final_feature_dict.keys():

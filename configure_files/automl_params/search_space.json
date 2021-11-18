@@ -26,30 +26,37 @@
       "_value": [0, 0.9]
 }
 },
-  "multiprocess_lightgbm": {
-    "num_leaves": {"_type": "choice",
-                 "_value": [10, 20, 30, 40, 50, 60]
-                 },
-  "learning_rate": {"_type": "choice",
-                    "_value": [0.01, 0.05, 0.1, 0.2, 0.3]
-                    },
-  "bagging_fraction": {"_type": "uniform",
-                       "_value": [0.7, 1.0]
-                       },
-  "feature_fraction": {"_type": "uniform",
-                       "_value": [0.7, 1.0]
-                       },
-  "bagging_freq": {"_type": "choice",
-                   "_value": [1, 2, 4, 8, 10]
-                   },
-  "max_depth": {"_type": "choice",
-                "_value": [3, 5, 6, 7, 8, 9, 12]
+  "xgboost": {
+            "eta": {
+                "_type": "choice",
+                "_value": [0.01, 0.05, 0.1, 0.2, 0.3]
+            },
+            "subsample":
+                {
+                    "_type": "uniform",
+                    "_value": [0.7, 1.0]
                 },
-  "lambda_l2": {
-      "_type": "uniform",
-      "_value": [0, 0.9]
-}
-},
+            "colsample_bytree":
+                {
+                    "_type": "uniform",
+                    "_value": [0.7, 1.0]
+                },
+            "max_depth":
+                {
+                    "_type": "choice",
+                    "_value": [3, 5, 7, 9, 12]
+                },
+            "early_stopping":
+                {
+                    "_type": "choice",
+                    "_value": [1, 2, 3, 4, 5]
+                },
+            "num_boost_round":
+                {
+                    "_type": "choice",
+                    "_value": [100, 200, 300, 400, 500]
+                }
+        },
   "lr": {
 
     "alpha": {"_type": "choice",

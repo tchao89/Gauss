@@ -6,6 +6,7 @@ preprocessing pipeline, used for type inference, data clear,
 feature generation and unsupervised feature selector."""
 from __future__ import annotations
 
+import operator
 import os.path
 
 from utils.bunch import Bunch
@@ -66,6 +67,8 @@ class PreprocessRoute(Component):
         assert ConstantValues.unsupervised_feature_path in params[ConstantValues.feature_path_dict]
         # label encoding file path, .db文件
         assert ConstantValues.label_encoding_models_path in params[ConstantValues.feature_path_dict]
+        assert ConstantValues.label_encoder_feature_path in params[ConstantValues.feature_path_dict]
+        assert ConstantValues.impute_models_path in params[ConstantValues.feature_path_dict]
 
         self._feature_generator_flag = params[ConstantValues.feature_generator_flag]
         self._already_data_clear = None
@@ -238,31 +241,15 @@ class PreprocessRoute(Component):
             entity_name=self._dataset_name,
             **dataset_params
         )
+
         if self._val_data_path is not None:
-            val_dataset_params = Bunch(
-                name=ConstantValues.val_dataset,
-                task_name=self._task_name,
-                data_package=None,
-                data_path=self._val_data_path,
-                data_file_type=self._data_file_type,
-                target_names=self._target_names,
-                use_weight_flag=self._use_weight_flag,
-                dataset_weight_dict=self._dataset_weight_dict,
-                weight_column_name=self._weight_column_name,
-                column_name_flag=self._val_column_name_flag,
-                memory_only=True
-            )
-            val_dataset = self.create_entity(
-                self._dataset_name,
-                **val_dataset_params
-            )
+            val_dataset = self.__generate_val_dataset(train_dataset=train_dataset)
             train_dataset.union(val_dataset)
 
         entity_dict[ConstantValues.train_dataset] = train_dataset
         # 类型推导
         logger.info("Starting type inference.")
         self.type_inference.run(**entity_dict)
-
         # 数据清洗
         logger.info("Starting data clear.")
         self.data_clear.run(**entity_dict)
@@ -348,7 +335,7 @@ class PreprocessRoute(Component):
         dataset_params = Bunch(
             name=ConstantValues.infer_dataset,
             task_name=self._task_name,
-            data_pair=None,
+            data_package=None,
             data_path=self._inference_data_path,
             data_file_type=self._data_file_type,
             column_name_flag=self._inference_column_name_flag,
@@ -396,3 +383,48 @@ class PreprocessRoute(Component):
                 "[train, inference, increment], but get {} instead.".format(
                     self._train_flag)
             )
+
+    def __generate_val_dataset(self, train_dataset):
+        data_bunch = train_dataset.get_dataset()
+        use_weight_flag = train_dataset.use_weight_flag
+
+        if self._val_data_path is not None:
+            val_dataset_params = Bunch(
+                name=ConstantValues.val_dataset,
+                task_name=self._task_name,
+                data_package=None,
+                train_dataset=train_dataset,
+                data_path=self._val_data_path,
+                data_file_type=self._data_file_type,
+                target_names=self._target_names,
+                use_weight_flag=self._use_weight_flag,
+                dataset_weight_dict=self._dataset_weight_dict,
+                weight_column_name=self._weight_column_name,
+                column_name_flag=self._val_column_name_flag,
+                memory_only=True
+            )
+            val_dataset = self.create_entity(
+                self._dataset_name,
+                **val_dataset_params
+            )
+
+            val_data_bunch = val_dataset.get_dataset()
+
+            if not operator.eq(data_bunch.feature_names,
+                               val_dataset.get_dataset().feature_names):
+                raise ValueError("")
+            if not operator.eq(data_bunch.target_names,
+                               val_dataset.get_dataset().target_names):
+                val_data_bunch.target.columns = data_bunch.target.columns
+                for index, target_name in enumerate(data_bunch.target_names):
+                    val_target_names = data_bunch.target_names[index]
+                    val_data_bunch.target_names = target_name
+                    val_data_bunch.proportion[target_name] = val_data_bunch.proportion.pop(val_target_names)
+                    val_data_bunch.label_class[target_name] = val_data_bunch.label_class.pop(val_target_names)
+            if use_weight_flag:
+                if not operator.eq(list(data_bunch.dataset_weight.columns),
+                                   list(val_data_bunch.dataset_weight.columns)):
+                    val_data_bunch.dataset_weight.columns = data_bunch.dataset_weight.columns
+        else:
+            raise ValueError("Validation dataset path is None.")
+        return val_dataset

@@ -47,9 +47,6 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         :param selector_config_path: root path of supervised selector configure files
         :param metrics_name: Construct BaseMetric object by entity factory.
         """
-        assert ConstantValues.model_name in params
-        assert ConstantValues.auto_ml_path in params
-        assert ConstantValues.metric_name in params
 
         super().__init__(
             name=params[ConstantValues.name],
@@ -59,11 +56,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
             feature_configure_path=params[ConstantValues.feature_configure_path]
         )
 
-        self._metrics_name = params[ConstantValues.metric_name]
         self._selector_config_path = params[ConstantValues.selector_configure_path]
-        self._model_name = params[ConstantValues.model_name]
-        self._auto_ml_path = params[ConstantValues.auto_ml_path]
-        self._model_root_path = params[ConstantValues.model_root_path]
         self._final_file_path = params[ConstantValues.final_file_path]
 
         self._optimize_mode = None
@@ -185,7 +178,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
 
         # 创建自动机器学习对象
         model_tuner = entity["auto_ml"]
-        model_tuner.is_final_set = False
+        model_tuner.automl_final_set = False
 
         model = entity["model"]
         assert isinstance(model, ModelWrapper), \
@@ -468,7 +461,7 @@ class SupervisedFeatureSelector(BaseFeatureSelector):
         check dataset and remove irregular columns,
         if there is existing at least a features containing
         np.nan, np.inf or -np.inf, this method will return False.
-        :param dataframe:
+        :param dataframe
         :return: bool
         """
         indices_to_keep = dataframe.isin([np.nan, np.inf, -np.inf]).any()

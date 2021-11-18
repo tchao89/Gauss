@@ -48,7 +48,7 @@ pipeline_dict.loss_name = None
 pipeline_dict.data_file_type = "csv"
 # pipeline do not need to get target names in libsvm and txt file.
 pipeline_dict.target_names = ["deposit"]
-pipeline_dict.use_weight_flag = False
+pipeline_dict.use_weight_flag = True
 # weight_column_name is a string value, which means a specific column names weight_column_name in a csv file or last column in txt or libsvm
 # using as sample weight. this value should be set "-1" if dataset file type is libsvm or txt.
 pipeline_dict.weight_column_name = ["dataset_weight"]
@@ -59,25 +59,23 @@ pipeline_dict.weight_column_name = ["dataset_weight"]
 pipeline_dict.dataset_weight_dict = None
 pipeline_dict.train_column_name_flag = True
 pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/bank/bank.csv"
-pipeline_dict.val_column_name_flag = True
-pipeline_dict.val_data_path = None
-pipeline_dict.feature_configure_path = "/home/liangqian/文档/公开数据集/bank/bank.yaml"
+pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/bank/bank_val.csv"
+# if column name flag is None, feature_configure_path should be None.
+pipeline_dict.feature_configure_path = None
 pipeline_dict.dataset_name = "plaindataset"
-pipeline_dict.model_zoo = ["lightgbm"]
+pipeline_dict.model_zoo = ["lightgbm", "xgboost"]
 pipeline_dict.data_clear_flag = False
 pipeline_dict.feature_generator_flag = False
 pipeline_dict.unsupervised_feature_selector_flag = False
 pipeline_dict.supervised_feature_selector_flag = False
 # pipeline_dict.data_clear_flag = [True, False]
-# pipeline_dict.feature_generator_flag = [True, False]
-# pipeline_dict.unsupervised_feature_selector_flag = [True, False]
-# pipeline_dict.supervised_feature_selector_flag = [True, False]
+# pipeline_dict.feature_generator_flag = [False]
+# pipeline_dict.unsupervised_feature_selector_flag = [True]
+# pipeline_dict.supervised_feature_selector_flag = [True]
 user_config_path = environ_configure.work_root + "/train_user_config.yaml"
 yaml_write(yaml_dict=dict(pipeline_dict), yaml_file=user_config_path)
 
 system_config_path = "/home/liangqian/Gauss/configure_files/system_config/system_config.yaml"
-
-
 # --------------- test block end ---------------
 
 
@@ -87,6 +85,8 @@ def main(user_configure_path=user_config_path, system_configure_path=system_conf
 
     system_configure = yaml_read(system_configure_path)
     system_configure = Bunch(**system_configure)
+
+    user_configure.val_column_name_flag = True
 
     if user_configure.mode == "auto":
         model_graph = AutoModelingGraph(name="auto",

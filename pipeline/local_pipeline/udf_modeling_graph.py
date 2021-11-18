@@ -28,7 +28,6 @@ class UdfModelingGraph(BaseModelingGraph):
     In this pipeline, value: train_flag will be set "train"
     between "train", "inference" and "increment".
     """
-
     def __init__(self, name: str, user_configure: dict, system_configure: dict):
         """
 
@@ -285,11 +284,11 @@ class UdfModelingGraph(BaseModelingGraph):
 
             if local_result is not None:
                 train_results.append(local_result)
-            self._find_best_result(train_results=train_results)
+        self._find_best_result(train_results=train_results)
 
     def _find_best_result(self, train_results):
-
         best_result = {}
+        best_model_result = None
 
         if len(train_results) == 0:
             raise NoResultReturnException("No model is trained successfully.")
@@ -305,12 +304,24 @@ class UdfModelingGraph(BaseModelingGraph):
                             result.get(ConstantValues.metric_result)) < 0:
                         best_result[model_name] = result
 
+            if best_model_result is None:
+                best_model_result = result
+            else:
+                if result.get(ConstantValues.metric_result) is not None:
+                    if best_result.get(model_name).get(ConstantValues.metric_result).__cmp__(
+                            result.get(ConstantValues.metric_result)) < 0:
+                        best_model_result = result
+
         # this code will change metric result object to metric value.
         for result in train_results:
+            result[ConstantValues.optimize_mode] = result.get(ConstantValues.metric_result).optimize_mode
             result[ConstantValues.metric_result] = float(result.get(ConstantValues.metric_result).result)
 
         model_dict = {ConstantValues.model: best_result}
+        best_model_dict = {ConstantValues.best_model: best_model_result}
+
         self.__pipeline_configure.update(model_dict)
+        self.__pipeline_configure.update(best_model_dict)
 
     def _set_pipeline_config(self):
         feature_dict = EnvironmentConfigure.feature_dict()
@@ -319,8 +330,15 @@ class UdfModelingGraph(BaseModelingGraph):
         if self.__pipeline_configure is not None:
             yaml_dict.update(self.__pipeline_configure)
 
+        for model_name in self._model_zoo:
+            file_root = join(self._work_paths["work_root"], model_name)
+            yaml_write(yaml_dict=yaml_dict,
+                       yaml_file=join(file_root, feature_dict.pipeline_configure))
+
         yaml_write(yaml_dict=yaml_dict,
                    yaml_file=join(self._work_paths["work_root"], feature_dict.pipeline_configure))
+        yaml_write(yaml_dict={},
+                   yaml_file=join(self._work_paths["work_root"], feature_dict.success_file_name))
 
     @property
     def pipeline_configure(self):

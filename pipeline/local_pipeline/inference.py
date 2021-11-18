@@ -51,9 +51,9 @@ class Inference:
         self.__unsupervised_feature_selector_flag = params[ConstantValues.unsupervised_feature_selector_flag]
         self.supervised_feature_selector_flag = params[ConstantValues.supervised_feature_selector_flag]
 
-        self.__final_file_path = params[self.__model_name][ConstantValues.final_file_path]
-        self.__work_model_root = params[self.__model_name][ConstantValues.work_model_root]
-        self.__increment_flag = params[self.__model_name][ConstantValues.increment_flag]
+        self.__final_file_path = params[ConstantValues.model][self.__model_name][ConstantValues.final_file_path]
+        self.__work_model_root = params[ConstantValues.model][self.__model_name][ConstantValues.work_model_root]
+        self.__increment_flag = params[ConstantValues.model][self.__model_name][ConstantValues.increment_flag]
         assert isinstance(self.__increment_flag, bool)
 
         self.__out_put_path = params[ConstantValues.out_put_path]
