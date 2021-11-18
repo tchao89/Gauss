@@ -45,22 +45,21 @@ pipeline_dict.metric_name = "binary_f1"
 # if None, default loss will be chosen.
 pipeline_dict.loss_name = None
 # optional: ["libsvm", "txt", "csv"]
-pipeline_dict.data_file_type = "txt"
+pipeline_dict.data_file_type = "csv"
 # pipeline do not need to get target names in libsvm and txt file.
-pipeline_dict.target_names = [-1]
+pipeline_dict.target_names = ["deposit"]
 pipeline_dict.use_weight_flag = True
 # weight_column_name is a string value, which means a specific column names weight_column_name in a csv file or last column in txt or libsvm
 # using as sample weight. this value should be set "-1" if dataset file type is libsvm or txt.
-pipeline_dict.weight_column_name = None
+pipeline_dict.weight_column_name = ["dataset_weight"]
 # format: {"label_name": {label_value: weight_value, ...}}, if no label value, choose target_A, target_B, ... instead.
 # eg. {"target_A": {1: 1.9, -1: 1}}, {-1: {1: 1.9, -1: 1}}, {-2: {"yes": 1.9, "no": 1}}
 # this interface will be reserved because anyone who is good at weight setting could use it conveniently
 # this interface could be set False permanently if it doesn't need.
 pipeline_dict.dataset_weight_dict = None
-pipeline_dict.train_column_name_flag = False
-pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/bank/bank.txt"
-pipeline_dict.val_column_name_flag = False
-pipeline_dict.val_data_path = None
+pipeline_dict.train_column_name_flag = True
+pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/bank/bank.csv"
+pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/bank/bank_val.csv"
 # if column name flag is None, feature_configure_path should be None.
 pipeline_dict.feature_configure_path = None
 pipeline_dict.dataset_name = "plaindataset"
@@ -86,6 +85,8 @@ def main(user_configure_path=user_config_path, system_configure_path=system_conf
 
     system_configure = yaml_read(system_configure_path)
     system_configure = Bunch(**system_configure)
+
+    user_configure.val_column_name_flag = True
 
     if user_configure.mode == "auto":
         model_graph = AutoModelingGraph(name="auto",

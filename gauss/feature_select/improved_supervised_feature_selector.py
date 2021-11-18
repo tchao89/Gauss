@@ -46,10 +46,6 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
         :param selector_config_path: root path of supervised selector configure files
         :param metrics_name: Construct BaseMetric object by entity factory.
         """
-        assert ConstantValues.model_name in params
-        assert ConstantValues.auto_ml_path in params
-        assert ConstantValues.metric_name in params
-
         super().__init__(
             name=params[ConstantValues.name],
             train_flag=params[ConstantValues.train_flag],
@@ -57,11 +53,6 @@ class ImprovedSupervisedFeatureSelector(BaseFeatureSelector):
             task_name=params[ConstantValues.task_name],
             feature_configure_path=params[ConstantValues.feature_configure_path]
         )
-
-        self._metrics_name = params[ConstantValues.metric_name]
-        self._model_name = params[ConstantValues.model_name]
-        self._auto_ml_path = params[ConstantValues.auto_ml_path]
-        self._model_root_path = params[ConstantValues.model_root_path]
         self._final_file_path = params[ConstantValues.final_file_path]
 
         self._optimize_mode = None

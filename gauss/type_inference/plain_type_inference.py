@@ -85,9 +85,9 @@ class PlainTypeInference(BaseTypeInference):
         self.__remove_columns(dataset=entity[ConstantValues.train_dataset])
         self._dtype_inference(dataset=entity[ConstantValues.train_dataset])
         self._ftype_inference(dataset=entity[ConstantValues.train_dataset])
-        self._target_check(dataset=entity[ConstantValues.train_dataset])
+        self._check_target_columns(dataset=entity[ConstantValues.train_dataset])
         self.__check_init_final_conf()
-        self.__final_configure_generation()
+        self.__generate_final_configure()
 
     def _increment_run(self, **entity):
         # just detect error in test dataset.
@@ -108,14 +108,14 @@ class PlainTypeInference(BaseTypeInference):
         for col in column_names:
             assert col in list(conf), "Column: {} is not in feature configure file.".format(col)
 
-    def __string_column_selector(self, feature_name: str):
+    def __select_string_columns(self, feature_name: str):
         if self.init_feature_configure is not None \
                 and self.init_feature_configure.feature_dict.get(feature_name) is not None \
                 and self.init_feature_configure.feature_dict.get(feature_name).dtype == 'string':
 
             self.final_feature_configure.feature_dict[feature_name].dtype = 'string'
 
-    def __datetime_column_selector(self, feature_name: str, dataset: pd.DataFrame):
+    def __select_datetime_columns(self, feature_name: str, dataset: pd.DataFrame):
 
         def datetime_map(x):
             x = str(x)
@@ -156,7 +156,7 @@ class PlainTypeInference(BaseTypeInference):
                 else:
                     self.final_feature_configure.feature_dict[column].ftype = 'numerical'
 
-            self.__datetime_column_selector(feature_name=column, dataset=data)
+            self.__select_datetime_columns(feature_name=column, dataset=data)
 
         return self.final_feature_configure
 
@@ -222,13 +222,17 @@ class PlainTypeInference(BaseTypeInference):
 
                 else:
                     feature_item_configure.dtype = 'string'
+            else:
+                raise TypeError(
+                    "Unknown dtype {} in column: {}, index: {}.".format(
+                        data_dtypes[col_index], column, col_index))
 
             self.final_feature_configure.add_item_type(column_name=column, feature_item_conf=feature_item_configure)
-            self.__string_column_selector(feature_name=column)
+            self.__select_string_columns(feature_name=column)
 
         return self.final_feature_configure
 
-    def _target_check(self, dataset: BaseDataset):
+    def _check_target_columns(self, dataset: BaseDataset):
         target = dataset.get_dataset().target
 
         # check if target columns is illegal.
@@ -283,7 +287,7 @@ class PlainTypeInference(BaseTypeInference):
             else:
                 logger.info(item[0] + " feature dose not exist in type inference.")
 
-    def __final_configure_generation(self):
+    def __generate_final_configure(self):
         yaml_dict = {}
         final_feature_dict = self.final_feature_configure.feature_dict
         for item in final_feature_dict.keys():

@@ -307,7 +307,6 @@ class AutoModelingGraph(BaseModelingGraph):
             init_model_root=self._work_paths[ConstantValues.init_model_root],
             metric_eval_used_flag=self._attributes_names.metric_eval_used_flag,
             feature_configure_name=self._entity_names[ConstantValues.feature_configure_name],
-            label_encoding_path=feature_dict[ConstantValues.label_encoding_models_path],
             metric_name=self._entity_names[ConstantValues.metric_name],
             loss_name=self._entity_names[ConstantValues.loss_name],
             task_name=self._attributes_names[ConstantValues.task_name],

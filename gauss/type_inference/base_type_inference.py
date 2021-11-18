@@ -34,7 +34,7 @@ class BaseTypeInference(Component):
         pass
 
     @abc.abstractmethod
-    def _target_check(self, target: BaseDataset):
+    def _check_target_columns(self, target: BaseDataset):
         pass
 
     @property

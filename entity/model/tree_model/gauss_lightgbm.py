@@ -37,7 +37,6 @@ class GaussLightgbm(ModelWrapper):
     """
     lightgbm object.
     """
-
     def __init__(self, **params):
         assert params[ConstantValues.train_flag] in [ConstantValues.train,
                                                      ConstantValues.increment,
