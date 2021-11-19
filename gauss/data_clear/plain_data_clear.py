@@ -61,7 +61,7 @@ class PlainDataClear(BaseDataClear):
             logger.info("Running clean() method and clearing, " + "with current memory usage: %.2f GiB",
                         get_current_memory_gb()["memory_usage"])
             self._clean(dataset=entity["train_dataset"])
-
+            self.__check_dtype(dataset=entity["train_dataset"])
         else:
             self._already_data_clear = False
         logger.info("Data clearing feature configuration is generating, " + "with current memory usage: %.2f GiB",
@@ -71,7 +71,6 @@ class PlainDataClear(BaseDataClear):
         logger.info("Data clearing impute models serializing, " + "with current memory usage: %.2f GiB",
                     get_current_memory_gb()["memory_usage"])
         self._data_clear_serialize()
-        self.__check_dtype(dataset=entity["train_dataset"])
 
     def __check_dtype(self, dataset: BaseDataset):
         feature_conf = yaml_read(self._feature_configure_path)
@@ -159,7 +158,6 @@ class PlainDataClear(BaseDataClear):
 
         assert isinstance(data, pd.DataFrame)
         self._aberrant_modify(data=data)
-
         feature_conf = yaml_read(self._feature_configure_path)
 
         for feature in feature_names:
@@ -191,13 +189,7 @@ class PlainDataClear(BaseDataClear):
                     impute_model = copy.deepcopy(self._default_cat_impute_model)
 
             item_data = item_data.reshape(-1, 1)
-
-            if "int" in item_conf['dtype']:
-                impute_model.fit(item_data.astype(np.int64))
-            elif "float" in item_conf['dtype']:
-                impute_model.fit(item_data.astype(np.float64))
-            else:
-                impute_model.fit(item_data)
+            impute_model.fit(item_data)
 
             item_data = impute_model.transform(item_data)
             item_data = item_data.reshape(1, -1).squeeze(axis=0)
@@ -207,11 +199,9 @@ class PlainDataClear(BaseDataClear):
 
     def _aberrant_modify(self, data: pd.DataFrame):
         feature_conf = yaml_read(self._feature_configure_path)
-
         for col in data.columns:
             dtype = feature_conf[col]["dtype"]
             check_nan = [self._type_check(item, dtype) for item in data[col]]
-
             if not all(check_nan):
                 data[col] = data[col].where(check_nan)
 
@@ -221,7 +211,7 @@ class PlainDataClear(BaseDataClear):
         this method is used to infer if a type of an object is int, float or string based on TypeInference object.
         :param item:
         :param dtype: dtype of a feature in feature configure file.
-        :return:
+        :return: bool
         """
         assert dtype in ["int64", "float64", "string"]
 

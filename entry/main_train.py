@@ -25,7 +25,7 @@ pipeline_dict.mode = "udf"
 # initial model path, optional: str or None, and it's different from increment model setting.
 # This is used to train a better model instead of increment.
 # if this value is not None, user can just use one model in value: model_zoo
-pipeline_dict.init_model_root = None
+pipeline_dict.init_model_root = "/home/liangqian/Gauss/experiments/xhfXlV/lightgbm"
 # choose different supervised selector, optional: ["model_select", "topk_select"]
 pipeline_dict.supervised_selector_mode = "topk_select"
 # This value is used to set transform type in regression task, eg: {"target_name": "log"}
@@ -64,7 +64,7 @@ pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/bank/bank_
 pipeline_dict.feature_configure_path = None
 pipeline_dict.dataset_name = "plaindataset"
 pipeline_dict.model_zoo = ["lightgbm", "xgboost"]
-pipeline_dict.data_clear_flag = False
+pipeline_dict.data_clear_flag = True
 pipeline_dict.feature_generator_flag = False
 pipeline_dict.unsupervised_feature_selector_flag = False
 pipeline_dict.supervised_feature_selector_flag = False

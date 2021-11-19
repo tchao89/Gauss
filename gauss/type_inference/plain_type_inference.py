@@ -189,7 +189,6 @@ class PlainTypeInference(BaseTypeInference):
                     feature_item_configure.dtype = "float64"
 
             elif data_dtypes[col_index] == 'object' or 'category':
-
                 str_count = 0
                 int_count = 0
                 float_count = 0

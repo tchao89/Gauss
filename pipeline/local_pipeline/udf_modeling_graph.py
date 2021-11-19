@@ -7,6 +7,7 @@ This pipeline is used to train model, which parameters and settings can be custo
 """
 from __future__ import annotations
 
+import os.path
 from os.path import join
 
 from pipeline.local_pipeline.core_chain import CoreRoute
@@ -235,7 +236,6 @@ class UdfModelingGraph(BaseModelingGraph):
             return None
 
         assert ConstantValues.train_dataset in entity_dict and ConstantValues.val_dataset in entity_dict
-
         core_chain = CoreRoute(
             name=ConstantValues.CoreRoute,
             train_flag=ConstantValues.train,
@@ -278,9 +278,16 @@ class UdfModelingGraph(BaseModelingGraph):
 
     def _run(self):
         train_results = []
+        init_model_name = None
+
+        if self._work_paths[ConstantValues.init_model_root] is not None:
+            init_model_name = os.path.split(self._work_paths[ConstantValues.init_model_root])[-1]
 
         for model in self._model_zoo:
-            local_result = self._run_route(model_name=model)
+            if init_model_name is not None and init_model_name == model:
+                continue
+            else:
+                local_result = self._run_route(model_name=model)
 
             if local_result is not None:
                 train_results.append(local_result)
