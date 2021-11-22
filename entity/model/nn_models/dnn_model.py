@@ -28,7 +28,6 @@ from utils.feature_name_exec import feature_list_generator
 from core.tfdnn.factory.network_factory import NetworkFactory
 from core.tfdnn.factory.loss_factory import LossFunctionFactory 
 
-
 class GaussNN(ModelWrapper):
     """Multi layer perceptron neural network wrapper.
 
@@ -79,6 +78,7 @@ class GaussNN(ModelWrapper):
         
     def __repr__(self):
         pass
+    
 
     @property
     def val_metric(self):

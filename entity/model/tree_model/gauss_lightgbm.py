@@ -147,7 +147,7 @@ class GaussLightgbm(ModelWrapper):
         assert self._train_flag == ConstantValues.train
         assert self._task_name == ConstantValues.binary_classification
 
-        init_model_path = self._init_model_root
+        init_model_path = os.path.join(self._init_model_path, self._model_file_name)
         if init_model_path:
             assert os.path.isfile(init_model_path), \
                 "Value: init_model_path({}) is not a valid model path.".format(
@@ -273,7 +273,7 @@ class GaussLightgbm(ModelWrapper):
         assert self._train_flag == ConstantValues.train
         assert self._task_name == ConstantValues.multiclass_classification
 
-        init_model_path = self._init_model_root
+        init_model_path = os.path.join(self._init_model_path, self._model_file_name)
 
         params = self._model_params
         params["objective"] = "multiclass"
@@ -398,7 +398,7 @@ class GaussLightgbm(ModelWrapper):
         assert self._task_name == ConstantValues.regression
         assert self._train_flag == ConstantValues.train
 
-        init_model_path = self._init_model_root
+        init_model_path = os.path.join(self._init_model_path, self._model_file_name)
 
         params = self._model_params
         params["objective"] = "regression"

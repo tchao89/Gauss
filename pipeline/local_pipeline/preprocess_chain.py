@@ -25,7 +25,6 @@ class PreprocessRoute(Component):
 
     def __init__(self, **params):
         """
-
         :param name: PreprocessRoute name.
         :param feature_path_dict: feature config file path
         :param task_name: classification or regression.
@@ -407,24 +406,26 @@ class PreprocessRoute(Component):
                 self._dataset_name,
                 **val_dataset_params
             )
-
+            print(train_dataset.get_dataset().data.columns)
+            print(val_dataset.get_dataset().data.columns)
+            assert 1 == 0
             val_data_bunch = val_dataset.get_dataset()
-
             if not operator.eq(data_bunch.feature_names,
                                val_dataset.get_dataset().feature_names):
-                raise ValueError("")
+                raise ValueError(
+                    "Value: feature names is different between "
+                    "train dataset and validation dataset.")
             if not operator.eq(data_bunch.target_names,
                                val_dataset.get_dataset().target_names):
-                val_data_bunch.target.columns = data_bunch.target.columns
-                for index, target_name in enumerate(data_bunch.target_names):
-                    val_target_names = data_bunch.target_names[index]
-                    val_data_bunch.target_names = target_name
-                    val_data_bunch.proportion[target_name] = val_data_bunch.proportion.pop(val_target_names)
-                    val_data_bunch.label_class[target_name] = val_data_bunch.label_class.pop(val_target_names)
+                raise ValueError(
+                    "Value: target names is different between "
+                    "train dataset and validation dataset.")
             if use_weight_flag:
                 if not operator.eq(list(data_bunch.dataset_weight.columns),
                                    list(val_data_bunch.dataset_weight.columns)):
-                    val_data_bunch.dataset_weight.columns = data_bunch.dataset_weight.columns
+                    raise ValueError(
+                        "Value: dataset weight column names is different "
+                        "between train dataset and validation dataset.")
         else:
             raise ValueError("Validation dataset path is None.")
         return val_dataset

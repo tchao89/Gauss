@@ -52,7 +52,8 @@ class ModelWrapper(Entity):
         if self._train_flag == ConstantValues.train:
             self._init_model_root = params[ConstantValues.init_model_root]
             if self._init_model_root is not None:
-                self._init_model_path = os.path.join(self._init_model_root, self._name)
+                self._init_model_path = os.path.join(self._init_model_path, ConstantValues.model)
+                self._init_model_path = os.path.join(self._init_model_path, ConstantValues.model_save)
             else:
                 self._init_model_path = None
         elif self._train_flag == ConstantValues.increment:

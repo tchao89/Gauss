@@ -85,11 +85,12 @@ class PlaintextDataset(BaseDataset):
 
         if self._name == ConstantValues.train_dataset or self._name == ConstantValues.val_dataset:
             self.__use_weight_flag = params[ConstantValues.use_weight_flag]
+            if self._name == ConstantValues.train_dataset:
+                self._column_name_flag = params[ConstantValues.column_name_flag]
             assert isinstance(self.__use_weight_flag, bool), "This value should be bool type, but get {}".format(
                 self.__use_weight_flag)
             if self._name == ConstantValues.val_dataset:
                 self.__train_dataset = params[ConstantValues.train_dataset]
-                assert isinstance(self.__train_dataset, PlaintextDataset)
             self.__dataset_weight_dict = params[ConstantValues.dataset_weight_dict]
             if params.get(ConstantValues.weight_column_name):
                 assert isinstance(params[ConstantValues.weight_column_name], list)
@@ -106,7 +107,6 @@ class PlaintextDataset(BaseDataset):
         self._val_start = None
         # This value is a bool value, and true means plaindataset has missing values and need to clear.
         self._need_data_clear = False
-        self._column_name_flag = params[ConstantValues.column_name_flag]
         self.load_data()
 
     def load_data(self):
@@ -122,7 +122,7 @@ class PlaintextDataset(BaseDataset):
                 self.__load_val_dataset()
             else:
                 self.__load_data_from_path()
-        elif self._data_path is None and self.__train_dataset is not None:
+        elif self._data_path is None and self.__train_dataset is None and self._data_package is not None:
             self.__load_data_from_memory()
         else:
             raise ValueError("Value: data path and data package is all None.")
@@ -171,6 +171,13 @@ class PlaintextDataset(BaseDataset):
                 self._target_names = train_target_index
                 self._weight_column_names = train_weight_index
                 self.__load_data_from_path()
+                self._bunch.data.columns = train_dataset.get_dataset().data.columns
+                self._bunch.target.columns = train_dataset.get_dataset().target.columns
+                self._bunch.feature_names = train_dataset.get_dataset().feature_names
+                self._bunch.target_names = train_dataset.get_dataset().target_names
+                self._bunch.dataset_weight.columns = train_dataset.get_dataset().dataset_weight.columns
+                self._bunch.label_class = train_dataset.get_dataset().label_class
+                self._bunch.proportion = train_dataset.get_dataset().proportion
         else:
             self._column_name_flag = False
             self._target_names = train_target_names
@@ -248,8 +255,14 @@ class PlaintextDataset(BaseDataset):
         # All kinds of dataset will get column names when programming reaches here.
         if self._name == ConstantValues.train_dataset or self._name == ConstantValues.val_dataset:
             self.__set_proportion()
-            self._bunch.data, self._bunch.target = shuffle(self._bunch.data, self._bunch.target)
             self.__set_weight()
+            if self._bunch.get(ConstantValues.dataset_weight) is not None:
+                self._bunch.data, self._bunch.target, self._bunch.dataset_weight = shuffle(
+                    self._bunch.data,
+                    self._bunch.target,
+                    self._bunch.dataset_weight)
+            else:
+                self._bunch.data, self._bunch.target = shuffle(self._bunch.data, self._bunch.target)
         elif self._name == ConstantValues.increment_dataset:
             self.__set_proportion()
             self._bunch.data, self._bunch.target = shuffle(self._bunch.data, self._bunch.target)
@@ -369,6 +382,8 @@ class PlaintextDataset(BaseDataset):
                     self.__weight_index = weight_index
                     weight = data[self._weight_column_names]
                     data.drop(self._weight_column_names, axis=1, inplace=True)
+                    print(data)
+                    assert 1 == 0
                 else:
                     weight = None
             else:
@@ -414,7 +429,7 @@ class PlaintextDataset(BaseDataset):
                     target_columns.append(self.__column_index[target_index])
 
                 target_columns = list(set(target_columns))
-                target = data.iloc[:, target_columns]
+                target = data.loc[:, target_columns]
 
                 data.drop(target_columns, axis=1, inplace=True)
                 target_names = ["target_" + string.ascii_uppercase[index]
@@ -514,7 +529,7 @@ class PlaintextDataset(BaseDataset):
 
     def load_txt(self):
         if self._column_name_flag is True:
-            raise ValueError("Value: column name flag should be false when loading libsvm file.")
+            raise ValueError("Value: column name flag should be false when loading txt file.")
 
         with open(self._data_path, 'r') as file:
             lines = file.readlines()
@@ -562,7 +577,7 @@ class PlaintextDataset(BaseDataset):
                     target_columns.append(self.__column_index[target_index])
 
                 target_columns = list(set(target_columns))
-                target = data.iloc[:, target_columns]
+                target = data.loc[:, target_columns]
 
                 data.drop(target_columns, axis=1, inplace=True)
                 target_names = ["target_" + string.ascii_uppercase[index]
@@ -715,6 +730,7 @@ class PlaintextDataset(BaseDataset):
         return PlaintextDataset(name=ConstantValues.val_dataset,
                                 task_name=self._task_name,
                                 train_flag=ConstantValues.train,
+                                train_dataset=None,
                                 use_weight_flag=self.__use_weight_flag,
                                 weight_column_name=self._weight_column_names,
                                 dataset_weight_dict=self.__dataset_weight_dict,
