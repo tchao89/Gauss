@@ -7,6 +7,7 @@ feature_generator_name: featuretools_generation
 feature_configure_name: feature_configure
 label_encoder_name: plain_label_encoder
 label_encoder_flag: True
+dataset_name: plaindataset
 opt_model_names:
 - tpe
 - random_search

@@ -112,12 +112,10 @@ class PreprocessRoute(Component):
             self._increment_column_name_flag = params[ConstantValues.increment_column_name_flag]
             self._target_names = params[ConstantValues.target_names]
             self._train_data_path = params[ConstantValues.train_data_path]
-
         elif self._train_flag == ConstantValues.inference:
             self._inference_column_name_flag = params[ConstantValues.inference_column_name_flag]
             assert isinstance(self._inference_column_name_flag, bool)
             self._inference_data_path = params[ConstantValues.inference_data_path]
-
         else:
             raise ValueError("Value: train_flag should be train, "
                              "increment or inference, but get {}".format(self._train_flag))
@@ -406,9 +404,6 @@ class PreprocessRoute(Component):
                 self._dataset_name,
                 **val_dataset_params
             )
-            print(train_dataset.get_dataset().data.columns)
-            print(val_dataset.get_dataset().data.columns)
-            assert 1 == 0
             val_data_bunch = val_dataset.get_dataset()
             if not operator.eq(data_bunch.feature_names,
                                val_dataset.get_dataset().feature_names):

@@ -54,23 +54,19 @@ class GaussXgboost(ModelWrapper):
             super().__init__(
                 name=params[ConstantValues.name],
                 model_root_path=params[ConstantValues.model_root_path],
-                init_model_root=params[ConstantValues.init_model_root],
                 task_name=params[ConstantValues.task_name],
                 train_flag=params[ConstantValues.train_flag],
-                decay_rate=params[ConstantValues.decay_rate],
-                metric_eval_used_flag=params[ConstantValues.metric_eval_used_flag]
+                decay_rate=params[ConstantValues.decay_rate]
             )
         else:
             assert params[ConstantValues.train_flag] == ConstantValues.inference
             super().__init__(
                 name=params[ConstantValues.name],
                 model_root_path=params[ConstantValues.model_root_path],
-                init_model_root=params[ConstantValues.init_model_root],
                 increment_flag=params[ConstantValues.increment_flag],
                 infer_result_type=params[ConstantValues.infer_result_type],
                 task_name=params[ConstantValues.task_name],
-                train_flag=params[ConstantValues.train_flag],
-                metric_eval_used_flag=params[ConstantValues.metric_eval_used_flag]
+                train_flag=params[ConstantValues.train_flag]
             )
 
         self._model_file_name = self._name + ".txt"
