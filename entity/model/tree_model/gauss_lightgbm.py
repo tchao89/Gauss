@@ -54,23 +54,19 @@ class GaussLightgbm(ModelWrapper):
             super().__init__(
                 name=params[ConstantValues.name],
                 model_root_path=params[ConstantValues.model_root_path],
-                init_model_root=params[ConstantValues.init_model_root],
                 task_name=params[ConstantValues.task_name],
                 train_flag=params[ConstantValues.train_flag],
-                decay_rate=params[ConstantValues.decay_rate],
-                metric_eval_used_flag=params[ConstantValues.metric_eval_used_flag]
+                decay_rate=params[ConstantValues.decay_rate]
             )
         else:
             assert params[ConstantValues.train_flag] == ConstantValues.inference
             super().__init__(
                 name=params[ConstantValues.name],
                 model_root_path=params[ConstantValues.model_root_path],
-                init_model_root=params[ConstantValues.init_model_root],
                 increment_flag=params[ConstantValues.increment_flag],
                 infer_result_type=params[ConstantValues.infer_result_type],
                 task_name=params[ConstantValues.task_name],
-                train_flag=params[ConstantValues.train_flag],
-                metric_eval_used_flag=params[ConstantValues.metric_eval_used_flag]
+                train_flag=params[ConstantValues.train_flag]
             )
 
         self._model_file_name = self._name + ".txt"
@@ -132,57 +128,29 @@ class GaussLightgbm(ModelWrapper):
     def _initialize_model(self):
         pass
 
-    def _binary_train(self,
-                      train_dataset: BaseDataset,
-                      val_dataset: BaseDataset,
-                      **entity):
-        """
-        This method is used to train lightgbm
-        model in binary classification.
-        :param train_dataset:
-        :param val_dataset:
-        :param entity:
-        :return: None
-        """
-        assert self._train_flag == ConstantValues.train
-        assert self._task_name == ConstantValues.binary_classification
+    def __core_train(self,
+                     train_dataset: BaseDataset,
+                     val_dataset: BaseDataset,
+                     **entity):
+        params = self._model_params
 
-        init_model_path = os.path.join(self._init_model_path, self._model_file_name)
-        if init_model_path:
+        # generate init model path for training.
+        if self._init_model_path:
+            init_model_path = os.path.join(self._init_model_path, self._model_file_name)
             assert os.path.isfile(init_model_path), \
                 "Value: init_model_path({}) is not a valid model path.".format(
                     init_model_path)
+        else:
+            init_model_path = None
 
-        params = self._model_params
-        params["objective"] = "binary"
-
+        # generate user-defined loss function object.
         if entity["loss"] is not None:
             self._loss_function = entity["loss"].loss_fn
             obj_function = self._loss_func
         else:
             obj_function = None
 
-        train_target_names = train_dataset.get_dataset().target_names
-        eval_target_names = val_dataset.get_dataset().target_names
-
-        assert operator.eq(train_target_names, eval_target_names), \
-            "Value: target_names is different between train_dataset and validation dataset."
-
-        # One label learning is achieved now, multi_label
-        # learning will be supported in future.
-        self._target_names = list(set(train_target_names).union(set(eval_target_names)))[0]
-
-        train_label_set = pd.unique(train_dataset.get_dataset().target[self._target_names])
-        eval_label_set = pd.unique(val_dataset.get_dataset().target[self._target_names])
-        train_label_num = len(train_label_set)
-        eval_label_num = len(eval_label_set)
-
-        assert train_label_num == eval_label_num and train_label_num == 2, \
-            "Set of train label is: {}, length: {}, validation label is {}, length is {}, " \
-            "and binary classification can not be used.".format(
-                train_label_set, train_label_num, eval_label_set, eval_label_num
-            )
-
+        # generate user-defined metric function object.
         if self._metric_eval_used_flag and entity["metric"] is not None:
             entity["metric"].label_name = self._target_names
             self._eval_function = entity["metric"].evaluate
@@ -191,13 +159,7 @@ class GaussLightgbm(ModelWrapper):
             params["metric"] = "binary_logloss"
             eval_function = None
 
-        logger.info(
-            "Construct lightgbm training dataset, "
-            "with current memory usage: {:.2f} GiB".format(
-                get_current_memory_gb()["memory_usage"]
-            )
-        )
-
+        # loading dataset
         lgb_entity = self.__lgb_preprocessing(
             **Bunch(
                 label_name=self._target_names,
@@ -213,13 +175,6 @@ class GaussLightgbm(ModelWrapper):
 
         lgb_train = lgb_entity.lgb_train
         lgb_eval = lgb_entity.lgb_eval
-
-        logger.info(
-            "Set preprocessing parameters for lightgbm, "
-            "with current memory usage: {:.2f} GiB".format(
-                get_current_memory_gb()["memory_usage"]
-            )
-        )
 
         if self._model_params is not None:
 
@@ -266,6 +221,61 @@ class GaussLightgbm(ModelWrapper):
             raise ValueError("Model parameters is None.")
         self.count += 1
 
+    def _binary_train(self,
+                      train_dataset: BaseDataset,
+                      val_dataset: BaseDataset,
+                      **entity):
+        """
+        This method is used to train lightgbm
+        model in binary classification.
+        :param train_dataset:
+        :param val_dataset:
+        :param entity:
+        :return: None
+        """
+        assert self._train_flag == ConstantValues.train
+        assert self._task_name == ConstantValues.binary_classification
+
+        params = self._model_params
+        params["objective"] = "binary"
+
+        train_target_names = train_dataset.get_dataset().target_names
+        eval_target_names = val_dataset.get_dataset().target_names
+
+        assert operator.eq(train_target_names, eval_target_names), \
+            "Value: target_names is different between train_dataset and validation dataset."
+
+        # One label learning is achieved now, multi_label
+        # learning will be supported in future.
+        self._target_names = list(set(train_target_names).union(set(eval_target_names)))[0]
+
+        train_label_set = pd.unique(train_dataset.get_dataset().target[self._target_names])
+        eval_label_set = pd.unique(val_dataset.get_dataset().target[self._target_names])
+        train_label_num = len(train_label_set)
+        eval_label_num = len(eval_label_set)
+
+        assert train_label_num == eval_label_num and train_label_num == 2, \
+            "Set of train label is: {}, length: {}, validation label is {}, length is {}, " \
+            "and binary classification can not be used.".format(
+                train_label_set, train_label_num, eval_label_set, eval_label_num
+            )
+
+        logger.info(
+            "Construct lightgbm training dataset, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+
+        logger.info(
+            "Set preprocessing parameters for lightgbm, "
+            "with current memory usage: {:.2f} GiB".format(
+                get_current_memory_gb()["memory_usage"]
+            )
+        )
+
+        self.__core_train(train_dataset, val_dataset, **entity)
+
     def _multiclass_train(self,
                           train_dataset: BaseDataset,
                           val_dataset: BaseDataset,
@@ -273,7 +283,13 @@ class GaussLightgbm(ModelWrapper):
         assert self._train_flag == ConstantValues.train
         assert self._task_name == ConstantValues.multiclass_classification
 
-        init_model_path = os.path.join(self._init_model_path, self._model_file_name)
+        if self._init_model_path:
+            init_model_path = os.path.join(self._init_model_path, self._model_file_name)
+            assert os.path.isfile(init_model_path), \
+                "Value: init_model_path({}) is not a valid model path.".format(
+                    init_model_path)
+        else:
+            init_model_path = None
 
         params = self._model_params
         params["objective"] = "multiclass"
@@ -398,7 +414,13 @@ class GaussLightgbm(ModelWrapper):
         assert self._task_name == ConstantValues.regression
         assert self._train_flag == ConstantValues.train
 
-        init_model_path = os.path.join(self._init_model_path, self._model_file_name)
+        if self._init_model_path:
+            init_model_path = os.path.join(self._init_model_path, self._model_file_name)
+            assert os.path.isfile(init_model_path), \
+                "Value: init_model_path({}) is not a valid model path.".format(
+                    init_model_path)
+        else:
+            init_model_path = None
 
         params = self._model_params
         params["objective"] = "regression"

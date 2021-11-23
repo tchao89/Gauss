@@ -7,7 +7,6 @@ This pipeline is used to train model, which parameters and settings can be custo
 """
 from __future__ import annotations
 
-import os.path
 from os.path import join
 
 from pipeline.local_pipeline.core_chain import CoreRoute
@@ -70,7 +69,7 @@ class UdfModelingGraph(BaseModelingGraph):
                                        model_need_clear_flag=system_configure[ConstantValues.model_need_clear_flag],
                                        feature_configure_path=user_configure[ConstantValues.feature_configure_path],
                                        feature_configure_name=system_configure[ConstantValues.feature_configure_name],
-                                       dataset_name=user_configure[ConstantValues.dataset_name],
+                                       dataset_name=system_configure[ConstantValues.dataset_name],
                                        type_inference_name=system_configure[ConstantValues.type_inference_name],
                                        label_encoder_name=system_configure[ConstantValues.label_encoder_name],
                                        label_encoder_flag=system_configure[ConstantValues.label_encoder_flag],

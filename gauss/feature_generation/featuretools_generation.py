@@ -131,7 +131,8 @@ class FeatureToolsGenerator(BaseFeatureGenerator):
             # Create new features using specified primitives
             logger.info("DFS method prepares to start, " + "with current memory usage: %.2f GiB",
                         get_current_memory_gb()["memory_usage"])
-            features, feature_names = ft.dfs(entityset=es, target_entity=self.name,
+            features, feature_names = ft.dfs(entityset=es,
+                                             target_entity=self._name,
                                              trans_primitives=trans_primitives)
 
             logger.info("Remove original dataset, " + "with current memory usage: %.2f GiB",

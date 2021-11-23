@@ -21,11 +21,11 @@ environ_configure = EnvironmentConfigure(work_root="/home/liangqian/Gauss/experi
 
 pipeline_dict = Bunch()
 # ["udf", "auto", "dispatch_auto", "dispatch_udf"]
-pipeline_dict.mode = "udf"
+pipeline_dict.mode = "auto"
 # initial model path, optional: str or None, and it's different from increment model setting.
 # This is used to train a better model instead of increment.
 # if this value is not None, user can just use one model in value: model_zoo
-pipeline_dict.init_model_root = "/home/liangqian/Gauss/experiments/xhfXlV/lightgbm"
+pipeline_dict.init_model_root = None
 # choose different supervised selector, optional: ["model_select", "topk_select"]
 pipeline_dict.supervised_selector_mode = "topk_select"
 # This value is used to set transform type in regression task, eg: {"target_name": "log"}
@@ -62,16 +62,15 @@ pipeline_dict.train_data_path = "/home/liangqian/文档/公开数据集/bank/ban
 pipeline_dict.val_data_path = "/home/liangqian/文档/公开数据集/bank/bank_val.csv"
 # if column name flag is None, feature_configure_path should be None.
 pipeline_dict.feature_configure_path = None
-pipeline_dict.dataset_name = "plaindataset"
 pipeline_dict.model_zoo = ["lightgbm", "xgboost"]
-pipeline_dict.data_clear_flag = True
-pipeline_dict.feature_generator_flag = False
-pipeline_dict.unsupervised_feature_selector_flag = False
-pipeline_dict.supervised_feature_selector_flag = False
-# pipeline_dict.data_clear_flag = [True, False]
-# pipeline_dict.feature_generator_flag = [False]
-# pipeline_dict.unsupervised_feature_selector_flag = [True]
-# pipeline_dict.supervised_feature_selector_flag = [True]
+# pipeline_dict.data_clear_flag = True
+# pipeline_dict.feature_generator_flag = False
+# pipeline_dict.unsupervised_feature_selector_flag = False
+# pipeline_dict.supervised_feature_selector_flag = False
+pipeline_dict.data_clear_flag = [True, False]
+pipeline_dict.feature_generator_flag = [False]
+pipeline_dict.unsupervised_feature_selector_flag = [True]
+pipeline_dict.supervised_feature_selector_flag = [True]
 user_config_path = environ_configure.work_root + "/train_user_config.yaml"
 yaml_write(yaml_dict=dict(pipeline_dict), yaml_file=user_config_path)
 

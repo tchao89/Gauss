@@ -170,14 +170,19 @@ class PlaintextDataset(BaseDataset):
             else:
                 self._target_names = train_target_index
                 self._weight_column_names = train_weight_index
+                if self._bunch is None:
+                    self._bunch = Bunch()
+                self._bunch.proportion = train_dataset.get_dataset().proportion
                 self.__load_data_from_path()
+
                 self._bunch.data.columns = train_dataset.get_dataset().data.columns
                 self._bunch.target.columns = train_dataset.get_dataset().target.columns
                 self._bunch.feature_names = train_dataset.get_dataset().feature_names
                 self._bunch.target_names = train_dataset.get_dataset().target_names
-                self._bunch.dataset_weight.columns = train_dataset.get_dataset().dataset_weight.columns
                 self._bunch.label_class = train_dataset.get_dataset().label_class
-                self._bunch.proportion = train_dataset.get_dataset().proportion
+
+                if self.__use_weight_flag:
+                    self._bunch.dataset_weight.columns = train_dataset.get_dataset().dataset_weight.columns
         else:
             self._column_name_flag = False
             self._target_names = train_target_names
@@ -382,8 +387,6 @@ class PlaintextDataset(BaseDataset):
                     self.__weight_index = weight_index
                     weight = data[self._weight_column_names]
                     data.drop(self._weight_column_names, axis=1, inplace=True)
-                    print(data)
-                    assert 1 == 0
                 else:
                     weight = None
             else:
@@ -418,8 +421,9 @@ class PlaintextDataset(BaseDataset):
 
             if self.__dataset_weight_dict:
                 for index in self.__dataset_weight_dict.copy().keys():
-                    self.__dataset_weight_dict[self.__column_index[index]] = self.__dataset_weight_dict[index]
-                    self.__dataset_weight_dict.pop(index)
+                    if index != self.__column_index[index]:
+                        self.__dataset_weight_dict[self.__column_index[index]] = self.__dataset_weight_dict[index]
+                        self.__dataset_weight_dict.pop(index)
 
             if self._name in [ConstantValues.train_dataset,
                               ConstantValues.val_dataset,
@@ -493,8 +497,9 @@ class PlaintextDataset(BaseDataset):
 
             if self.__dataset_weight_dict:
                 for index in self.__dataset_weight_dict.copy().keys():
-                    self.__dataset_weight_dict[self.__column_index[index]] = self.__dataset_weight_dict[index]
-                    self.__dataset_weight_dict.pop(index)
+                    if index != self.__column_index[index]:
+                        self.__dataset_weight_dict[target_columns[index]] = self.__dataset_weight_dict[index]
+                        self.__dataset_weight_dict.pop(index)
 
             if self._name in [ConstantValues.train_dataset,
                               ConstantValues.val_dataset,
@@ -548,9 +553,6 @@ class PlaintextDataset(BaseDataset):
             data = pd.DataFrame(np.asarray(data, dtype=str))
             self.__column_index = list(data.columns)
 
-            target_columns = []
-            self.__column_index = list(data.columns)
-
             if self.__use_weight_flag:
                 if self._weight_column_names:
                     weight_columns = []
@@ -566,9 +568,11 @@ class PlaintextDataset(BaseDataset):
 
             if self.__dataset_weight_dict:
                 for index in self.__dataset_weight_dict.copy().keys():
-                    self.__dataset_weight_dict[self.__column_index[index]] = self.__dataset_weight_dict[index]
-                    self.__dataset_weight_dict.pop(index)
+                    if index != self.__column_index[index]:
+                        self.__dataset_weight_dict[self.__column_index[index]] = self.__dataset_weight_dict[index]
+                        self.__dataset_weight_dict.pop(index)
 
+            target_columns = []
             if self._name in [ConstantValues.train_dataset,
                               ConstantValues.val_dataset,
                               ConstantValues.increment_dataset]:

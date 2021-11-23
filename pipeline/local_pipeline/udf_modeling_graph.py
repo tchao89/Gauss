@@ -71,7 +71,7 @@ class UdfModelingGraph(BaseModelingGraph):
             model_need_clear_flag=system_configure[ConstantValues.model_need_clear_flag],
             feature_configure_path=user_configure[ConstantValues.feature_configure_path],
             feature_configure_name=system_configure[ConstantValues.feature_configure_name],
-            dataset_name=user_configure[ConstantValues.dataset_name],
+            dataset_name=system_configure[ConstantValues.dataset_name],
             type_inference_name=system_configure[ConstantValues.type_inference_name],
             label_encoder_name=system_configure[ConstantValues.label_encoder_name],
             label_encoder_flag=system_configure[ConstantValues.label_encoder_flag],
