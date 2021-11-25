@@ -90,8 +90,6 @@ class PlaintextDataset(BaseDataset):
         if self._name == ConstantValues.train_dataset or self._name == ConstantValues.val_dataset:
 
             self.__use_weight_flag = params[ConstantValues.use_weight_flag]
-            #if self._name == ConstantValues.train_dataset:
-            #    self._column_name_flag = params[ConstantValues.column_name_flag]
             assert isinstance(self.__use_weight_flag, bool), "This value should be bool type, but get {}".format(
                 self.__use_weight_flag)
             if self._name == ConstantValues.val_dataset:
@@ -365,7 +363,6 @@ class PlaintextDataset(BaseDataset):
         dataset_weight = self._bunch.dataset_weight
         target = self._bunch.target
         target_names = self._bunch.target_names
-        #print(target_names)
         # Dataset weight will be calculated.
         if dataset_weight is None:
             if self._task_name == ConstantValues.binary_classification or ConstantValues.multiclass_classification:
